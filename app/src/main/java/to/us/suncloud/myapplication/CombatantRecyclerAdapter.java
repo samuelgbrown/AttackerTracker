@@ -16,12 +16,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecyclerAdapter.CombatantViewHolder> {
+    private static final int UNSET = -1;
+
     RecyclerView combatantRecyclerView;
 
     private ArrayList<Combatant> combatantList;
     private ArrayList<Combatant> combatantList_Memory; // A memory version of the list, to see what changes have occurred
 
-    private int curActiveCombatant = -1; // The currently active combatant, as an index in combatantList (if -1, there is no active combatant)
+    private int curActiveCombatant = UNSET; // The currently active combatant, as an index in combatantList (if -1, there is no active combatant)
 
     CombatantRecyclerAdapter(List<Combatant> combatantList) {
         this.combatantList = new ArrayList<>(combatantList); // Hold onto the combatant list
@@ -37,7 +39,6 @@ public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecy
     }
 
     class CombatantViewHolder extends RecyclerView.ViewHolder {
-        private static final int UNSET = -1;
 
         int position = UNSET;
         TextView NameView;
@@ -51,11 +52,48 @@ public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecy
 
         public CombatantViewHolder(@NonNull View itemView) {
             super(itemView);
-            // TODO: Assign all views
+            // TODO: Figure out how to display the combatant's faction!
             NameView = itemView.findViewById(R.id.combatant_name);
-            // etc...
+            TotalInitiativeView = itemView.findViewById(R.id.combatant_total_initiative);
+            RollView = itemView.findViewById(R.id.combatant_roll);
+            SpeedFactorView = itemView.findViewById(R.id.combatant_speed_factor);
+            ActiveCombatantBorder = itemView.findViewById(R.id.active_combatant_border);
+            CombatantRemove = itemView.findViewById(R.id.combatant_remove);
+            CombatantCompletedCheck = itemView.findViewById(R.id.combatant_completed_check);
 
             // TODO: Set up callback for the delete button and checkboxes
+            CombatantRemove.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (position != UNSET) {
+                        // First, adjust the active combatant display, if required
+                        if (curActiveCombatant == position) {
+                            // (If curActiveCombatant is UNSET, then we won't get here)
+                            if (position == (combatantList.size() - 1)) {
+                                // If this is the last combatant in the list (before removing this combatant), then reset the currently active combatant to the new final combatant in the list
+                                curActiveCombatant = position - 1; // The new final index in combatantList, once this combatant is removed, will be position - 1 (one behind the current combatant position, which is currently the last combatant)
+                            }
+                        }
+
+                        // Next, remove this from the combatant list
+                        combatantList.remove(position);
+
+                        // Let the adapter know that the list has been modified, and it should rearrange things as needed
+//                        notifyItemRemoved(position); // Don't think I need this...?
+                        notifyCombatantsChanged();
+
+                        // Finally, update the active combatant border, in case anything has changed
+                        updateActiveCombatantGUI();
+                    }
+                }
+            });
+
+            CombatantCompletedCheck.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    // TODO: Basically just want to gray out this combatant so it is still readable, but clearly visibly different
+                }
+            });
         }
 
         public void bind(int combatant_ind) {
@@ -82,8 +120,7 @@ public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecy
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         View layoutView = inflater.inflate(R.layout.combatant_item, parent, false);
 
-        CombatantViewHolder viewHolder = new CombatantViewHolder(layoutView);
-        return viewHolder;
+        return new CombatantViewHolder(layoutView);
     }
 
     @Override
