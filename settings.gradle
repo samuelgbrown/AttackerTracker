@@ -1,0 +1,2 @@
+rootProject.name='AttackerTracker'
+include ':app'

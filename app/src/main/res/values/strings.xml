@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">AttackerTracker</string>
+    <string name="next_round">Next Round</string>
+    <string name="begin_encounter">Begin Encounter</string>
+    <string name="combatant_name_placeholder">Combatant Name</string>
+    <string name="add_combatant">Add</string>
+    <string name="settings">Settings</string>
+
+</resources>
