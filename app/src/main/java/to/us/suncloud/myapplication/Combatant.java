@@ -2,11 +2,14 @@ package to.us.suncloud.myapplication;
 
 import androidx.annotation.Nullable;
 
+import java.io.Serializable;
+import java.security.SecureRandom;
+
 // A simple class to keep track of a combatant
-public class Combatant {
+public class Combatant implements Serializable {
     // TODO: Enforce uniqueness by name (for enemies, should ALWAYS be different, e.g. "Zombie 1", "Zombie 2"...)
-    private Faction faction;
-    private String name;
+    private Faction faction = null;
+    private String name = null;
     private int speedFactor;
     private int roll;
     private int totalInitiative;
@@ -67,6 +70,20 @@ public class Combatant {
 
     enum Faction {
         Party,
-        Enemy
+        Enemy,
+        Neutral
+    }
+
+    public static String factionToString(Faction faction) {
+        switch (faction) {
+            case Party:
+                return "Party";
+            case Enemy:
+                return "Enemy";
+            case Neutral:
+                return "Neutral";
+            default:
+                return "";
+        }
     }
 }

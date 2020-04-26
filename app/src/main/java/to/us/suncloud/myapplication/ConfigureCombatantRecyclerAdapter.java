@@ -3,7 +3,9 @@ package to.us.suncloud.myapplication;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -15,7 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecyclerAdapter.CombatantViewHolder> {
+public class ConfigureCombatantRecyclerAdapter extends RecyclerView.Adapter<ConfigureCombatantRecyclerAdapter.CombatantViewHolder> {
     private static final int UNSET = -1;
 
     RecyclerView combatantRecyclerView;
@@ -25,7 +27,7 @@ public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecy
 
     private int curActiveCombatant = UNSET; // The currently active combatant, as an index in combatantList (if -1, there is no active combatant)
 
-    CombatantRecyclerAdapter(List<Combatant> combatantList) {
+    ConfigureCombatantRecyclerAdapter(List<Combatant> combatantList) {
         this.combatantList = new ArrayList<>(combatantList); // Hold onto the combatant list
         this.combatantList_Memory = new ArrayList<>(combatantList); // Keep a second copy, for memory
     }
@@ -41,6 +43,8 @@ public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecy
     class CombatantViewHolder extends RecyclerView.ViewHolder {
 
         int position = UNSET;
+        boolean hasCompleted; // Has this combatant completed its turn?
+
         TextView NameView;
         TextView TotalInitiativeView;
         TextView RollView;
@@ -49,7 +53,9 @@ public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecy
 
         ImageButton CombatantRemove;
         CheckBox CombatantCompletedCheck;
+        ConstraintLayout CombatantGrayout;
 
+        // TODO SOON START HERE: Figure out how to use different ViewHolders for different activities, while minimizing boiler plate (Configure-, Add- should be using different viewholders, but otherwise similar implementations of CombatantGroupFragment; Add will need search/filtering-by-String-start support, and NEITHER need the encounter viewholder used below...)
         public CombatantViewHolder(@NonNull View itemView) {
             super(itemView);
             // TODO: Figure out how to display the combatant's faction!
@@ -60,6 +66,7 @@ public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecy
             ActiveCombatantBorder = itemView.findViewById(R.id.active_combatant_border);
             CombatantRemove = itemView.findViewById(R.id.combatant_remove);
             CombatantCompletedCheck = itemView.findViewById(R.id.combatant_completed_check);
+            CombatantGrayout = itemView.findViewById(R.id.combatant_grayout);
 
             // TODO: Set up callback for the delete button and checkboxes
             CombatantRemove.setOnClickListener(new View.OnClickListener() {
@@ -88,10 +95,11 @@ public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecy
                 }
             });
 
-            CombatantCompletedCheck.setOnClickListener(new View.OnClickListener() {
+            CombatantCompletedCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
-                public void onClick(View view) {
-                    // TODO: Basically just want to gray out this combatant so it is still readable, but clearly visibly different
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    // The has completed value should follow the state of the boolean
+                    setHasCompleted(b);
                 }
             });
         }
@@ -112,13 +120,35 @@ public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecy
                 ActiveCombatantBorder.setBackgroundColor(ActiveCombatantBorder.getContext().getResources().getColor(R.color.standardBackground));
             }
         }
+
+        public void setHasCompleted(boolean hasCompleted) {
+            if (this.hasCompleted != hasCompleted) {
+                // If there is a new setting for the completed setting, then change the grayout
+                float targetAlpha;
+                if (hasCompleted) {
+                    // If this combatant has completed its turn, gray it out by increasing the alpha of the grayout view
+                    targetAlpha = .5f;
+                } else {
+                    targetAlpha = 0f;
+                }
+
+                // Get the current alpha value
+                float currentAlpha = CombatantGrayout.getAlpha();
+
+                // Now animate the grayout
+                AlphaAnimation alphaAnim = new AlphaAnimation(currentAlpha, targetAlpha);
+                alphaAnim.setDuration(300); // Animation should take .3s
+                alphaAnim.setFillAfter(true); // Persist the new alpha after the animation ends
+                CombatantGrayout.startAnimation(alphaAnim);
+            }
+        }
     }
 
     @NonNull
     @Override
     public CombatantViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        View layoutView = inflater.inflate(R.layout.combatant_item, parent, false);
+        View layoutView = inflater.inflate(R.layout.combatant_item_encounter, parent, false);
 
         return new CombatantViewHolder(layoutView);
     }
@@ -131,6 +161,11 @@ public class CombatantRecyclerAdapter extends RecyclerView.Adapter<CombatantRecy
     @Override
     public int getItemCount() {
         return combatantList.size();
+    }
+
+    public void setCombatantList(ArrayList<Combatant> newCombatantList) {
+        combatantList = new ArrayList<>(newCombatantList);
+        notifyCombatantsChanged();
     }
 
     public void notifyCombatantsChanged() {
