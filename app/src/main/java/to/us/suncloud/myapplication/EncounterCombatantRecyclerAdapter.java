@@ -17,7 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConfigureCombatantRecyclerAdapter extends RecyclerView.Adapter<ConfigureCombatantRecyclerAdapter.CombatantViewHolder> {
+public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<EncounterCombatantRecyclerAdapter.CombatantViewHolder> {
     private static final int UNSET = -1;
 
     RecyclerView combatantRecyclerView;
@@ -27,7 +27,7 @@ public class ConfigureCombatantRecyclerAdapter extends RecyclerView.Adapter<Conf
 
     private int curActiveCombatant = UNSET; // The currently active combatant, as an index in combatantList (if -1, there is no active combatant)
 
-    ConfigureCombatantRecyclerAdapter(List<Combatant> combatantList) {
+    EncounterCombatantRecyclerAdapter(List<Combatant> combatantList) {
         this.combatantList = new ArrayList<>(combatantList); // Hold onto the combatant list
         this.combatantList_Memory = new ArrayList<>(combatantList); // Keep a second copy, for memory
     }
@@ -58,15 +58,16 @@ public class ConfigureCombatantRecyclerAdapter extends RecyclerView.Adapter<Conf
         // TODO SOON START HERE: Figure out how to use different ViewHolders for different activities, while minimizing boiler plate (Configure-, Add- should be using different viewholders, but otherwise similar implementations of CombatantGroupFragment; Add will need search/filtering-by-String-start support, and NEITHER need the encounter viewholder used below...)
         public CombatantViewHolder(@NonNull View itemView) {
             super(itemView);
-            // TODO: Figure out how to display the combatant's faction!
-            NameView = itemView.findViewById(R.id.combatant_name);
-            TotalInitiativeView = itemView.findViewById(R.id.combatant_total_initiative);
-            RollView = itemView.findViewById(R.id.combatant_roll);
-            SpeedFactorView = itemView.findViewById(R.id.combatant_speed_factor);
+
+            // TODO: Figure out how to display the combatant's faction! -> Use background color
+            NameView = itemView.findViewById(R.id.combatant_enc_name);
+            TotalInitiativeView = itemView.findViewById(R.id.combatant_enc_total_initiative);
+            RollView = itemView.findViewById(R.id.combatant_enc_roll);
+            SpeedFactorView = itemView.findViewById(R.id.combatant_enc_speed_factor);
             ActiveCombatantBorder = itemView.findViewById(R.id.active_combatant_border);
-            CombatantRemove = itemView.findViewById(R.id.combatant_remove);
-            CombatantCompletedCheck = itemView.findViewById(R.id.combatant_completed_check);
-            CombatantGrayout = itemView.findViewById(R.id.combatant_grayout);
+            CombatantRemove = itemView.findViewById(R.id.combatant_enc_remove);
+            CombatantCompletedCheck = itemView.findViewById(R.id.combatant_enc_completed_check);
+            CombatantGrayout = itemView.findViewById(R.id.combatant_enc_grayout);
 
             // TODO: Set up callback for the delete button and checkboxes
             CombatantRemove.setOnClickListener(new View.OnClickListener() {
@@ -172,6 +173,9 @@ public class ConfigureCombatantRecyclerAdapter extends RecyclerView.Adapter<Conf
         // If anything about the combatants has changed, see if we need to rearrange the list
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantDiffUtil(combatantList_Memory, combatantList));
         diffResult.dispatchUpdatesTo(this); // If anything has changed, move the list items around
+
+        // Update the combatantList
+        combatantList_Memory = combatantList;
     }
 
     public void setCurActiveCombatant(int curActiveCombatant) {
@@ -192,38 +196,6 @@ public class ConfigureCombatantRecyclerAdapter extends RecyclerView.Adapter<Conf
             if (vH instanceof CombatantViewHolder) {
                 ((CombatantViewHolder) vH).setActiveCombatant(i == curActiveCombatant);
             }
-        }
-    }
-
-    class CombatantDiffUtil extends DiffUtil.Callback {
-        ArrayList<Combatant> oldList;
-        ArrayList<Combatant> newList;
-
-        CombatantDiffUtil(ArrayList<Combatant> oldList, ArrayList<Combatant> newList) {
-            this.oldList = oldList;
-            this.newList = newList;
-        }
-
-        @Override
-        public int getOldListSize() {
-            return oldList.size();
-        }
-
-        @Override
-        public int getNewListSize() {
-            return newList.size();
-        }
-
-        @Override
-        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            // Combatants are unique by name...ideally...
-            return oldList.get(oldItemPosition).getName().equals(newList.get(newItemPosition).getName());
-        }
-
-        @Override
-        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            // Check if ALL of the values are the same
-            return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
         }
     }
 }
