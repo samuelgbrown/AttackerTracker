@@ -17,11 +17,11 @@ import java.util.Arrays;
 public class CombatantGroupFragment extends Fragment {
     final Combatant.Faction thisFaction; // The faction that this fragment represents
     RecyclerView combatantRecyclerView;
-    RecyclerView.Adapter combatantRecyclerAdapter;
+    RecyclerView.Adapter combatantRecyclerAdapter; // TODO SOON: Need to use custom adapter
 
     CombatantGroupFragment(RecyclerView.Adapter combatantRecyclerAdapter) {
 //        setCombatantList(newCombatantList.getCombatantArrayList());
-        this.thisFaction = newCombatantList.getThisFaction();
+        this.thisFaction = newCombatantList.getThisFaction(); // TODO: Deal with this implementation
 
         this.combatantRecyclerAdapter = combatantRecyclerAdapter;
     }

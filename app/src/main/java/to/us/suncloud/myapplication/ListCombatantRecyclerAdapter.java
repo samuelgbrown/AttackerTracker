@@ -55,15 +55,23 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         ImageButton CombatantRemove;
         ImageButton CombatantChangeName;
 
-        // TODO SOON START HERE: Figure out how to use different ViewHolders for different activities, while minimizing boiler plate (Configure-, Add- should be using different viewholders, but otherwise similar implementations of CombatantGroupFragment; Add will need search/filtering-by-String-start support, and NEITHER need the encounter viewholder used below...)
+        // TODO SOON: Figure out how to use different ViewHolders for different activities, while minimizing boiler plate (Configure-, Add- should be using different viewholders (perhaps not?), but otherwise similar implementations of CombatantGroupFragment; Add will need search/filtering-by-String-start support, and NEITHER need the encounter viewholder used below...)
+        // Difference between Add and configure:
+        //      1. Configure will have gear button to change aspects of combatant
+        //      2. Remove will be different - Configure will be to remove from the list, add will be to remove from the file
+        //          Note that this difference in removal behavior may be accomplished just through the RecyclerAdapter (i.e. where the list gets sent after the fragment this recycler is in closes)
+        // Current game-plan:
+        //  Use the SAME viewholder for both add and configure.  Fragment will do different things with the final list that this recycler is viewing/modifying (configure: return it to the main activity, add: save the list to file and return a single combatant)
+        //  For Add, perhaps double-check with user if they want to save the modified list to file?  Either at combatant modification or when fragment is returning combatant (in this case, this adapter doesn't need to differentiate add from configure)
+
         public CombatantViewHolder(@NonNull final View itemView) {
             // TODO: FINISH THIS
             super(itemView);
 
             // TODO: Figure out how to display the combatant's faction! -> Use background color
-            NameView = itemView.findViewById(R.id.combatant_conf_name);
-            CombatantRemove = itemView.findViewById(R.id.combatant_conf_remove);
-            CombatantChangeName = itemView.findViewById(R.id.combatant_conf_change_name); // TODO: Make this change the name TextView to editable, move the cursor there, pull up the keyboard.  Then, when the user confirms, set the name, and bring back the static name view
+            NameView = itemView.findViewById(R.id.combatant_mod_name);
+            CombatantRemove = itemView.findViewById(R.id.combatant_mod_remove);
+            CombatantChangeName = itemView.findViewById(R.id.combatant_mod_change_name); // TODO: Make this change the name TextView to editable, move the cursor there, pull up the keyboard.  Then, when the user confirms, set the name, and bring back the static name view
 
             // TODO: Set up callback for the delete button and checkboxes
             CombatantRemove.setOnClickListener(new View.OnClickListener() {
@@ -90,6 +98,9 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                     }
                 }
             });
+
+            // TODO: Gear button should allow name, faction, and icon to change
+            // TODO: Implement icons!  I would be fun!
         }
 
         public void bind(int combatant_ind) {
@@ -153,7 +164,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     @Override
     public CombatantViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        View view = inflater.inflate(R.layout.combatant_item_configure, parent, false);
+        View view = inflater.inflate(R.layout.combatant_item_mod, parent, false);
 
         return new CombatantViewHolder(view);
     }

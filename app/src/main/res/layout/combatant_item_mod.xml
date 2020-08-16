@@ -22,7 +22,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
-            android:id="@+id/combatant_conf_remove"
+            android:id="@+id/combatant_mod_remove"
             android:layout_width="50dp"
             android:layout_height="0dp"
             android:layout_marginTop="8dp"
@@ -35,7 +35,7 @@
             app:srcCompat="@android:drawable/btn_dialog" />
 
         <ImageButton
-            android:id="@+id/combatant_conf_change_name"
+            android:id="@+id/combatant_mod_change_name"
             android:layout_width="50dp"
             android:layout_height="0dp"
             android:layout_marginTop="8dp"
@@ -43,12 +43,12 @@
             android:layout_marginBottom="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintDimensionRatio="1:1"
-            app:layout_constraintEnd_toStartOf="@id/combatant_conf_remove"
+            app:layout_constraintEnd_toStartOf="@id/combatant_mod_remove"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/settings" />
 
         <TextView
-            android:id="@+id/combatant_conf_name"
+            android:id="@+id/combatant_mod_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"

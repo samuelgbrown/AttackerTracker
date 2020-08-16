@@ -32,9 +32,9 @@ public class ConfigureCombatantActivity extends AppCompatActivity {
         Bundle thisBundleData = thisIntent.getExtras();
 
         // Get the combatant lists
-        ArrayList<CombatantList> combatantFractionLists = null;
+        ArrayList<FactionCombatantList> combatantFractionLists = null;
         if (thisBundleData.containsKey(combatantListList)) {
-            combatantFractionLists = (ArrayList<CombatantList>) thisBundleData.getSerializable(combatantListList);
+            combatantFractionLists = (ArrayList<FactionCombatantList>) thisBundleData.getSerializable(combatantListList);
         }
 
         // Get the "purpose" of this activity (beginning or middle of combat)

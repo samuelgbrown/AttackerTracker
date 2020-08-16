@@ -55,7 +55,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         CheckBox CombatantCompletedCheck;
         ConstraintLayout CombatantGrayout;
 
-        // TODO SOON START HERE: Figure out how to use different ViewHolders for different activities, while minimizing boiler plate (Configure-, Add- should be using different viewholders, but otherwise similar implementations of CombatantGroupFragment; Add will need search/filtering-by-String-start support, and NEITHER need the encounter viewholder used below...)
+        // TODO SOON: Figure out how to use different ViewHolders for different activities, while minimizing boiler plate (Configure-, Add- should be using different viewholders, but otherwise similar implementations of CombatantGroupFragment; Add will need search/filtering-by-String-start support, and NEITHER need the encounter viewholder used below...)
         public CombatantViewHolder(@NonNull View itemView) {
             super(itemView);
 

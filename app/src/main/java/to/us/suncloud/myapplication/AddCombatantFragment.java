@@ -20,6 +20,8 @@ import java.util.ArrayList;
  * Use the {@link AddCombatantFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
+
+// TODO: Make a version of this that is something like "modify saved combatants" that is identical to this (assuming you can modify saved combatants here, too) except there is no return value (i.e. nothing happens when a combatant is "selected")
 public class AddCombatantFragment extends Fragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -27,7 +29,7 @@ public class AddCombatantFragment extends Fragment {
 
     private static final String combatantListSaveFile = "combatantListSaveFile";
 
-    private ArrayList<CombatantList> currentCombatantList = null;
+    private ArrayList<FactionCombatantList> currentFactionCombatantList = null;
 
     private TextView emptyCombatants;
 
@@ -42,10 +44,10 @@ public class AddCombatantFragment extends Fragment {
      * @return A new instance of fragment AddCombatantFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static AddCombatantFragment newInstance(ArrayList<CombatantList> currentCombatantList) {
+    public static AddCombatantFragment newInstance(ArrayList<FactionCombatantList> currentFactionCombatantList) {
         AddCombatantFragment fragment = new AddCombatantFragment();
         Bundle args = new Bundle();
-        args.putSerializable(CURRENT_COMBATANT_LIST, currentCombatantList);
+        args.putSerializable(CURRENT_COMBATANT_LIST, currentFactionCombatantList);
         fragment.setArguments(args);
         return fragment;
     }
@@ -54,12 +56,12 @@ public class AddCombatantFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            currentCombatantList = (ArrayList<CombatantList>) getArguments().getSerializable(CURRENT_COMBATANT_LIST);
+            currentFactionCombatantList = (ArrayList<FactionCombatantList>) getArguments().getSerializable(CURRENT_COMBATANT_LIST);
             // This list will be null if a) this is the first time this fragment has been used on this device, or b) no combatants have been saved previously
         }
 
         // Load in combatants from file (process them later)
-        ArrayList<CombatantList> fileContents = (ArrayList<CombatantList>) LocalPersistence.readObjectFromFile(getContext(), combatantListSaveFile);
+        ArrayList<FactionCombatantList> fileContents = (ArrayList<FactionCombatantList>) LocalPersistence.readObjectFromFile(getContext(), combatantListSaveFile);
     }
 
     @Override
@@ -70,7 +72,7 @@ public class AddCombatantFragment extends Fragment {
         emptyCombatants = layoutContents.findViewById(R.id.add_combatants_empty);
         ConstraintLayout combatantGroupParent = layoutContents.findViewById(R.id.add_combatant_layout_parent);
 
-        if (currentCombatantList == null) {
+        if (currentFactionCombatantList == null) {
             // If there is nothing in the file, then no combatants have previously been saved, so display the empty message
             emptyCombatants.setVisibility(View.VISIBLE);
         } else {
@@ -80,9 +82,9 @@ public class AddCombatantFragment extends Fragment {
             FragmentManager fm = getChildFragmentManager();
             FragmentTransaction fragTransaction = fm.beginTransaction();
 
-            for (int factionInd = 0; factionInd < currentCombatantList.size(); factionInd++) {
-                CombatantGroupFragment newFrag = new CombatantGroupFragment(currentCombatantList.get(factionInd));
-                fragTransaction.add(combatantGroupParent.getId(), newFrag, Combatant.factionToString(currentCombatantList.get(factionInd).getThisFaction()) + "_add_fragment");
+            for (int factionInd = 0; factionInd < currentFactionCombatantList.size(); factionInd++) {
+                CombatantGroupFragment newFrag = new CombatantGroupFragment(currentFactionCombatantList.get(factionInd));
+                fragTransaction.add(combatantGroupParent.getId(), newFrag, Combatant.factionToString(currentFactionCombatantList.get(factionInd).getThisFaction()) + "_add_fragment");
             }
 
         }

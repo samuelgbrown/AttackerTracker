@@ -3,16 +3,31 @@ package to.us.suncloud.myapplication;
 import androidx.annotation.Nullable;
 
 import java.io.Serializable;
-import java.security.SecureRandom;
+import java.util.ArrayList;
 
 // A simple class to keep track of a combatant
 public class Combatant implements Serializable {
     // TODO: Enforce uniqueness by name (for enemies, should ALWAYS be different, e.g. "Zombie 1", "Zombie 2"...)
-    private Faction faction = null;
-    private String name = null;
-    private int speedFactor;
-    private int roll;
-    private int totalInitiative;
+    static final String INIT_NAME = "New Combatant";
+    private Faction faction = Faction.Party;
+    private String name;
+    private int speedFactor = 0;
+    private int roll = 0;
+    private int totalInitiative = 0;
+
+    public Combatant(AllFactionCombatantLists listOfAllCombatants) {
+        // Require all CombatantLists to enforce uniqueness across all lists
+
+        // Once we have found a unique name, set it as this Combatant's name
+        setName(generateUniqueName(listOfAllCombatants));
+    }
+
+    public Combatant(ArrayList<String> listOfAllCombatantNames) {
+        // Require all CombatantLists to enforce uniqueness across all lists
+
+        // Once we have found a unique name, set it as this Combatant's name
+        setName(generateUniqueName(listOfAllCombatantNames));
+    }
 
     public Faction getFaction() {
         return faction;
@@ -85,5 +100,39 @@ public class Combatant implements Serializable {
             default:
                 return "";
         }
+    }
+
+    public static boolean isNameUnique(String nameToTest, ArrayList<FactionCombatantList> listOfAllCombatants) {
+        // First, generate an ArrayList of Strings of all combatants
+        ArrayList<String> allCombatantNames = new ArrayList<>();
+        for (int fclIndex = 0; fclIndex < listOfAllCombatants.size(); fclIndex++) {
+            // For each faction, add the combatant names list to allCombatantNames
+            allCombatantNames.addAll(listOfAllCombatants.get(fclIndex).getCombatantNamesList());
+        }
+
+        // Then, see if the supplied name is unique to the supplied list
+        return !allCombatantNames.contains(nameToTest);
+    }
+
+    public static String generateUniqueName(AllFactionCombatantLists listOfAllCombatants) {
+        return generateUniqueName(listOfAllCombatants.getCombatantNamesList());
+    }
+
+    public static String generateUniqueName(ArrayList<String> listOfAllCombatantNames) {
+        // Try making a name unique to this list
+        boolean isUnique = false;
+        int curSuffix = 2;
+        String currentNameSelection = String.valueOf(INIT_NAME);
+        while (!isUnique) {
+            isUnique = !listOfAllCombatantNames.contains(currentNameSelection); // See if the combatant name list contains this name
+
+            if (!isUnique) {
+                // Try to make the name unique
+                currentNameSelection = INIT_NAME + " " + curSuffix;
+                curSuffix++; // Iterate curSuffix in case we need to try to make the name unique again
+            }
+        }
+
+        return currentNameSelection;
     }
 }
