@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -17,11 +18,11 @@ import java.util.Arrays;
 public class CombatantGroupFragment extends Fragment {
     final Combatant.Faction thisFaction; // The faction that this fragment represents
     RecyclerView combatantRecyclerView;
-    RecyclerView.Adapter combatantRecyclerAdapter; // TODO SOON: Need to use custom adapter
+    ListCombatantRecyclerAdapter combatantRecyclerAdapter;
 
-    CombatantGroupFragment(RecyclerView.Adapter combatantRecyclerAdapter) {
+    CombatantGroupFragment(ListCombatantRecyclerAdapter combatantRecyclerAdapter, Combatant.Faction thisFaction) {
 //        setCombatantList(newCombatantList.getCombatantArrayList());
-        this.thisFaction = newCombatantList.getThisFaction(); // TODO: Deal with this implementation
+        this.thisFaction = thisFaction;
 
         this.combatantRecyclerAdapter = combatantRecyclerAdapter;
     }
@@ -33,8 +34,16 @@ public class CombatantGroupFragment extends Fragment {
         combatantRecyclerView = fragView.findViewById(R.id.groupCombatant_view);
         TextView GroupTextView = fragView.findViewById(R.id.groupTextView);
 
-        // Set the adapter for the recycler view
+        // Set the adapter and layout manager for the recycler view
         combatantRecyclerView.setAdapter(combatantRecyclerAdapter);
+        LinearLayoutManager manager = new LinearLayoutManager(getContext()) {
+            @Override
+            public boolean canScrollVertically() {
+                return false; // Make the Recycler view unable to scroll
+            }
+        };
+        combatantRecyclerView.setLayoutManager(manager);
+
 
         // Set the text view using the faction type
         ArrayList<String> allFactionNames = new ArrayList<>(Arrays.asList(getResources().getStringArray(R.array.group_names)));
@@ -43,6 +52,10 @@ public class CombatantGroupFragment extends Fragment {
 
         // Return the inflated fragment
         return fragView;
+    }
+
+    public ListCombatantRecyclerAdapter getAdapter() {
+        return combatantRecyclerAdapter;
     }
 
 

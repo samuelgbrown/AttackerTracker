@@ -1,19 +1,34 @@
 package to.us.suncloud.myapplication;
 
+import android.service.autofill.FieldClassification;
+import android.util.Log;
+
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // A simple class to keep track of a combatant
 public class Combatant implements Serializable {
-    // TODO: Enforce uniqueness by name (for enemies, should ALWAYS be different, e.g. "Zombie 1", "Zombie 2"...)
-    static final String INIT_NAME = "New Combatant";
+    // Enforce uniqueness by name (for enemies, should ALWAYS be different, e.g. "Zombie 1", "Zombie 2"...), although the UUID is used for actual unique identification
+    private static final String INIT_NAME = "New Combatant";
+    public static final int DOES_NOT_APPEAR = -2; // If, upon a search for highestOrdinalInstance among a list of Combatants, the given base name does not appear
+    public static final int NO_ORDINAL = -1; // If, upon a search for highestOrdinalInstance among a list of Combatants, the given base name does appear, but it has no ordinal (i.e. "Zombie" exists, but not "Zombie 1")
+
     private Faction faction = Faction.Party;
-    private String name;
+    private String name; // Name will be initialized on construction
+    private int iconIndex = 0; // Initialize with a blank icon
     private int speedFactor = 0;
     private int roll = 0;
     private int totalInitiative = 0;
+    private UUID id = UUID.randomUUID();
+
+    // Create a regex Pattern for finding the base name of a Combatant
+    private static Pattern ordinalChecker = Pattern.compile("^(.*?)(?:\\W*(\\d++)|$)"); // A pattern that matches the Combatant name into the first group, and the Combatant's ordinal number (if it exists) into the second group
 
     public Combatant(AllFactionCombatantLists listOfAllCombatants) {
         // Require all CombatantLists to enforce uniqueness across all lists
@@ -29,6 +44,32 @@ public class Combatant implements Serializable {
         setName(generateUniqueName(listOfAllCombatantNames));
     }
 
+    public Combatant(Combatant c) {
+        // Copy constructor (used for cloning)
+        faction = c.getFaction();
+        name = c.getName();
+        iconIndex = c.getIconIndex();
+        speedFactor = c.getSpeedFactor();
+        roll = c.getRoll();
+        totalInitiative = c.getTotalInitiative();
+        id = c.getId();
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public Combatant getRaw() {
+        // Useful for quickly getting a "sanitized" version of the combatant (just clears the roll/total initiative, may be used to clear other temporary values later?)
+        Combatant rawCombatant = new Combatant(this);
+        rawCombatant.clearRoll();
+        return rawCombatant;
+    }
+
+    public void clearRoll() {
+        setRoll(0);
+    }
+
     public Faction getFaction() {
         return faction;
     }
@@ -37,11 +78,51 @@ public class Combatant implements Serializable {
         this.faction = faction;
     }
 
+    public void setIconIndex(int iconIndex) {
+        this.iconIndex = iconIndex;
+    }
+
+    public int getIconIndex() {
+        return iconIndex;
+    }
+
     public String getName() {
         return name;
     }
 
+    public String getBaseName() {
+        // Get the name of this Combatant without any number at the end
+        Matcher match = ordinalChecker.matcher(name);
+        if (match.matches()) {
+            return match.group(1); // Get the first matched group (that isn't the full match), which corresponds to the Combatant's base name (without any ordinals)
+        } else {
+            return "";
+        }
+    }
+
+    public int getOrdinal() {
+        Matcher match = ordinalChecker.matcher(name);
+        if (match.matches()) {
+            if (match.group(2) != null) {
+                return Integer.parseInt(match.group(2));
+            } else {
+                // If there is no ordinal
+                return NO_ORDINAL;
+            }
+        } else {
+            // If no match could be found, return a -1 and log an error
+            Log.e("Combatant", "Could not calculate ordinal of name " + name);
+            return NO_ORDINAL;
+        }
+    }
+
+    public void setNameOrdinal(int ordinal) {
+        // Set the ordinal number of the name
+        setName(getBaseName() + " " + String.valueOf(ordinal));
+    }
+
     public void setName(String name) {
+        // Note: Be careful when using this function, name exclusivity must be enforced elsewhere (it will not be checked here)
         this.name = name;
     }
 
@@ -74,10 +155,13 @@ public class Combatant implements Serializable {
         if (obj instanceof Combatant) {
             boolean nameEqual = getName().equals(((Combatant) obj).getName());
             boolean facEqual = getFaction() == ((Combatant) obj).getFaction();
+            boolean iconEqual = getIconIndex() == ((Combatant) obj).getIconIndex();
             boolean speedEqual = getSpeedFactor() == ((Combatant) obj).getSpeedFactor();
             boolean rollEqual = getRoll() == ((Combatant) obj).getRoll();
+            boolean totalEqual = getTotalInitiative() == ((Combatant) obj).getTotalInitiative();
+            boolean idEqual = getId() == ((Combatant) obj).getId();
 
-            isEqual = nameEqual && facEqual && speedEqual && rollEqual;
+            isEqual = nameEqual && facEqual &&iconEqual && speedEqual && rollEqual && totalEqual && idEqual;
         }
 
         return isEqual;
@@ -115,7 +199,20 @@ public class Combatant implements Serializable {
     }
 
     public static String generateUniqueName(AllFactionCombatantLists listOfAllCombatants) {
-        return generateUniqueName(listOfAllCombatants.getCombatantNamesList());
+//        return generateUniqueName(listOfAllCombatants.getCombatantNamesList());
+        int highestOrdinalInstance = listOfAllCombatants.getHighestOrdinalInstance(INIT_NAME);
+        switch (highestOrdinalInstance) {
+            case DOES_NOT_APPEAR:
+                // No other Combatant appears with this name
+                return INIT_NAME;
+            case NO_ORDINAL:
+                // There is a Combatant with this name, but no other ordinal (i.e. "Zombie" appears, but not "Zombie 2").
+                // NOTE: When adding a Combatant with this new name, we will likely want to also rename the old Combatant to give it an ordinal (i.e. "Zombie" becomes "Zombie 1")
+                return INIT_NAME + "  2";
+            default:
+                // There is a Combatant with this name already, so add one to the highest ordinal number
+                return INIT_NAME + "" + String.valueOf(highestOrdinalInstance + 1);
+        }
     }
 
     public static String generateUniqueName(ArrayList<String> listOfAllCombatantNames) {
@@ -123,6 +220,7 @@ public class Combatant implements Serializable {
         boolean isUnique = false;
         int curSuffix = 2;
         String currentNameSelection = String.valueOf(INIT_NAME);
+
         while (!isUnique) {
             isUnique = !listOfAllCombatantNames.contains(currentNameSelection); // See if the combatant name list contains this name
 
@@ -135,4 +233,10 @@ public class Combatant implements Serializable {
 
         return currentNameSelection;
     }
+
+    public Combatant clone() {
+        return new Combatant(this);
+    }
+
+
 }

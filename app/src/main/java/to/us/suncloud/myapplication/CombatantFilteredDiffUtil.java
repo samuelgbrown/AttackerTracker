@@ -5,12 +5,13 @@ import androidx.recyclerview.widget.DiffUtil;
 import java.util.ArrayList;
 
 public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
-    ArrayList<Combatant> oldList;
-    ArrayList<Combatant> newList;
+    FactionCombatantList oldList;
+    FactionCombatantList newList;
     String oldString;
     String newString;
 
-    CombatantFilteredDiffUtil(ArrayList<Combatant> oldList, String oldString, ArrayList<Combatant> newList, String newString) {
+    CombatantFilteredDiffUtil(FactionCombatantList oldList, String oldString, FactionCombatantList newList, String newString) {
+        // TODO: Does this really need the filter text...?  If not, then can basically use same CombatantFilteredDiffUtil as Encounter Activity...
         this.oldList = oldList;
         this.newList = newList;
         this.oldString = oldString;
@@ -29,9 +30,9 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
 
     @Override
     public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-        // Combatants are unique by name...ideally...
+        // Compare the UUID of the Combatants
         // Item identity has no relation to the filter text
-        return oldList.get(oldItemPosition).getName().equals(newList.get(newItemPosition).getName());
+        return oldList.get(oldItemPosition).getId().equals(newList.get(newItemPosition).getId());
     }
 
     @Override

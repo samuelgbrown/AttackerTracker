@@ -4,11 +4,12 @@ import androidx.recyclerview.widget.DiffUtil;
 
 import java.util.ArrayList;
 
+// Used only for the Encounter Activity
 public class CombatantDiffUtil extends DiffUtil.Callback {
-    ArrayList<Combatant> oldList;
-    ArrayList<Combatant> newList;
+    EncounterCombatantList oldList;
+    EncounterCombatantList newList;
 
-    CombatantDiffUtil(ArrayList<Combatant> oldList, ArrayList<Combatant> newList) {
+    CombatantDiffUtil(EncounterCombatantList oldList, EncounterCombatantList newList) {
         this.oldList = oldList;
         this.newList = newList;
     }
@@ -25,8 +26,8 @@ public class CombatantDiffUtil extends DiffUtil.Callback {
 
     @Override
     public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-        // Combatants are unique by name...ideally...
-        return oldList.get(oldItemPosition).getName().equals(newList.get(newItemPosition).getName());
+        // Compare the UUID of the Combatants
+        return oldList.get(oldItemPosition).getId().equals(newList.get(newItemPosition).getId());
     }
 
     @Override

@@ -11,6 +11,14 @@
         app:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/open_bookmarks"
+        android:icon="@drawable/bookmarks"
+        android:menuCategory="alternative"
+        android:title="@string/open_bookmarks"
+        android:visible="true"
+        app:showAsAction="ifRoom"  />
+
+    <item
         android:id="@+id/settings"
         android:icon="@drawable/settings"
         android:menuCategory="system"

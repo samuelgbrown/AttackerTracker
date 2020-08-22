@@ -3,7 +3,7 @@ package to.us.suncloud.myapplication;
 import java.io.Serializable;
 import java.util.ArrayList;
 
-// Simple shell for a list of combatants that also holds faction information
+// Simple wrapper for a list of combatants that also holds faction information
 public class FactionCombatantList implements Serializable {
     private ArrayList<Combatant> combatantArrayList;
     private Combatant.Faction thisFaction;
@@ -16,6 +16,115 @@ public class FactionCombatantList implements Serializable {
     FactionCombatantList(Combatant.Faction thisFaction) {
         this.thisFaction = thisFaction;
         combatantArrayList = new ArrayList<>();
+    }
+
+    FactionCombatantList(FactionCombatantList c) {
+        // Perform a deep copy of the FactionCombatantList
+        this.combatantArrayList = new ArrayList<>(c.size());
+        for (int i = 0; i < c.size(); i++) {
+            combatantArrayList.add(c.get(i).clone()); // For each Combatant in c, make a clone to place in this array list
+        }
+        this.thisFaction = c.faction();
+    }
+
+    // ArrayList<> interface methods
+    public Combatant get(int index) {
+        return combatantArrayList.get(index);
+    }
+
+    public Combatant get(String name) {
+        // Return the Combatant that has the inputted name (there should only ever be one, so we'll only return the first we get).  If no such name appears in the list, return a null
+        for (int i = 0; i < combatantArrayList.size(); i++) {
+            if (combatantArrayList.get(i).getName().equals(name)) {
+                return combatantArrayList.get(i);
+            }
+        }
+
+        // If we get here, then no such Combatant exists
+        return null;
+    }
+
+    public void add(Combatant newCombatant) {
+        combatantArrayList.add(newCombatant);
+    }
+
+    public void add(int i, Combatant newCombatant) {
+        combatantArrayList.add(i, newCombatant);
+    }
+
+    public void remove(Combatant combatantToRemove) {
+        combatantArrayList.remove(combatantToRemove);
+    }
+
+    public void removeAll(FactionCombatantList combatantsToRemove) {
+        // Remove all combatants present in the inputted FactionCombatantList
+        combatantArrayList.removeAll(combatantsToRemove.getCombatantArrayList());
+    }
+
+    public void addAll(FactionCombatantList combatantsToAdd) {
+        // Add all combatants present in the inputted FactionCombatantList
+        // TODO CHECK: Make this use the add() method, which will (hopefully) have some extra checks/functionality?  Or, all name checking will take place in higher level lists...ug
+        combatantArrayList.addAll(combatantsToAdd.getCombatantArrayList());
+    }
+
+    public boolean containsName(Combatant combatantToCheck) {
+        return containsName(combatantToCheck.getName());
+    }
+
+    public boolean containsName(String name) {
+        // Does this List contain another Combatant with the same name?
+        boolean contains = false;
+        for (int i = 0; i < combatantArrayList.size(); i++) {
+            // Doing comparison manually, because Collection.contains(Object o) uses the equals(Object o) method, which includes more than just the name for Combatants
+            if (combatantArrayList.get(i).getName().equals(name)) {
+                contains = true;
+                break;
+            }
+        }
+
+        return contains;
+    }
+
+    public boolean containsBaseName(Combatant combatantToCheck) {
+        return containsBaseName(combatantToCheck.getBaseName());
+    }
+
+    public boolean containsBaseName(String baseName) {
+        // Does this List contain another Combatant with the same base name (i.e. with no number at the end)?
+        boolean contains = false;
+        for (int i = 0; i < combatantArrayList.size(); i++) {
+            // Doing comparison manually, because Collection.contains(Object o) uses the equals(Object o) method, which includes more than just the name for Combatants
+            if (combatantArrayList.get(i).getBaseName().equals(baseName)) {
+                contains = true;
+                break;
+            }
+        }
+
+        return contains;
+    }
+
+    public int getHighestOrdinalInstance(Combatant combatantToCheck) {
+        return getHighestOrdinalInstance(combatantToCheck.getBaseName());
+    }
+
+    public int getHighestOrdinalInstance(String combatantBaseNameToCheck) {
+        // What is the highest ordinal instance of this Combatant's base name in this list (i.e. for new Combatant "Zombie 3", what is the largest X for which there is a Combatant named "Zombie X" that appears in this list?
+        // If no other Combatant with this base name exists, function will return a -1
+        int highestOrdinal = Combatant.DOES_NOT_APPEAR;
+
+        for (int i = 0; i < combatantArrayList.size(); i++) {
+            // Doing comparison manually, because Collection.contains(Object o) uses the equals(Object o) method, which includes more than just the name for Combatants
+            if (combatantArrayList.get(i).getBaseName().equals(combatantBaseNameToCheck)) {
+                // Get the new highest ordinal value, between the current highest and this Combatant
+                highestOrdinal = Math.max(highestOrdinal, combatantArrayList.get(i).getOrdinal());
+            }
+        }
+
+        return highestOrdinal;
+    }
+
+    public int indexOf(Combatant combatant) {
+        return combatantArrayList.indexOf(combatant);
     }
 
     public ArrayList<Combatant> getCombatantArrayList() {
@@ -36,20 +145,20 @@ public class FactionCombatantList implements Serializable {
         return allCombatantNames;
     }
 
-    public void addCombatant(Combatant newCombatant) {
-        combatantArrayList.add(newCombatant);
-    }
-
-    public void removeCombatant(Combatant combatant) {
-        combatantArrayList.remove(combatant);
-    }
-
-    public Combatant.Faction getThisFaction() {
+    public Combatant.Faction faction() {
         return thisFaction;
     }
 
     public void setThisFaction(Combatant.Faction thisFaction) {
         this.thisFaction = thisFaction;
+    }
+
+    public boolean isEmpty() {
+        return combatantArrayList.isEmpty();
+    }
+
+    public FactionCombatantList clone() {
+        return new FactionCombatantList(this);
     }
 
     public int size() {
