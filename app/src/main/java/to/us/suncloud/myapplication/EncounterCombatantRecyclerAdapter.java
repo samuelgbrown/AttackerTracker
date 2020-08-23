@@ -1,5 +1,10 @@
 package to.us.suncloud.myapplication;
 
+import android.content.Context;
+import android.content.res.ColorStateList;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,7 +12,7 @@ import android.view.animation.AlphaAnimation;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -17,22 +22,50 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<EncounterCombatantRecyclerAdapter.CombatantViewHolder> {
     public static final int UNSET = -1;
+    private static final float GRAYED_OUT = 0.5f;
+    private static final float CLEAR = 0f;
+
+    private static final String PAYLOAD_CHECK = "payloadCheck";
+    private static final String PAYLOAD_UPDATE_PROGRESS = "payloadUpdateProgress";
+    private static final String PAYLOAD_DICE_CHEAT = "payloadDiceCheat";
 
     RecyclerView combatantRecyclerView;
 
     private EncounterCombatantList combatantList;
     private EncounterCombatantList combatantList_Memory; // A memory version of the list, to see what changes have occurred
 
+    ArrayList<Integer> iconResourceIds; // A list of resource ID's of the icons that will be used for each Combatant
+
+    boolean diceCheatModeOn = false; // Are we currently in the dice cheat mode?
+
     private int curActiveCombatant = UNSET; // The currently active combatant, as an index in combatantList (if -1, there is no active combatant)
     private int curRoundNumber = 1; // The current round number (iterated each time the active combatant loops around)
 
-    EncounterCombatantRecyclerAdapter(AllFactionCombatantLists combatantList) {
-        // TODO: Turn the AllFactionCombatantList into an EncounterCombatantList
+    EncounterCombatantRecyclerAdapter(Context context, AllFactionCombatantLists combatantList) {
+        // Turn the AllFactionCombatantList into an EncounterCombatantList
         this.combatantList = new EncounterCombatantList(combatantList); // Hold onto the combatant list (deep copy clone)
         this.combatantList_Memory = this.combatantList.clone(); // Keep a second copy, for memory (a second clone)
+
+        // Preload a list of resources that will be used to load svg's into the grid
+        iconResourceIds = new ArrayList<>();
+        int curNum = 0;
+        while (true) {
+            // Generate filenames for every icon that we will use in order, and check if it exists
+            String resourceName = String.format(Locale.US, "icon_%02d", curNum); // Oh, the horror...
+            int id = context.getResources().getIdentifier(resourceName, "drawable", context.getPackageName());
+
+            if (id > 0) {
+                // If the id is valid
+                iconResourceIds.add(id);
+            } else {
+                // If the id is invalid (equal to 0), then there are no more icons to load
+                break;
+            }
+        }
     }
 
     @Override
@@ -56,33 +89,39 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     class CombatantViewHolder extends RecyclerView.ViewHolder {
 
         int position = UNSET;
-        boolean hasCompleted; // Has this combatant completed its turn?
+        boolean selfChangingText = false;
 
-        TextView NameView;
-        TextView TotalInitiativeView;
-        TextView RollView;
-        EditText RollViewEdit;
-        TextView SpeedFactorView;
-        ConstraintLayout ActiveCombatantBorder;
+        private TextView NameView;
+        private TextView TotalInitiativeView;
+        private TextView RollView;
+        private EditText RollViewEdit;
+        private EditText SpeedFactorView;
+        private ImageView CombatantIcon;
 
-        ImageButton CombatantRemove;
-        CheckBox CombatantCompletedCheck;
-        ConstraintLayout CombatantGrayout;
+        private ConstraintLayout CombatantStatusBorder;
+        private ConstraintLayout CombatantIconBorder;
+        private ConstraintLayout RollLayout;
+        private ConstraintLayout CheckAreaLayout;
 
-        // TODO: Have multiple options for ordering Combatant ViewHolders (default is in order of total initiative, should also have alphabetically (split by Faction)
-        // TODO SOON: Figure out how to use different ViewHolders for different activities, while minimizing boiler plate (Configure-, Add- should be using different viewholders, but otherwise similar implementations of CombatantGroupFragment; Add will need search/filtering-by-String-start support, and NEITHER need the encounter viewholder used below...)
+        //        private ImageButton CombatantRemove;
+        private CheckBox CombatantCompletedCheck;
+        private ConstraintLayout CombatantGrayout;
+
         public CombatantViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            // TODO: Figure out how to display the combatant's faction! -> Use ICON (as in other viewholder)
             NameView = itemView.findViewById(R.id.combatant_enc_name);
             TotalInitiativeView = itemView.findViewById(R.id.combatant_enc_total_initiative);
-            RollView = itemView.findViewById(R.id.combatant_enc_roll_layout);
+            RollView = itemView.findViewById(R.id.combatant_enc_roll);
             RollViewEdit = itemView.findViewById(R.id.combatant_enc_roll_edit); // For CHEATERS
             SpeedFactorView = itemView.findViewById(R.id.combatant_enc_speed_factor);
-            ActiveCombatantBorder = itemView.findViewById(R.id.active_combatant_border);
+            CombatantStatusBorder = itemView.findViewById(R.id.encounter_combatant_border);
             CombatantCompletedCheck = itemView.findViewById(R.id.combatant_enc_completed_check);
             CombatantGrayout = itemView.findViewById(R.id.combatant_enc_grayout);
+            CombatantIcon = itemView.findViewById(R.id.encounter_icon);
+            CombatantIconBorder = itemView.findViewById(R.id.encounter_icon_border);
+            RollLayout = itemView.findViewById(R.id.combatant_enc_roll_layout);
+            CheckAreaLayout = itemView.findViewById(R.id.completed_enc_background);
 
             //            CombatantRemove = itemView.findViewById(R.id.combatant_enc_remove);
 
@@ -117,48 +156,255 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                     // The has completed value should follow the state of the boolean
-                    setHasCompleted(b);
+                    setCombatProgression();
+                }
+            });
+
+            SpeedFactorView.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable editable) {
+                    // If this is being called due to a programmatic change, ignore it
+                    if (selfChangingText) {
+                        return;
+                    }
+
+                    // First, make sure the value here is valid
+                    int currentSpeedFactor = combatantList.get(position).getSpeedFactor(); // The current roll for this Combatant
+                    int newSpeedFactor  = currentSpeedFactor; // Initial value never used, but at least the IDE won't yell at me...
+                    boolean needToRevert;
+                    try {
+                        newSpeedFactor = Integer.parseInt(editable.toString()); // Get the value that was entered into the text box
+
+                        // If the new entered roll value is not in the d20 range, then reject it
+                        needToRevert = newSpeedFactor < 0; // needToRevert becomes false (we accept the input) if newSpeedFactor is 0 or greater
+                    } catch (NumberFormatException e) {
+                        needToRevert = true;
+                    }
+
+                    // Update the value of the EditText, if needed
+                    if (needToRevert) {
+                        // The entered text was not valid, so reset it and finish
+                        selfChangingText = true;
+                        RollViewEdit.setText(String.valueOf(currentSpeedFactor));
+                        selfChangingText = false;
+                        return;
+                    } else if (newSpeedFactor == currentSpeedFactor) {
+                        // If the new speed factor value is the same as the current speed factor, then don't do anything
+                        return;
+                    }
+
+                    // If the entered text was valid and different than the current speed factor, then change this Combatant, resort the list, and update the GUI
+                    setSpeedFactor(position, newSpeedFactor);
+                }
+            });
+
+            RollViewEdit.addTextChangedListener(new TextWatcher() {
+
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable editable) {
+                    // If this is being called due to a programmatic change, ignore it
+                    if (selfChangingText) {
+                        return;
+                    }
+
+                    // First, make sure the value here is valid
+                    int currentRoll = combatantList.get(position).getRoll(); // The current roll for this Combatant
+                    int newRollVal = currentRoll; // Initial value never used, but at least the IDE won't yell at me...
+                    boolean needToRevert;
+                    try {
+                        newRollVal = Integer.parseInt(editable.toString()); // Get the value that was entered into the text box
+
+                        // If the new entered roll value is not in the d20 range, then reject it
+                        needToRevert = newRollVal <= 0 || 20 < newRollVal; // needToRevert becomes false (we accept the input) if newRollVal is between [1 20]
+                    } catch (NumberFormatException e) {
+                        needToRevert = true;
+                    }
+
+                    // Update the value of the EditText, if needed
+                    if (needToRevert) {
+                        // The entered text was not valid, so reset it and finish
+                        selfChangingText = true;
+                        RollViewEdit.setText(String.valueOf(currentRoll));
+                        selfChangingText = false;
+                        return;
+                    } else if (newRollVal == currentRoll) {
+                        // If the new roll value is the same as the current roll, then don't do anything
+                        return;
+                    }
+
+                    // If the entered text was valid and different than the current roll, then change this Combatant, resort the list, and update the GUI
+                    RollView.setText(String.valueOf(newRollVal)); // Set this value in the TextView
+                    setRollValue(position, newRollVal);
                 }
             });
         }
 
         public void bind(int combatant_ind) {
             position = combatant_ind;
-            NameView.setText(combatantList.get(combatant_ind).getName());
-            TotalInitiativeView.setText(combatantList.get(combatant_ind).getTotalInitiative());
-            RollView.setText(combatantList.get(combatant_ind).getRoll());
-            SpeedFactorView.setText(combatantList.get(combatant_ind).getSpeedFactor());
+            Combatant thisCombatant = combatantList.get(position);
+
+            NameView.setText(thisCombatant.getName());
+            TotalInitiativeView.setText(thisCombatant.getTotalInitiative());
+            RollView.setText(thisCombatant.getRoll());
+
+            selfChangingText = true;
+            SpeedFactorView.setText(thisCombatant.getSpeedFactor());
+            RollViewEdit.setText(thisCombatant.getRoll());
+            selfChangingText = false;
+
+            // Load the icon image
+            int iconIndex = thisCombatant.getIconIndex();
+            if (iconIndex == 0) {
+                // If the icon index is 0, then the icon is blank
+                CombatantIcon.setImageResource(android.R.color.transparent);
+            } else {
+                // Otherwise, get the corresponding icon image
+                CombatantIcon.setImageDrawable(CombatantIcon.getContext().getDrawable(iconResourceIds.get(iconIndex - 1)));
+            }
+
+            // Set the color of the icon and the icon's border
+            int colorId = -1;
+            switch (thisCombatant.getFaction()) {
+                case Party:
+                    colorId = CombatantIcon.getContext().getResources().getColor(R.color.colorParty);
+                    break;
+                case Enemy:
+                    colorId = CombatantIcon.getContext().getResources().getColor(R.color.colorEnemy);
+                    break;
+                case Neutral:
+                    colorId = CombatantIcon.getContext().getResources().getColor(R.color.colorNeutral);
+            }
+
+            CombatantIcon.setImageTintList(ColorStateList.valueOf(colorId)); // TODO CHECK: Check that this actually changes the tint of the icon...
+            CombatantIconBorder.setBackgroundColor(colorId);
+
+            setCombatProgression(); // Set up the GUI elements related to progression
+            setDiceCheatMode(); // Set up the dice roll Views
         }
 
-        public void setActiveCombatant(boolean isActiveCombatant) {
-            // Update whether or not this is the active combatant
-            if (isActiveCombatant) {
-                ActiveCombatantBorder.setBackgroundColor(ActiveCombatantBorder.getContext().getResources().getColor(R.color.activeCombatant));
+        public void setDiceCheatMode() {
+            // Use the current setting of diceCheatModeOn to see which View should be seen for the viewHolder
+            if (diceCheatModeOn) {
+                // If we are in dice cheat mode, make sure that the EditText is visible and the TextView is hidden
+                RollViewEdit.setVisibility(View.VISIBLE);
+                RollView.setVisibility(View.GONE);
             } else {
-                ActiveCombatantBorder.setBackgroundColor(ActiveCombatantBorder.getContext().getResources().getColor(R.color.standardBackground));
+                // If we are not in dice cheat mode, make sure that the TextView is visible and the EditText is hidden
+                RollViewEdit.setVisibility(View.GONE);
+                RollView.setVisibility(View.VISIBLE);
             }
         }
 
-        public void setHasCompleted(boolean hasCompleted) {
-            if (this.hasCompleted != hasCompleted) {
-                // If there is a new setting for the completed setting, then change the grayout
-                float targetAlpha;
-                if (hasCompleted) {
-                    // If this combatant has completed its turn, gray it out by increasing the alpha of the grayout view
-                    targetAlpha = .5f;
-                } else {
-                    targetAlpha = 0f;
-                }
+        public void setCombatProgression() {
+            // Set up variables for everything that may change
+            float targetAlpha;
+            int borderColor = R.color.standardBackground; // Initialize to a "blank" border
+            int initiativeRollVisibility;
+            int checkLayoutVisibility;
 
-                // Get the current alpha value
-                float currentAlpha = CombatantGrayout.getAlpha();
+            // Get some useful parameters
+            float currentAlpha = CombatantGrayout.getAlpha();
+            int positionInInitiative = combatantList.getInitiativeIndexOf(position);
+            boolean isChecked = CombatantCompletedCheck.isChecked();
 
-                // Now animate the grayout
+            // Get the current state, and assign appropriate values to the variables
+            if (isChecked) {
+                // If the Combatant is checked off, then they should be grayed out
+                // TODO CHECK: If Combatant is currently active but checked, what should happen...?  Nothing?  Should they be skipped?  Settings option?
+                targetAlpha = GRAYED_OUT;
+            } else {
+                // If the Combatant is unchecked, then their ViewHolder should be visible
+                targetAlpha = CLEAR;
+            }
+
+            if (curActiveCombatant == positionInInitiative) {
+                // If this is the currently active combatant
+                borderColor = R.color.activeCombatant; // The border should always reflect the fact that they are the currently selected combatant
+            } else if (curActiveCombatant > positionInInitiative && !isChecked) {
+                // If this Combatant has already had their turn, but they are unchecked
+                borderColor = R.color.returnToCombatant; // Let the user know to return back to this Combatant later
+            }
+
+            if (curActiveCombatant == UNSET) {
+                // If we are currently between rounds, then hide the roll and total initiative
+                initiativeRollVisibility = View.INVISIBLE;
+                checkLayoutVisibility = View.GONE;
+            } else {
+                // If we are in the middle of the round, then make sure both roll and total initiative are visible
+                initiativeRollVisibility = View.VISIBLE;
+                checkLayoutVisibility = View.VISIBLE;
+            }
+
+            // Finally, assign the settings to the variable GUI elements
+            // Set the Combatant to be grayed out, if needed
+            if (currentAlpha != targetAlpha) {
+                // If the current alpha value is not what we want it to be, animate the change
                 AlphaAnimation alphaAnim = new AlphaAnimation(currentAlpha, targetAlpha);
                 alphaAnim.setDuration(300); // Animation should take .3s
                 alphaAnim.setFillAfter(true); // Persist the new alpha after the animation ends
                 CombatantGrayout.startAnimation(alphaAnim);
             }
+
+            // Set the Combatant's ViewHolder border color
+            CombatantStatusBorder.setBackgroundColor(CombatantStatusBorder.getContext().getResources().getColor(borderColor));
+
+            // Set the visibility of the roll, total initiative, and checkbox views
+            RollLayout.setVisibility(initiativeRollVisibility);
+            TotalInitiativeView.setVisibility(initiativeRollVisibility);
+            CheckAreaLayout.setVisibility(checkLayoutVisibility);
+        }
+
+        public void setChecked(boolean isChecked) {
+            // Should the Combatant's checkbox be checked or not?
+            CombatantCompletedCheck.setChecked(isChecked); // The function setCombatantProgression will be automatically called, so the GUI will be updated
+        }
+    }
+
+    private void setRollValue(int combatantInd, int newRollVal) {
+        // Edit the indicated Combatant, resort the list, and update the GUI
+        combatantList.get(combatantInd).setRoll(newRollVal);
+        reSortInitiative();
+    }
+
+    private void setSpeedFactor(int combatantInd, int newSpeedFactor) {
+        // Edit the indicated Combatant, resort the list, and update the GUI
+        combatantList.get(combatantInd).setSpeedFactor(newSpeedFactor);
+        reSortInitiative();
+    }
+
+    private void reSortInitiative() {
+        if (combatantList.getCurrentSortMethod() == EncounterCombatantList.SortMethod.INITIATIVE) {
+            // If the Combatant list is currently sorted by initiative, then resort the list and reset the GUI
+            combatantList.reSort();
+
+            // Let the adapter know that at least one Combatant has changed its Initiative values, so all of the orders may now be different
+            notifyCombatantsChanged();
+
+            // Also, make ALL Combatants update their progress-related GUI
+            Bundle payload = new Bundle();
+            payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true);
+
+            notifyItemRangeChanged(0, combatantList.size(), payload); // Let the Combatant know it know that it should just update its progress-related GUI, and nothing else
         }
     }
 
@@ -177,11 +423,39 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     }
 
     @Override
+    public void onBindViewHolder(@NonNull CombatantViewHolder holder, int position, @NonNull List<Object> payloads) {
+        if (!payloads.isEmpty() && payloads.get(0) instanceof Bundle) {
+            // If the payload is not empty, deal with the payload
+            Bundle args = (Bundle) payloads.get(0);
+
+            if (args.containsKey(PAYLOAD_CHECK)) {
+                // If the payload is a boolean, then it represents whether the Combatant should or should not be checked off
+                // Case 1: The holder represents the combatant whose turn just finished, and it will become checked
+                // Case 2: The round just ended, so all Combatants become unchecked
+                holder.setChecked(args.getBoolean(PAYLOAD_CHECK));
+            }
+
+            if (args.containsKey(PAYLOAD_UPDATE_PROGRESS)) {
+                // If the payload is not a boolean (probably just an Object), then the Combatant's combat progress related GUI elements should be updated, with no other changes
+                // Likely case: The holder represents the currently active Combatant
+                holder.setCombatProgression();
+            }
+
+            if (args.containsKey(PAYLOAD_DICE_CHEAT)) {
+                holder.setDiceCheatMode();
+            }
+        } else {
+            // If the payload is empty, then continue on the binding process
+            super.onBindViewHolder(holder, position, payloads);
+        }
+    }
+
+    @Override
     public int getItemCount() {
         return combatantList.size();
     }
 
-    // TODO: Do I need this...?
+    // TODO: Do I need this...?  Perhaps for Activity management stuffs?
     public void setCombatantList(ArrayList<Combatant> newCombatantList) {
         combatantList = new EncounterCombatantList(newCombatantList);
         notifyCombatantsChanged();
@@ -197,29 +471,19 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
     }
 
-    @Override
-    public void onBindViewHolder(@NonNull CombatantViewHolder holder, int position, @NonNull List<Object> payloads) {
-        if (!payloads.isEmpty()) {
-            // If the payload is not empty, it's an indication that the currently active Combatant has changed
-            // TODO: Make the holder update its GUI
-        } else {
-            super.onBindViewHolder(holder, position, payloads);
-        }
-    }
-
-    public void setCurActiveCombatant(int curActiveCombatant) {
-        if (curActiveCombatant < combatantList.size()) {
-            this.curActiveCombatant = curActiveCombatant;
-        } else {
-            this.curActiveCombatant = -1;
-        }
-
-        updateActiveCombatantGUI();
-    }
-
     public void sort(EncounterCombatantList.SortMethod sortMethod) {
         combatantList.sort(sortMethod); // Perform the sorting
         notifyCombatantsChanged(); // Update the display
+    }
+
+    public void toggleDiceCheat() {
+        diceCheatModeOn = !diceCheatModeOn; // Toggle the state of Dice Cheat mode
+
+        // Let each Combatant know that it should update its dice cheat mode status
+        Bundle payload = new Bundle();
+        payload.putBoolean(PAYLOAD_DICE_CHEAT, diceCheatModeOn);
+
+        notifyItemRangeChanged(0, combatantList.size(), payload); // Send the payload to every Combatant
     }
 
     public int getCurActiveCombatant() {
@@ -231,57 +495,91 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     }
 
     public void iterateCombatStep() {
-        // TODO: Depending on the current value of curActiveCombatant, use notifyItemRangeChanged with a payload of a new Object() to notify the ViewHolders that they need to update their activeCombatant status
-        // TODO: Will need way to get a Combatant position in the Initiative sorted list, regardless of the state of the current sort, so that checkboxes/grayed-out-ness can be preserved between sort button presses
+        // Before changing the combatant step, let the currently selected Combatant (if it exists) that they should be checked
+        if (curActiveCombatant != UNSET) {
+            Bundle payload = new Bundle();
+            payload.putBoolean(PAYLOAD_CHECK, true);
+
+            notifyItemChanged(curActiveCombatant, payload); // Holder will become checked
+        }
+
+        // Depending on where we are in the combat cycle, iterate the curActiveCombatant value differently
         if (curActiveCombatant == UNSET) {
             curActiveCombatant = 0; // If the currently active combatant is unset, initialize the currently active combatant
 
             // Also, ROLL INITIATIVE!!!!!
-            rollInitiative(); // TODO CHECK: This technically means that going back after this gives you the chance to re-roll initiative, which COULD be an issue.  Can just keep track of which rounds have been rolled already
+            combatantList.rollInitiative(); // TODO CHECK: This technically means that going back after this gives you the chance to re-roll initiative, which COULD be an issue.  Can just keep track of which rounds have been rolled already
+            combatantList.sort(EncounterCombatantList.SortMethod.INITIATIVE); // Sort by initiative, now that we have calculated it
+
+            // TODO LATER: Keep track of all rolls, so that you can go backwards in time!
+            // TODO SOON: How do I deal with ties in initiative? Go by alphabet, favor party, "connect" the tied Combatants together somehow...?  May need to be a setting...
         } else if (curActiveCombatant == (combatantList.size() - 1)) {
             curActiveCombatant = UNSET; // If we are at the end of the list, go to "UNSET" for now
+
+            combatantList.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION); // Go back to sorting by alphabet/faction, for pre-round prep
         } else {
             curActiveCombatant++; // Otherwise, just increment the combatant number
         }
 
-        // Change the round number, if needed
-        if (curActiveCombatant == UNSET) {
-            // If the currently active Combatant is unset, we just finished the last Combatant and are now waiting to roll initiative for the next round
-            curRoundNumber++;
+        // Now that we've changed the combat step, let the currently selected Combatant (if it exists) that it should update its GUI.  If we are now between rounds, let EVERY Combatant know to update its GUI
+        Bundle payload = new Bundle();
+        if (curActiveCombatant != UNSET) {
+            // If we are still in the combat round
+            payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true);
+
+            notifyItemChanged(curActiveCombatant, payload); // Let the currently active Combatant know it should update its combat-related progress
+        } else {
+            // If we are no longer in the combat round and are now waiting to roll initiative for the next round, increment the round number
+            payload.putBoolean(PAYLOAD_CHECK, false);
+
+            notifyItemRangeChanged(0, combatantList.size(), payload); // Uncheck all of the Combatants
+            curRoundNumber++; // This value will most likely be queried by the Activity right after this function is called
         }
     }
 
     public void reverseCombatStep() {
-        // Move backwards along the active Combatant list
+        // Before changing the combatant step, let the currently selected Combatant (if it exists) to update its progression GUI, because it will no longer the currently selected Combatant
+        if (curActiveCombatant != UNSET) {
+            Bundle payload = new Bundle();
+            payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true);
+
+            notifyItemChanged(curActiveCombatant, payload); // Let the currently active Combatant know it should update its combat-related progress
+        }
+
+        // Move backwards along the active Combatant in the list
         if (curActiveCombatant == UNSET) {
             curActiveCombatant = combatantList.size() - 1; // If the currently active combatant is unset, go back to the end of the list
+
+            combatantList.sort(EncounterCombatantList.SortMethod.INITIATIVE); // Sort by initiative, now that we are back in the previous round
         } else if (curActiveCombatant == 0) {
             curActiveCombatant = UNSET; // If we are at the beginning of the list, go to "UNSET" for now
+
+            combatantList.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION); // Go back to sorting by alphabet/faction, for pre-round prep
         } else {
             curActiveCombatant--; // Otherwise, just decrement
         }
 
+        // Now selected is UNSET - nothing (no one was checked anyway)
+        // Now selected is final - everyone except final becomes checked
+        // Now selected is not UNSET and not final - the current Combatant becomes unchecked
+
         // Change the round number, if needed
-        if (curActiveCombatant == (combatantList.size() - 1)) {
-            // If the currently active Combatant is the last Combatant, we just went back into the previous round of Combat
-            curRoundNumber--;
-        }
-    }
+        if (curActiveCombatant != (combatantList.size() - 1)) {
+            // If the currently selected Combatant is not the last Combatant...
+            if (curActiveCombatant != UNSET) {
+                // ...and we are not between rounds, then the now currently active Combatant should be unchecked
+                Bundle payload = new Bundle();
+                payload.putBoolean(PAYLOAD_CHECK, false);
 
-    private void rollInitiative() {
-        // TODO!!
-        // TODO LATER: Keep track of all rolls, so that you can go backwards in time!
-        // TODO SOON: How do I deal with ties in initiative? Go by alphabet, favor party, "connect" the tied Combatants together somehow...?  May need to be a setting...
-    }
-
-    private void updateActiveCombatantGUI() {
-        // Update the GUI with respect to which combatant is active;
-        for (int i = 0; i < combatantList.size(); i++) {
-            // Go through each combatant and make sure that it is not displaying as the active combatant, unless it really is
-            RecyclerView.ViewHolder vH = combatantRecyclerView.findViewHolderForLayoutPosition(i);
-            if (vH instanceof CombatantViewHolder) {
-                ((CombatantViewHolder) vH).setActiveCombatant(i == curActiveCombatant);
+                notifyItemChanged(curActiveCombatant, payload); // Holder will become unchecked
             }
+        } else {
+            // If the currently active Combatant is the last Combatant, we just went back into the previous round of Combat
+            Bundle payload = new Bundle();
+            payload.putBoolean(PAYLOAD_CHECK, true);
+
+            notifyItemRangeChanged(0, combatantList.size() - 1, payload); // Check all Combatants except the last one, the now currently active Combatant
+            curRoundNumber--; // This value will most likely be queried by the Activity right after this function is called
         }
     }
 }

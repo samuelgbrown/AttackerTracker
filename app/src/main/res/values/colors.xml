@@ -5,6 +5,7 @@
     <color name="colorAccent">#03DAC5</color>
     <color name="standardBackground">#FAFAFA</color>
     <color name="activeCombatant">#0097E8</color>
+    <color name="returnToCombatant">#ED9332</color>
     <color name="colorParty">#37DA3B</color>
     <color name="colorEnemy">#BF1D1D</color>
     <color name="colorNeutral">#B8B8B8</color>

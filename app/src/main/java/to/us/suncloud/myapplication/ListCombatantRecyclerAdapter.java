@@ -1,6 +1,7 @@
 package to.us.suncloud.myapplication;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
@@ -24,7 +25,9 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static android.graphics.Typeface.BOLD;
 
@@ -41,22 +44,47 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     private FactionCombatantList combatantList_Display; // The version of the list that will be used for display (will take into account filtering from the search)
     private FactionCombatantList combatantList_Memory; // A memory version of the list, to see what changes have occurred
 
+    ArrayList<Integer> iconResourceIds; // A list of resource ID's of the icons that will be used for each Combatant
+
     private String filteredText = ""; // The string that is currently being used to filter the list
     private String filteredText_Memory = ""; // The string that was last used to filter the list, before the last call to notifyCombatantsChanged
 
-    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, FactionCombatantList combatantList) {
+    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, FactionCombatantList combatantList) {
         this.parent = parent;
         this.combatantList_Master = combatantList; // Save the reference (master will be modified directly)
         this.combatantList_Display = combatantList.clone(); // COPY the main list for these two lists, so that the master is not changed
         this.combatantList_Memory = combatantList.clone();
+
+        setupIconResourceIDs(context);
     }
 
-    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, FactionCombatantList combatantList, boolean adapterCanModify) {
+    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, FactionCombatantList combatantList, boolean adapterCanModify) {
         this.parent = parent;
         this.adapterCanModify = adapterCanModify;
         this.combatantList_Master = combatantList; // Save the reference (master will be modified directly)
         this.combatantList_Display = new FactionCombatantList(combatantList); // COPY the main list for these two lists, so that the master is not changed
         this.combatantList_Memory = new FactionCombatantList(combatantList);
+
+        setupIconResourceIDs(context);
+    }
+
+    private void setupIconResourceIDs(Context context) {
+        // Preload a list of resources that will be used to load svg's into the grid
+        iconResourceIds = new ArrayList<>();
+        int curNum = 0;
+        while (true) {
+            // Generate filenames for every icon that we will use in order, and check if it exists
+            String resourceName = String.format(Locale.US, "icon_%02d", curNum); // Oh, the horror...
+            int id = context.getResources().getIdentifier(resourceName, "drawable", context.getPackageName());
+
+            if (id > 0) {
+                // If the id is valid
+                iconResourceIds.add(id);
+            } else {
+                // If the id is invalid (equal to 0), then there are no more icons to load
+                break;
+            }
+        }
     }
 
     @Override
@@ -159,6 +187,16 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         public void bind(int combatant_ind) {
             position = combatant_ind;
             String combatantName = combatantList_Master.get(combatant_ind).getName();
+
+            // Load the icon image
+            int iconIndex = combatantList_Master.get(position).getIconIndex();
+            if (iconIndex == 0) {
+                // If the icon index is 0, then the icon is blank
+                CombatantIcon.setImageResource(android.R.color.transparent);
+            } else {
+                // Otherwise, get the corresponding icon image
+                CombatantIcon.setImageDrawable(CombatantIcon.getContext().getDrawable(iconResourceIds.get(iconIndex - 1)));
+            }
 
             // Set the color of the icon and the icon's border
             int colorId = -1;

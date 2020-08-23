@@ -6,12 +6,15 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toolbar;
+
+import androidx.appcompat.widget.Toolbar;
 
 public class EncounterActivity extends AppCompatActivity {
     private static final String COMBATANT_LIST = "combatant_list";
@@ -35,6 +38,9 @@ public class EncounterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_encounter);
 
+        // TODO: Make toolbar
+        // TODO: Add "dice thief" to let player change the dice rolls
+
         // Get info from the intent that started this activity
         Intent intent = getIntent();
         Bundle thisBundleData = intent.getExtras();
@@ -56,7 +62,7 @@ public class EncounterActivity extends AppCompatActivity {
         roundCounter = findViewById(R.id.encounter_round_counter);
 
         // Set up the RecyclerView
-        adapter = new EncounterCombatantRecyclerAdapter(masterCombatantList);
+        adapter = new EncounterCombatantRecyclerAdapter(getApplicationContext(), masterCombatantList);
         encounterRecyclerView.setAdapter(adapter);
         encounterRecyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
 
@@ -79,6 +85,9 @@ public class EncounterActivity extends AppCompatActivity {
         // Setup various GUI elements
         updateNoCombatantView(); // The no combatant message
         updateGUIState(); // The next/previous buttons
+
+        // Setup the toolbar
+        setSupportActionBar(encounterToolbar);
     }
 
     private void updateGUIState() {
@@ -128,6 +137,37 @@ public class EncounterActivity extends AppCompatActivity {
         } else {
             // If the Combatant list is not empty, then make the message gone
             noCombatantTextView.setVisibility(View.GONE);
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_encounter, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // TODO: Fill in option menu items!!!
+        int id = item.getItemId();
+        switch (id) {
+            case R.id.sort_alpha:
+                // Sort the Combatants alphabetically by faction
+                adapter.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION);
+                return true;
+            case R.id.sort_initiative:
+                // (Attempt to) sort the Combatants by initiative
+                adapter.sort(EncounterCombatantList.SortMethod.INITIATIVE);
+                return true;
+            case R.id.dice_cheat:
+                // Toggle the dice cheat mode on and off
+                adapter.toggleDiceCheat();
+            case R.id.settings:
+                // Open the settings menu
+
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
         }
     }
 }

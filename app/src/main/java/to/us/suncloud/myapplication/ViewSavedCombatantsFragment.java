@@ -238,7 +238,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
             if (mustAdd) {
                 // If we must add a fragment to display this faction
                 // Create a recyclerAdapter for each faction's recyclerview (done here so that item click handling will be simpler
-                ListCombatantRecyclerAdapter adapter = new ListCombatantRecyclerAdapter(this, eligibleCombatantsList.getAllFactionLists().get(facInd), !expectingReturnedCombatant); // If we are expecting a Combatant to return from the Fragment (we are selecting a Combatant to add), then we CANNOT modify the list.   If we are just viewing/modifying at the saved Combatants list, then we CAN modify the list
+                ListCombatantRecyclerAdapter adapter = new ListCombatantRecyclerAdapter(this, getContext(), eligibleCombatantsList.getAllFactionLists().get(facInd), !expectingReturnedCombatant); // If we are expecting a Combatant to return from the Fragment (we are selecting a Combatant to add), then we CANNOT modify the list.   If we are just viewing/modifying at the saved Combatants list, then we CAN modify the list
 
                 // Create a new container view to add to the LinearLayout
                 FrameLayout thisFragmentContainer = new FrameLayout(getContext());
@@ -321,9 +321,10 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
     private void addCombatantToSave(Combatant newCombatant) {
         // Try to add a new Combatant (by base name) to the eligible Combatant list, which will be then saved to file once we close out of this Fragment
-        // If a Combatant with this base-name already exists, then don't both saving it
+        // If a Combatant with this base-name already exists, then don't bother saving it
         if (!eligibleCombatantsList.containsName(newCombatant.getBaseName())) {
-            eligibleCombatantsList.addCombatant(newCombatant);
+            // If no other Combatant exists with this name, then make a clone of the Combatant with only the base name, and sanitize its roll, etc
+            eligibleCombatantsList.addCombatant(newCombatant.getRaw());
         } else if (!expectingReturnedCombatant) {
             // If the only reason the user is here is to modify the saved Combatants, and they just added a Combatant with an ordinal, tell them how silly they are
             Toast.makeText(getContext(), "A version of " + newCombatant.getBaseName() + " is already bookmarked", Toast.LENGTH_SHORT).show();

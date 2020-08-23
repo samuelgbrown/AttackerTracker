@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/sort_initiative"
+        android:icon="@drawable/init_sort"
+        android:menuCategory="alternative"
+        android:title="@string/sort_init"
+        android:visible="true"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/sort_alpha"
+        android:icon="@drawable/alpha_sort"
+        android:menuCategory="alternative"
+        android:title="@string/sort_alpha"
+        android:visible="true"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/dice_cheat"
+        android:icon="@drawable/ic_dice_thief"
+        android:menuCategory="alternative"
+        android:title="@string/cheat_mode"
+        android:visible="true"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/settings"
+        android:icon="@drawable/settings"
+        android:menuCategory="alternative"
+        android:title="@string/settings"
+        android:visible="true"
+        app:showAsAction="always" />
+</menu>

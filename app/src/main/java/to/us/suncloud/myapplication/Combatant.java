@@ -8,6 +8,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,9 +28,12 @@ public class Combatant implements Serializable {
     private int totalInitiative = 0;
     private UUID id = UUID.randomUUID();
 
+    private static Random rand = new Random(); // A random number generator (static, so that each Combatant uses the same one, and it does not just use the system clock as a first time seed each time
+
     // Create a regex Pattern for finding the base name of a Combatant
     private static Pattern ordinalChecker = Pattern.compile("^(.*?)(?:\\W*(\\d++)|$)"); // A pattern that matches the Combatant name into the first group, and the Combatant's ordinal number (if it exists) into the second group
 
+    // Constructors
     public Combatant(AllFactionCombatantLists listOfAllCombatants) {
         // Require all CombatantLists to enforce uniqueness across all lists
 
@@ -55,20 +59,21 @@ public class Combatant implements Serializable {
         id = c.getId();
     }
 
+    //
+    // Simple Getters
+    //
     public UUID getId() {
         return id;
     }
 
-    public Combatant getRaw() {
-        // Useful for quickly getting a "sanitized" version of the combatant (just clears the roll/total initiative, may be used to clear other temporary values later?)
-        Combatant rawCombatant = new Combatant(this);
-        rawCombatant.clearRoll();
-        return rawCombatant;
+    public int getRoll() {
+        return roll;
     }
 
-    public void clearRoll() {
-        setRoll(0);
+    public int getTotalInitiative() {
+        return totalInitiative;
     }
+
 
     public Faction getFaction() {
         return faction;
@@ -90,6 +95,9 @@ public class Combatant implements Serializable {
         return name;
     }
 
+    //
+    // Advanced Getters
+    //
     public String getBaseName() {
         // Get the name of this Combatant without any number at the end
         Matcher match = ordinalChecker.matcher(name);
@@ -116,11 +124,18 @@ public class Combatant implements Serializable {
         }
     }
 
-    public void setNameOrdinal(int ordinal) {
-        // Set the ordinal number of the name
-        setName(getBaseName() + " " + String.valueOf(ordinal));
+    public Combatant getRaw() {
+        // Useful for quickly getting a "sanitized" version of the combatant (clears the roll/total initiative, gets rid of the name ordinal, if it exists)
+        Combatant rawCombatant = clone();
+
+        rawCombatant.clearRoll();
+        setName(getBaseName());
+        return rawCombatant;
     }
 
+    //
+    // Simple Setters
+    //
     public void setName(String name) {
         // Note: Be careful when using this function, name exclusivity must be enforced elsewhere (it will not be checked here)
         this.name = name;
@@ -134,21 +149,40 @@ public class Combatant implements Serializable {
         this.speedFactor = speedFactor;
     }
 
-    public int getRoll() {
-        return roll;
-    }
-
+    //
+    // Advanced Setters
+    //
     public void setRoll(int roll) {
         this.roll = roll;
 
         // Set the total initiative
+        calcTotalInitiative();
+    }
+
+    public void rollInitiative() {
+        // Find a pseudorandom number between 1 and 20, assign it to the roll member variable, and re-calculate the total initiative
+        setRoll(rand.nextInt(20) + 1); // Calculate a random number between [0 20), and adjust it so it produces a roll between [1 20]
+    }
+
+    private void calcTotalInitiative() {
+        // Recalculate the total initiative
         this.totalInitiative = speedFactor + this.roll;
+
+        // TODO: This calculation can be changed according to a setting?
     }
 
-    public int getTotalInitiative() {
-        return totalInitiative;
+    public void setNameOrdinal(int ordinal) {
+        // Set the ordinal number of the name
+        setName(getBaseName() + " " + String.valueOf(ordinal));
     }
 
+    public void clearRoll() {
+        setRoll(0);
+    }
+
+    //
+    // Other functions
+    //
     @Override
     public boolean equals(@Nullable Object obj) {
         boolean isEqual = false;
@@ -167,11 +201,6 @@ public class Combatant implements Serializable {
         return isEqual;
     }
 
-    enum Faction {
-        Party,
-        Enemy,
-        Neutral
-    }
 
     public static String factionToString(Faction faction) {
         switch (faction) {
@@ -238,5 +267,9 @@ public class Combatant implements Serializable {
         return new Combatant(this);
     }
 
-
+    enum Faction {
+        Party,
+        Enemy,
+        Neutral
+    }
 }

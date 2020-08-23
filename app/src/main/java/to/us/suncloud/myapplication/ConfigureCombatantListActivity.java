@@ -122,7 +122,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                 // If we must display this faction
 
                 // Create a recyclerAdapter for each faction's recyclerview (done here so that item click handling will be simpler
-                ListCombatantRecyclerAdapter adapter = new ListCombatantRecyclerAdapter(this, factionList, true);
+                ListCombatantRecyclerAdapter adapter = new ListCombatantRecyclerAdapter(this, getApplicationContext(), factionList, true);
 
                 // Create a new container view to add to the LinearLayout
                 FrameLayout thisFragmentContainer = new FrameLayout(getApplicationContext());
@@ -229,7 +229,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                 addCombatantFrag.show(fm_ac, "AddCombatantToList");
                 return true;
             default:
-                return false;
+                return super.onOptionsItemSelected(item);
         }
     }
 }

@@ -8,6 +8,9 @@
     <string name="settings">Settings</string>
     <string name="add_combatant_title">Add a Combatant</string>
     <string name="open_bookmarks">Open Bookmarks</string>
+    <string name="sort_init">Sort: Initiative</string>
+    <string name="sort_alpha">Sort: Alphabetically </string>
+    <string name="cheat_mode">Dice Cheat Mode</string>
     <string name="mod_saved_combatant">Modify Bookmarked Combatants</string>
     <string name="new_combatant">+ New Combatant</string>
     <string name="empty_add_combatants">There don\'t seem to be any saved combatants here.  Make some using the button below, and they will appear here for quick referencing later!</string>

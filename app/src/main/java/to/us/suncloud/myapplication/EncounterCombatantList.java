@@ -1,6 +1,8 @@
 package to.us.suncloud.myapplication;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 // This Combatant list is used for the encounter.  It keeps a list of Combatants that are not organized/separated (unlike the AllFactionsCombatantList) that can be reorganized easily.
 // It will also perform all functions relevant to calculating initiative
@@ -51,14 +53,34 @@ public class EncounterCombatantList {
     }
 
     public void sort(SortMethod sortMethod) {
-        // TODO: Sort according to some rule
+        // Sort according to some rule
         currentSortMethod = sortMethod;
         doSorting();
     }
 
+    public void reSort() {
+        // Sort the list again, using the current sort method
+        doSorting();
+    }
+
     private void doSorting() {
-        // TODO: Depending on the current sorting style (currentSortMethod), sort the contents of combatantArrayList
-        // TODO: Use sortByInit(ArrayList<Combatant>) and sortByAlpha(ArrayList<Combatant>), or similar (so that getInitiativeIndex has access to initiative sorting to use on a different ArrayList)
+        // Depending on the current sorting style (currentSortMethod), sort the contents of combatantArrayList
+        switch (currentSortMethod) {
+            case INITIATIVE:
+                Collections.sort(combatantArrayList, new SortByInitiative()); // Sort the combatantArrayList alphabetically
+                return;
+            case ALPHABETICALLY_BY_FACTION:
+                Collections.sort(combatantArrayList, new SortAlphabeticallyByFaction()); // Sort the combatantArrayList alphabetically by faction
+        }
+    }
+
+    public void rollInitiative() {
+        // Roll initiative for each Combatant! (Don't worry about sorting for now, it will be called explicitly
+        for (Combatant combatant : combatantArrayList) {
+            combatant.rollInitiative();
+        }
+
+        // TODO: Add an "update duplicate initiative array" function, which will be called here, and whenever the roll or speed factors are updated [rolls and speed factors should only be updated through this object].  This will populate an ArrayList of Integers that have any Total Initiative values that are duplicated.  The total initiative value's location in the duplicate initiative array will denote its color (or perhaps the pos % 2 will denote its color?)
     }
 
     public int size() {
@@ -73,24 +95,72 @@ public class EncounterCombatantList {
         return new EncounterCombatantList(this);
     }
 
-    public int getInitiativeIndexOf(Combatant c) {
+    public int getInitiativeIndexOf(int indexInCurrentList) {
         // A method to find the index in combatantArrayList of a Combatant when the list is sorted by initiative, regardless of the actual sorted state of the list
         if (currentSortMethod == SortMethod.INITIATIVE) {
-            // If the array is already sorted by initiative, then just get the index of the Combatant
-            return combatantArrayList.indexOf(c);
+            // If the array is already sorted by initiative, then just return the input index
+            return indexInCurrentList;
         } else {
-            // We're going to need to sort the list, then get the index of the Combatant
+            // The combatantArrayList is currently sorted alphabetically_by_faction, so we're going to need to sort the list, then get the index of the Combatant
+            Combatant c = combatantArrayList.get(indexInCurrentList); // Get the Combatant at the indicated point in the current lis
             ArrayList<Combatant> sortedList = new ArrayList<>(combatantArrayList); // Create a SHALLOW copy of the list (the Combatants themselves are not cloned, only their references are copied)
 
-            // TODO: Do initiative sorting on the sortedList
+            // Do initiative sorting on the sortedList
+            Collections.sort(sortedList, new SortByInitiative());
 
+            // Finally, find the index in the initiative sorted list of the selected Combatant
             return sortedList.indexOf(c);
         }
     }
 
-
     public enum SortMethod {
         INITIATIVE,
         ALPHABETICALLY_BY_FACTION
+    }
+
+    static private class SortByInitiative implements Comparator<Combatant> {
+        @Override
+        public int compare(Combatant combatant, Combatant t1) {
+            int cTI = combatant.getTotalInitiative();
+            int t1TI = t1.getTotalInitiative();
+            // TODO: This comparison method can be changed according to which version we're using by using a method (perhaps set the method in the Constructor of this object?
+            if (cTI != t1TI) {
+                // If the total initiatives are different, then it's a simple sort
+                return cTI - t1TI;
+            } else {
+                //  If the total initiatives are the same, then sort according to the SortAlphabeticallyByFaction class
+                return new SortAlphabeticallyByFaction().compare(combatant, t1);
+            }
+        }
+    }
+
+    static private class SortAlphabeticallyByFaction implements Comparator<Combatant> {
+        static private int factionToInt(Combatant.Faction f) {
+            switch (f) {
+                case Party:
+                    return 0;
+                case Enemy:
+                    return 1;
+                case Neutral:
+                    return 2;
+                default:
+                    return 10;
+            }
+        }
+
+        @Override
+        public int compare(Combatant combatant, Combatant t1) {
+            int fC = factionToInt(combatant.getFaction());
+            int fT1 = factionToInt(t1.getFaction());
+            if (fC != fT1) {
+                // If the Factions are different, then just make sure they are sorted Party < Enemy < Neutral
+                return fC - fT1;
+            } else {
+                // If the Factions are the same, sort alphabetically
+                return combatant.getName().compareToIgnoreCase(t1.getName());
+            }
+        }
+
+
     }
 }
