@@ -29,9 +29,10 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     private static final float GRAYED_OUT = 0.5f;
     private static final float CLEAR = 0f;
 
-    private static final String PAYLOAD_CHECK = "payloadCheck";
-    private static final String PAYLOAD_UPDATE_PROGRESS = "payloadUpdateProgress";
-    private static final String PAYLOAD_DICE_CHEAT = "payloadDiceCheat";
+    private static final String PAYLOAD_CHECK = "payloadCheck"; // Used to indicate that a Combatant should become checked or unchecked (infers an update progress call as well)
+    private static final String PAYLOAD_UPDATE_PROGRESS = "payloadUpdateProgress"; // Used any time a Combatant becomes checked/unchecked (this may happen by the user, or programmatically)
+    private static final String PAYLOAD_DICE_CHEAT = "payloadDiceCheat"; // Used any time dice cheat mode is turned on/off
+    private static final String PAYLOAD_DUPLICATE_INDICATOR = "payloadDuplicateIndicator"; // Used any time the color of the duplicate indicator may be changed (if initiative is re-rolled, or if the combatantList is modified by addition/removal)
 
     RecyclerView combatantRecyclerView;
 
@@ -101,9 +102,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         private ConstraintLayout CombatantStatusBorder;
         private ConstraintLayout CombatantIconBorder;
         private ConstraintLayout RollLayout;
-        private ConstraintLayout CheckAreaLayout;
+        private ConstraintLayout DuplicateIndicator;
 
-        //        private ImageButton CombatantRemove;
         private CheckBox CombatantCompletedCheck;
         private ConstraintLayout CombatantGrayout;
 
@@ -121,36 +121,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             CombatantIcon = itemView.findViewById(R.id.encounter_icon);
             CombatantIconBorder = itemView.findViewById(R.id.encounter_icon_border);
             RollLayout = itemView.findViewById(R.id.combatant_enc_roll_layout);
-            CheckAreaLayout = itemView.findViewById(R.id.completed_enc_background);
-
-            //            CombatantRemove = itemView.findViewById(R.id.combatant_enc_remove);
-
-//            // TO_DO: Set up callback for the delete button and checkboxes (Are we going to even want a remove button...?  I don't think so....)
-//            CombatantRemove.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View view) {
-//                    if (position != UNSET) {
-//                        // First, adjust the active combatant display, if required
-//                        if (curActiveCombatant == position) {
-//                            // (If curActiveCombatant is UNSET, then we won't get here)
-//                            if (position == (combatantList.size() - 1)) {
-//                                // If this is the last combatant in the list (before removing this combatant), then reset the currently active combatant to the new final combatant in the list
-//                                curActiveCombatant = position - 1; // The new final index in combatantList, once this combatant is removed, will be position - 1 (one behind the current combatant position, which is currently the last combatant)
-//                            }
-//                        }
-//
-//                        // Next, remove this from the combatant list
-//                        combatantList.remove(position);
-//
-//                        // Let the adapter know that the list has been modified, and it should rearrange things as needed
-////                        notifyItemRemoved(position); // Don't think I need this...?
-//                        notifyCombatantsChanged();
-//
-//                        // Finally, update the active combatant border, in case anything has changed
-//                        updateActiveCombatantGUI();
-//                    }
-//                }
-//            });
+            DuplicateIndicator = itemView.findViewById(R.id.enc_dup_background);
 
             CombatantCompletedCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
@@ -300,6 +271,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
             setCombatProgression(); // Set up the GUI elements related to progression
             setDiceCheatMode(); // Set up the dice roll Views
+            setDuplicateInitiativeView(); // Set up the duplicate indicator
         }
 
         public void setDiceCheatMode() {
@@ -313,6 +285,25 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                 RollViewEdit.setVisibility(View.GONE);
                 RollView.setVisibility(View.VISIBLE);
             }
+        }
+
+        public void setDuplicateInitiativeView() {
+            // Update the background of the Checkbox to reflect whether or not this Combatant's total initiative is shared across multiple Combatant's
+            int resourceID = R.color.combatantTab; // If this Combatant is not a duplicate, then set the background to the standard background
+            if (combatantList.isDuplicate(position)) {
+                // If this is a duplicate, get the color that it should be
+                switch (combatantList.getDuplicateColor(position)) {
+                    case 0:
+                        resourceID = R.color.duplicateInitiative1;
+                        break;
+                    case 1:
+                        resourceID = R.color.duplicateInitiative2;
+                        break;
+                }
+            }
+
+            // Set the background color for the duplicate indicator
+            DuplicateIndicator.setBackgroundResource(resourceID);
         }
 
         public void setCombatProgression() {
@@ -330,7 +321,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             // Get the current state, and assign appropriate values to the variables
             if (isChecked) {
                 // If the Combatant is checked off, then they should be grayed out
-                // TODO CHECK: If Combatant is currently active but checked, what should happen...?  Nothing?  Should they be skipped?  Settings option?
+                // TODO CHECK: If Combatant is currently active but checked, what should happen...?  Nothing?  Should they be skipped?  Settings option? "Autoskip checked Combatants"?
                 targetAlpha = GRAYED_OUT;
             } else {
                 // If the Combatant is unchecked, then their ViewHolder should be visible
@@ -371,12 +362,12 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             // Set the visibility of the roll, total initiative, and checkbox views
             RollLayout.setVisibility(initiativeRollVisibility);
             TotalInitiativeView.setVisibility(initiativeRollVisibility);
-            CheckAreaLayout.setVisibility(checkLayoutVisibility);
+            CombatantCompletedCheck.setVisibility(checkLayoutVisibility);
         }
 
         public void setChecked(boolean isChecked) {
             // Should the Combatant's checkbox be checked or not?
-            CombatantCompletedCheck.setChecked(isChecked); // The function setCombatantProgression will be automatically called, so the GUI will be updated
+            CombatantCompletedCheck.setChecked(isChecked); // The function setCombatantProgression will be automatically called due to the listener on the CheckBox, so the GUI will be updated
         }
     }
 
@@ -444,6 +435,10 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             if (args.containsKey(PAYLOAD_DICE_CHEAT)) {
                 holder.setDiceCheatMode();
             }
+
+            if (args.containsKey(PAYLOAD_DUPLICATE_INDICATOR)) {
+                holder.setDuplicateInitiativeView();
+            }
         } else {
             // If the payload is empty, then continue on the binding process
             super.onBindViewHolder(holder, position, payloads);
@@ -458,7 +453,14 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     // TODO: Do I need this...?  Perhaps for Activity management stuffs?
     public void setCombatantList(ArrayList<Combatant> newCombatantList) {
         combatantList = new EncounterCombatantList(newCombatantList);
-        notifyCombatantsChanged();
+
+        // Let the adapter know that it should refresh the Views
+        Bundle payload = new Bundle();
+        payload.putBoolean(PAYLOAD_DUPLICATE_INDICATOR, true); // Initiative has been rolled, so there may now be duplicates
+        payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true); // Combatant order has been changed, so progress may have changed
+
+        notifyItemRangeChanged(0, combatantList.size(), payload); // Let the adapter know that every Combatant's view should update its duplicate indicator
+        notifyCombatantsChanged(); // Let the adapter know that the views will likely need to rearrange
     }
 
     public void notifyCombatantsChanged() {
@@ -511,28 +513,42 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             combatantList.rollInitiative(); // TODO CHECK: This technically means that going back after this gives you the chance to re-roll initiative, which COULD be an issue.  Can just keep track of which rounds have been rolled already
             combatantList.sort(EncounterCombatantList.SortMethod.INITIATIVE); // Sort by initiative, now that we have calculated it
 
+            // Let the adapter know that it should refresh the Views
+            // TODO CHECK: Try not including this notifyItemRangeChanged, see if notifyCombatantsChanged would work on its own...? Change for future similar calls in this and reverseCombatStep()
+            Bundle payload = new Bundle();
+            payload.putBoolean(PAYLOAD_DUPLICATE_INDICATOR, true); // Initiative has been rolled, so there may now be duplicates
+            payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true); // Combatant order has been changed, so progress may have changed TODO: May not be needed?
+
+            notifyItemRangeChanged(0, combatantList.size(), payload); // Let the adapter know that every Combatant's view should update its duplicate indicator
+            notifyCombatantsChanged(); // Let the adapter know that the views will likely need to rearrange
+
             // TODO LATER: Keep track of all rolls, so that you can go backwards in time!
             // TODO SOON: How do I deal with ties in initiative? Go by alphabet, favor party, "connect" the tied Combatants together somehow...?  May need to be a setting...
         } else if (curActiveCombatant == (combatantList.size() - 1)) {
-            curActiveCombatant = UNSET; // If we are at the end of the list, go to "UNSET" for now
+            curActiveCombatant = UNSET; // If we are at the end of the Combatant list, start preparing for the next round
 
             combatantList.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION); // Go back to sorting by alphabet/faction, for pre-round prep
+
+            // Let the adapter know to change the Views
+            Bundle payload = new Bundle();
+            payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true); // We are ending the combat round, so progress must be changed (roll and initiative views will go away, etc)
+            payload.putBoolean(PAYLOAD_CHECK, false); // Uncheck all of the combatants
+
+            notifyItemRangeChanged(0, combatantList.size(), payload); // Let the adapter know that every Combatant's view should update its duplicate indicator
+            notifyCombatantsChanged(); // Let the adapter know that the views will likely need to rearrange
         } else {
             curActiveCombatant++; // Otherwise, just increment the combatant number
         }
 
         // Now that we've changed the combat step, let the currently selected Combatant (if it exists) that it should update its GUI.  If we are now between rounds, let EVERY Combatant know to update its GUI
-        Bundle payload = new Bundle();
         if (curActiveCombatant != UNSET) {
             // If we are still in the combat round
+            Bundle payload = new Bundle();
             payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true);
 
             notifyItemChanged(curActiveCombatant, payload); // Let the currently active Combatant know it should update its combat-related progress
         } else {
             // If we are no longer in the combat round and are now waiting to roll initiative for the next round, increment the round number
-            payload.putBoolean(PAYLOAD_CHECK, false);
-
-            notifyItemRangeChanged(0, combatantList.size(), payload); // Uncheck all of the Combatants
             curRoundNumber++; // This value will most likely be queried by the Activity right after this function is called
         }
     }
@@ -551,10 +567,25 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             curActiveCombatant = combatantList.size() - 1; // If the currently active combatant is unset, go back to the end of the list
 
             combatantList.sort(EncounterCombatantList.SortMethod.INITIATIVE); // Sort by initiative, now that we are back in the previous round
+
+            // Let the adapter know to change the Views
+            Bundle payload = new Bundle();
+            payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true); // We are ending the combat round, so progress must be changed (roll and initiative views will go away, etc)
+            payload.putBoolean(PAYLOAD_CHECK, true); // Check all of the combatants
+
+            notifyItemRangeChanged(0, combatantList.size(), payload); // Let the adapter know that every Combatant's view should update its duplicate indicator
+            notifyCombatantsChanged(); // Let the adapter know that the views will likely need to rearrange
         } else if (curActiveCombatant == 0) {
             curActiveCombatant = UNSET; // If we are at the beginning of the list, go to "UNSET" for now
 
             combatantList.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION); // Go back to sorting by alphabet/faction, for pre-round prep
+
+            // Let the adapter know to change the Views
+            Bundle payload = new Bundle();
+            payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true); // We are ending the combat round, so progress must be changed (roll and initiative views will go away, etc)
+
+            notifyItemRangeChanged(0, combatantList.size(), payload); // Let the adapter know that every Combatant's view should update its duplicate indicator
+            notifyCombatantsChanged(); // Let the adapter know that the views will likely need to rearrange
         } else {
             curActiveCombatant--; // Otherwise, just decrement
         }
@@ -575,10 +606,6 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             }
         } else {
             // If the currently active Combatant is the last Combatant, we just went back into the previous round of Combat
-            Bundle payload = new Bundle();
-            payload.putBoolean(PAYLOAD_CHECK, true);
-
-            notifyItemRangeChanged(0, combatantList.size() - 1, payload); // Check all Combatants except the last one, the now currently active Combatant
             curRoundNumber--; // This value will most likely be queried by the Activity right after this function is called
         }
     }

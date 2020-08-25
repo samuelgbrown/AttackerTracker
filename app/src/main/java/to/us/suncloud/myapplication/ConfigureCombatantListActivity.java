@@ -27,7 +27,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
     HashMap<Combatant.Faction, FactionFragmentInfo> factionFragmentMap = new HashMap<>();
 
-    AllFactionCombatantLists combatantLists = new AllFactionCombatantLists(); // TODO: Make an EncounterCombatantList, that will hold combatants from all factions, and will be responsible for setting rolls and rearranging the list and such
+    AllFactionCombatantLists combatantLists = new AllFactionCombatantLists();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,8 +58,6 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
         Toolbar toolbar = findViewById(R.id.configure_toolbar);
         setSupportActionBar(toolbar); // TODO: Add toolbar buttons (Settings, like which DnD version is being used?)
-
-        // TODO: Convert this activity so that the MAIN view is the "randomized" combat view, but the initial view is all combatants separated by faction
     }
 
     @Override
@@ -122,7 +120,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                 // If we must display this faction
 
                 // Create a recyclerAdapter for each faction's recyclerview (done here so that item click handling will be simpler
-                ListCombatantRecyclerAdapter adapter = new ListCombatantRecyclerAdapter(this, getApplicationContext(), factionList, true);
+                ListCombatantRecyclerAdapter adapter = new ListCombatantRecyclerAdapter(this, getApplicationContext(), factionList, true, true);
 
                 // Create a new container view to add to the LinearLayout
                 FrameLayout thisFragmentContainer = new FrameLayout(getApplicationContext());

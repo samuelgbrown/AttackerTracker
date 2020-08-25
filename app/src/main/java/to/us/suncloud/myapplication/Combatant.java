@@ -215,6 +215,11 @@ public class Combatant implements Serializable {
         }
     }
 
+    public void genUUID() {
+        // Generate a new UUID for this Combatant
+        id = UUID.randomUUID();
+    }
+
     public static boolean isNameUnique(String nameToTest, ArrayList<FactionCombatantList> listOfAllCombatants) {
         // First, generate an ArrayList of Strings of all combatants
         ArrayList<String> allCombatantNames = new ArrayList<>();
@@ -265,6 +270,13 @@ public class Combatant implements Serializable {
 
     public Combatant clone() {
         return new Combatant(this);
+    }
+
+    public Combatant cloneUnique() {
+        // Generate a Combatant with a unique ID
+        Combatant newCombatant = clone();
+        newCombatant.genUUID();
+        return newCombatant;
     }
 
     enum Faction {

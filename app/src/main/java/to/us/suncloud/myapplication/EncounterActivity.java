@@ -24,8 +24,6 @@ public class EncounterActivity extends AppCompatActivity {
 
     int roundNumber = 0;
 
-    // TODO: Add "cheater mode" so you can modify dice rolls
-
     RecyclerView encounterRecyclerView;
     Toolbar encounterToolbar;
     TextView noCombatantTextView;
@@ -37,9 +35,6 @@ public class EncounterActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_encounter);
-
-        // TODO: Make toolbar
-        // TODO: Add "dice thief" to let player change the dice rolls
 
         // Get info from the intent that started this activity
         Intent intent = getIntent();

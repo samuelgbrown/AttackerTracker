@@ -2,6 +2,7 @@ package to.us.suncloud.myapplication;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 
 // Simple wrapper for a list of combatants that also holds faction information
 public class FactionCombatantList implements Serializable {
@@ -11,11 +12,15 @@ public class FactionCombatantList implements Serializable {
     FactionCombatantList(ArrayList<Combatant> combatantArrayList, Combatant.Faction thisFaction) {
         this.thisFaction = thisFaction;
         this.combatantArrayList = combatantArrayList;
+
+        sort();
     }
 
     FactionCombatantList(Combatant.Faction thisFaction) {
         this.thisFaction = thisFaction;
         combatantArrayList = new ArrayList<>();
+
+        sort();
     }
 
     FactionCombatantList(FactionCombatantList c) {
@@ -25,6 +30,7 @@ public class FactionCombatantList implements Serializable {
             combatantArrayList.add(c.get(i).clone()); // For each Combatant in c, make a clone to place in this array list
         }
         this.thisFaction = c.faction();
+        c.sort(); // Ensure that the combatantArrayList is sorted (which is should be already...)
     }
 
     // ArrayList<> interface methods
@@ -46,10 +52,12 @@ public class FactionCombatantList implements Serializable {
 
     public void add(Combatant newCombatant) {
         combatantArrayList.add(newCombatant);
+        sort();
     }
 
     public void add(int i, Combatant newCombatant) {
         combatantArrayList.add(i, newCombatant);
+        sort();
     }
 
     public void remove(Combatant combatantToRemove) {
@@ -63,7 +71,6 @@ public class FactionCombatantList implements Serializable {
 
     public void addAll(FactionCombatantList combatantsToAdd) {
         // Add all combatants present in the inputted FactionCombatantList
-        // TODO CHECK: Make this use the add() method, which will (hopefully) have some extra checks/functionality?  Or, all name checking will take place in higher level lists...ug
         combatantArrayList.addAll(combatantsToAdd.getCombatantArrayList());
     }
 
@@ -133,6 +140,12 @@ public class FactionCombatantList implements Serializable {
 
     public void setCombatantArrayList(ArrayList<Combatant> combatantArrayList) {
         this.combatantArrayList = combatantArrayList;
+        sort();
+    }
+
+    public void sort() {
+        // Sort the CombatantArrayList alphabetically
+        Collections.sort(combatantArrayList, new CombatantSorter.SortAlphabeticallyByFaction());
     }
 
     public ArrayList<String> getCombatantNamesList() {

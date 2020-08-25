@@ -24,7 +24,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -345,7 +344,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
             receiver.receiveNewCombatant(currentCombatant, returnBundle);
         } else {
             // Let the receiver know that the Combatant they sent has been changed
-            receiver.notfiyCombatantChanged(returnBundle);
+            receiver.notifyCombatantChanged(returnBundle);
         }
 
         // Finally, dismiss the dialog
@@ -354,6 +353,6 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
 
     interface receiveNewOrModCombatantInterface extends Serializable {
         void receiveNewCombatant(Combatant newCombatant, Bundle returnBundle);
-        void notfiyCombatantChanged(Bundle returnBundle);
+        void notifyCombatantChanged(Bundle returnBundle);
     }
 }

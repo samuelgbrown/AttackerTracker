@@ -65,7 +65,7 @@ public class AllFactionCombatantLists implements Serializable {
         // Find the Faction that matches this Combatant, and add it
         for (int i = 0; i < allFactionLists.size(); i++) {
             if (newCombatant.getFaction() == allFactionLists.get(i).faction()) {
-                allFactionLists.get(i).add(newCombatant);
+                allFactionLists.get(i).add(newCombatant); // Upon adding, the list will automatically be sorted
                 return;
             }
         }

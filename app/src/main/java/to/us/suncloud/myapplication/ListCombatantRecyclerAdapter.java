@@ -39,6 +39,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
     MasterCombatantKeeper parent = null; // If this is set, then the selected combatant will be sent to the parent
     boolean adapterCanModify = false; // Can the adapter modify the Combatant (used so that we can use this adapter for both Combatant display and modify+display purposes, because they are VERY similar)
+    boolean adapterCanCopy = false; // Can the adapter copy the Combatant (used in the Configure Activity, but not for viewing the saved Combatants
 
     private FactionCombatantList combatantList_Master; // The master version of the list
     private FactionCombatantList combatantList_Display; // The version of the list that will be used for display (will take into account filtering from the search)
@@ -61,6 +62,17 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, FactionCombatantList combatantList, boolean adapterCanModify) {
         this.parent = parent;
         this.adapterCanModify = adapterCanModify;
+        this.combatantList_Master = combatantList; // Save the reference (master will be modified directly)
+        this.combatantList_Display = new FactionCombatantList(combatantList); // COPY the main list for these two lists, so that the master is not changed
+        this.combatantList_Memory = new FactionCombatantList(combatantList);
+
+        setupIconResourceIDs(context);
+    }
+
+    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, FactionCombatantList combatantList, boolean adapterCanModify, boolean adapterCanCopy) {
+        this.parent = parent;
+        this.adapterCanModify = adapterCanModify;
+        this.adapterCanCopy = adapterCanCopy;
         this.combatantList_Master = combatantList; // Save the reference (master will be modified directly)
         this.combatantList_Display = new FactionCombatantList(combatantList); // COPY the main list for these two lists, so that the master is not changed
         this.combatantList_Memory = new FactionCombatantList(combatantList);
@@ -100,10 +112,10 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         TextView NameView;
         ImageButton CombatantRemove;
         ImageButton CombatantChangeCombatant;
+        ImageButton CombatantCopy;
         ImageView CombatantIcon;
         ConstraintLayout CombatantIconBorder;
 
-        // TODO SOON: Figure out how to use different ViewHolders for different activities, while minimizing boiler plate (Configure-, Add- should be using different viewholders (perhaps not?), but otherwise similar implementations of CombatantGroupFragment; Add will need search/filtering-by-String-start support, and NEITHER need the encounter viewholder used below...)
         // Difference between Add and configure:
         //      1. Configure will have gear button to change aspects of combatant
         //      2. Remove will be different - Configure will be to remove from the list, add will be to remove from the file
@@ -117,13 +129,12 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         public CombatantViewHolder(@NonNull final View itemView) {
             super(itemView);
 
-            // TODO SOON: Add a copy function that will make a copy of this Combatant (WITH NEW UUID), such that any ordinal stuff will happen automagically.
-
             NameView = itemView.findViewById(R.id.combatant_mod_name);
             CombatantRemove = itemView.findViewById(R.id.combatant_mod_remove);
             CombatantChangeCombatant = itemView.findViewById(R.id.combatant_mod_change_combatant);
             CombatantIcon = itemView.findViewById(R.id.combatant_mod_icon);
             CombatantIconBorder = itemView.findViewById(R.id.combatant_mod_icon_border);
+            CombatantCopy = itemView.findViewById(R.id.combatant_mod_copy);
 
             // Set up click functionality for rest of viewHolder (i.e. name, "itemView" [the background], and the icon)
             View.OnClickListener returnCombatantListener = new View.OnClickListener() {
@@ -141,6 +152,9 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
             if (adapterCanModify) {
                 // If the adapter can modify the Combatants/the Combatant list, then allow the user to do so through these buttons
+                CombatantChangeCombatant.setVisibility(View.VISIBLE);
+                CombatantRemove.setVisibility(View.VISIBLE);
+
                 CombatantChangeCombatant.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -152,12 +166,11 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                     }
                 });
 
-                // TODO: Checkboxes should only be in encounter adapter?
                 CombatantRemove.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         if (position != UNSET) {
-                            // Ask the user if they definiately want to remove the combatant
+                            // Ask the user if they definitely want to remove the combatant
                             new AlertDialog.Builder(itemView.getContext())
                                     .setTitle(R.string.confirm_delete)
                                     .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
@@ -181,6 +194,38 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                 // If we cannot modify the combatants/the combatant list, then remove the options
                 CombatantChangeCombatant.setVisibility(View.GONE);
                 CombatantRemove.setVisibility(View.GONE);
+            }
+
+            if (adapterCanCopy) {
+                CombatantCopy.setVisibility(View.VISIBLE);
+                CombatantCopy.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        if (position != UNSET) {
+                            // Ask the user if they definitely want to copy the combatant
+                            new AlertDialog.Builder(itemView.getContext())
+                                    .setTitle(R.string.confirm_copy)
+                                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            // Remove this from the combatant list
+                                            copyCombatant(position);
+                                        }
+                                    })
+                                    .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            // Do nothing
+                                        }
+                                    })
+                                    .create();
+                        }
+                    }
+                });
+
+            } else {
+                // If we can't copy the Combatant, then make the button disappear
+                CombatantCopy.setVisibility(View.GONE);
             }
         }
 
@@ -240,7 +285,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     }
 
     @Override
-    public void notfiyCombatantChanged(Bundle returnBundle) {
+    public void notifyCombatantChanged(Bundle returnBundle) {
         // Receiving notification from the CreateOrModCombatant Fragment that the Combatant we sent to be modified has finished being changed
 //        // If we got a returnBundle with a list position, then that combatant needs to be replaced with the new one
 //        if (returnBundle != null) {
@@ -268,7 +313,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     }
 
     private void removeCombatant(int position) {
-        // Remove the combatant at the given position
+        // Remove the Combatant at the given position
         // Removal will be relative to combatantDisplayList, because each removal request will originate from the viewholder, whose position is relative to the display list
         Combatant combatantToRemove = combatantList_Display.get(position);
 
@@ -283,26 +328,42 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         parent.combatantInListRemoved();
     }
 
-    private void replaceCombatant(int position, Combatant newCombatant) {
-        // TODO CHECK: Is this supposed to be used somewhere...?  Perhaps not, because Combatant name changes are done in place now?
-        // Replace the combatant at the given position
-        // Removal will be relative to combatantDisplayList, because each removal request will originate from the viewholder, whose position is relative to the display list
-        Combatant combatantToRemove = combatantList_Display.get(position);
+    private void copyCombatant(int position) {
+        // Copy the Combatant at the given position
+        Combatant newCombatant = combatantList_Display.get(position).cloneUnique(); // Create a clone fo the Combatant to copy, but with a unique ID
 
-        // Get the index of this combatant in the Master list (so the changed Combatant goes into the same position)
-        int masterListPosition = combatantList_Master.indexOf(combatantToRemove);
+        // This is a little bit hacky, but I THINK it should work...
+        // Add the Combatant to the Master list (so that a new Combatant name is generated that is unique to the entire Combatant list)
+        parent.getMasterCombatantList().addCombatant(newCombatant); // TODO CHECK: Now, after this, the AllFactionsCombatantList owned by the calling Activity/Fragment should have changed, as well as the combatantList_Master (a FactionCombatantList).
 
-        // Remove the given combatant
-        combatantList_Display.remove(combatantToRemove);
-        combatantList_Master.remove(combatantToRemove);
+        // Now the combatantList_Master is updated using the above method, clone it into combatantList_Display
+        // Note: This will likely only happen in the ConfigureCombatantListActivity, so we don't need to worry about String filtering
+        combatantList_Display = combatantList_Master.clone();
 
-        // Add the new Combatant to the master list
-        combatantList_Display.add(position, newCombatant);
-        combatantList_Master.add(masterListPosition, newCombatant);
-
-        // Let the Adapter know that we have modified the combatant list
+        // Finally, let the adapter know that we have updated the list
         notifyCombatantListChanged();
     }
+
+//    private void replaceCombatant(int position, Combatant newCombatant) {
+//        // TO_DO CHECK: Is this supposed to be used somewhere...?  Perhaps not, because Combatant name changes are done in place now?
+//        // Replace the Combatant at the given position
+//        // Removal will be relative to combatantDisplayList, because each removal request will originate from the viewholder, whose position is relative to the display list
+//        Combatant combatantToRemove = combatantList_Display.get(position);
+//
+//        // Get the index of this combatant in the Master list (so the changed Combatant goes into the same position)
+//        int masterListPosition = combatantList_Master.indexOf(combatantToRemove);
+//
+//        // Remove the given combatant
+//        combatantList_Display.remove(combatantToRemove);
+//        combatantList_Master.remove(combatantToRemove);
+//
+//        // Add the new Combatant to the master list
+//        combatantList_Display.add(position, newCombatant);
+//        combatantList_Master.add(masterListPosition, newCombatant);
+//
+//        // Let the Adapter know that we have modified the combatant list
+//        notifyCombatantListChanged();
+//    }
 
     @Override
     public void onBindViewHolder(@NonNull ListCombatantRecyclerAdapter.CombatantViewHolder holder, int position, @NonNull List<Object> payloads) {

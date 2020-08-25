@@ -332,7 +332,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     }
 
     @Override
-    public void notfiyCombatantChanged(Bundle returnBundle) {
+    public void notifyCombatantChanged(Bundle returnBundle) {
         // Should never receive this, because this Fragment can only accept NEW combatants from the CreateOrModCombatant Fragment, not MODIFIED combatants
 
         // Do Nothing
