@@ -11,6 +11,7 @@ public class AllFactionCombatantLists implements Serializable {
     }
 
     AllFactionCombatantLists(ArrayList<FactionCombatantList> allFactionLists) {
+        // Used as a shallow copy constructor
         // This method assumes that the inputted faction list has either 0 or 1 FactionCombatantList for each faction listed in Combatant.Faction (i.e. uniqueness)
         this.allFactionLists = allFactionLists;
     }
@@ -47,6 +48,7 @@ public class AllFactionCombatantLists implements Serializable {
         switch (highestExistingOrdinal) {
             case Combatant.DOES_NOT_APPEAR:
                 // If the Combatant does not appear, then we do not need to make any modifications, regardless of what ordinal newCombatant has. Cool!
+                break;
             case Combatant.NO_ORDINAL:
                 // If this Combatant's base name DOES appear, but with no ordinal, then that Combatant's name must be changed
                 // If newCombatant has an ordinal that's smaller than 2, then this Combatant's name must be changed to 1) preserve uniqueness, and 2) make it so that "Zombie" and "Zombie 1" don't both appear in the list (because that's weird)
@@ -55,6 +57,7 @@ public class AllFactionCombatantLists implements Serializable {
                     newCombatant.setNameOrdinal(2); // Set the new Combatant's ordinal to 2
                     // If the new Combatant's ordinal is 2 or greater, then...well...it's not bothering anyone, I guess...
                 }
+                break;
             default:
                 // If the Combatant's base name DOES appear in the list already, and it has an ordinal, then simply modify this combatant's ordinal (if needed) to be at least one higher than the current highest ordinal.
                 newCombatant.setNameOrdinal(Math.max(highestExistingOrdinal + 1, newCombatant.getOrdinal()));
@@ -95,7 +98,7 @@ public class AllFactionCombatantLists implements Serializable {
 
     public int getHighestOrdinalInstance(String combatantBaseName) {
         // Get the highest ordinal instance of the baseName among all of the Faction lists
-        int highestOrdinal = -1;
+        int highestOrdinal = Combatant.DOES_NOT_APPEAR;
         for (int i = 0; i < allFactionLists.size(); i++) {
             // Go through each Faction, and get the highest ordinal instance of this base name
             highestOrdinal = Math.max(highestOrdinal, allFactionLists.get(i).getHighestOrdinalInstance(combatantBaseName));
@@ -191,6 +194,7 @@ public class AllFactionCombatantLists implements Serializable {
 
     public AllFactionCombatantLists clone() {
         return new AllFactionCombatantLists(this);
-    }
+    } // Deep copy
+    public AllFactionCombatantLists shallowCopy() {return new AllFactionCombatantLists(getAllFactionLists());} // Shallow copy
 
 }

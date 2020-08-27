@@ -66,6 +66,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                 // If the id is invalid (equal to 0), then there are no more icons to load
                 break;
             }
+
+            curNum++;
         }
     }
 

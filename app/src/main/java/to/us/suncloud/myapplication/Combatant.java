@@ -128,8 +128,10 @@ public class Combatant implements Serializable {
         // Useful for quickly getting a "sanitized" version of the combatant (clears the roll/total initiative, gets rid of the name ordinal, if it exists)
         Combatant rawCombatant = clone();
 
+        // Set a few values for the new Combatant
         rawCombatant.clearRoll();
-        setName(getBaseName());
+        rawCombatant.setName(getBaseName());
+        rawCombatant.genUUID();
         return rawCombatant;
     }
 

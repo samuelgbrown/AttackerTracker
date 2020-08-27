@@ -5,8 +5,10 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.AttributeSet;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -38,23 +40,28 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         Intent thisIntent = getIntent();
         Bundle thisBundleData = thisIntent.getExtras();
 
-        // Get the combatant lists
-        if (thisBundleData.containsKey(COMBATANT_LIST_LIST)) {
-            combatantLists = (AllFactionCombatantLists) thisBundleData.getSerializable(COMBATANT_LIST_LIST);
-        }
-
-        // Get the "purpose" of this activity (beginning or middle of combat)
-        TextView mainButton = findViewById(R.id.finish_button);
         boolean isBegin = true;
-        if (thisBundleData.containsKey(COMBAT_BEGIN)) {
-            isBegin = thisBundleData.getBoolean(COMBAT_BEGIN);
+        if (thisBundleData != null) {
+            // Get the combatant lists
+            if (thisBundleData.containsKey(COMBATANT_LIST_LIST)) {
+                // TODO: Set up interaction between this and Encounter Activity (passing combatant list back and forth [unless we never really need the list back from the Encounter Activity...?] )
+                combatantLists = (AllFactionCombatantLists) thisBundleData.getSerializable(COMBATANT_LIST_LIST);
+            }
+
+            // Get the "purpose" of this activity (beginning or middle of combat)
+            if (thisBundleData.containsKey(COMBAT_BEGIN)) {
+                isBegin = thisBundleData.getBoolean(COMBAT_BEGIN);
+            }
         }
 
+        TextView mainButton = findViewById(R.id.finish_button);
         if (isBegin) {
             mainButton.setText(R.string.begin_encounter);
         } else {
             mainButton.setText(R.string.resume_encounter);
         }
+
+        // TODO: Set main button funciton: Start an Encounter Activity and pass the combatantList!
 
         Toolbar toolbar = findViewById(R.id.configure_toolbar);
         setSupportActionBar(toolbar); // TODO: Add toolbar buttons (Settings, like which DnD version is being used?)
@@ -93,9 +100,6 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         } else {
             // If there are no combatants, display the message
             noCombatantMessage.setVisibility(View.VISIBLE);
-
-            // Then, skip the rest of this method (no factions to display)
-            return;
         }
 
         // Create a fragment for each faction, if we need to
@@ -124,6 +128,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
                 // Create a new container view to add to the LinearLayout
                 FrameLayout thisFragmentContainer = new FrameLayout(getApplicationContext());
+                thisFragmentContainer.setId(12345); // Set some id for the FrameLayout
                 combatantFragmentParentLayout.addView(thisFragmentContainer, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
                 // Create a new fragment, and place it in the container
@@ -141,9 +146,17 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                 // Delete the view in which the faction fragment is contained
                 combatantFragmentParentLayout.removeView(factionFragmentMap.get(factionList.faction()).getContainer());
 
-                // Remove the fragment
+                // Remove the fragment from the View
                 fragTransaction.remove(factionFragmentMap.get(factionList.faction()).getFragment());
+
+                // Delete the key from the factionFragmentMap (it is no longer being displayed)
+                factionFragmentMap.remove(factionList.faction());
+
+                continue;
             }
+
+            // Let the adapter know that the Combatants list *may* have changed, if we are neither adding a Fragment (nothing changed because we just initialized it) nor removing one (it no longer exists, so doesn't need to update)
+            factionFragmentMap.get(factionList.faction()).getFragment().getAdapter().notifyCombatantListChanged();
         }
 
         if (fragTransaction != null) {
@@ -170,23 +183,24 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         }
     }
 
+    // Interface methods
+
     @Override
     public void receiveChosenCombatant(Combatant selectedCombatant) {
         // Receive a combatant from a ListCombatantRecyclerAdapter
-        // Do nothing, because this implementation of the
-        // TODO CHECK: Do nothing, probably? (I don't think a Combatant can be modified from this list, right?)
+        // Do nothing, because this is "receiving" a combatant from the configure list, which shouldn't do anything on being touched
+    }
+
+    @Override
+    public void combatantListModified() {
+        // A Combatant in one of the Fragments was just removed.  Update the list, in case one of the Fragments needs to be removed
+        updateFactionFragmentDisplay();
     }
 
     @Override
     public AllFactionCombatantLists getMasterCombatantList() {
         // Give the ListCombatantRecyclerAdapter a copy of the master combatant list, so that it can guarantee name uniqueness
         return combatantLists;
-    }
-
-    @Override
-    public void combatantInListRemoved() {
-        // A Combatant in one of the Fragments was just removed.  Update the list, in case one of the Fragments needs to be removed
-        updateFactionFragmentDisplay();
     }
 
     @Override

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AttackerTracker</string>
+    <string name="app_name">Attacker Tracker</string>
     <string name="next_round">Next Round</string>
     <string name="begin_encounter">Begin Encounter</string>s
     <string name="resume_encounter">Resume Encounter</string>

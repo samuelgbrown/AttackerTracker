@@ -10,6 +10,7 @@ public class FactionCombatantList implements Serializable {
     private Combatant.Faction thisFaction;
 
     FactionCombatantList(ArrayList<Combatant> combatantArrayList, Combatant.Faction thisFaction) {
+        // Used for shallow copy
         this.thisFaction = thisFaction;
         this.combatantArrayList = combatantArrayList;
 
@@ -62,6 +63,20 @@ public class FactionCombatantList implements Serializable {
 
     public void remove(Combatant combatantToRemove) {
         combatantArrayList.remove(combatantToRemove);
+    }
+
+    public FactionCombatantList subList(ArrayList<Integer> subListIndices) {
+        ArrayList<Combatant> subList = new ArrayList<>();
+        for (int i = 0;i < subListIndices.size();i++) {
+            subList.add(combatantArrayList.get(subListIndices.get(i))); // Go through each member of subListIndices and get the Combatant at that index
+        }
+
+        // Return a new FactionCombatantList for this subList
+        return new FactionCombatantList(subList, faction());
+    }
+
+    public void remove(int combatantIndToRemove) {
+        combatantArrayList.remove(combatantIndToRemove);
     }
 
     public void removeAll(FactionCombatantList combatantsToRemove) {
@@ -170,11 +185,16 @@ public class FactionCombatantList implements Serializable {
         return combatantArrayList.isEmpty();
     }
 
+    public int size() {
+        return combatantArrayList.size();
+    }
     public FactionCombatantList clone() {
         return new FactionCombatantList(this);
     }
 
-    public int size() {
-        return combatantArrayList.size();
+    public FactionCombatantList shallowCopy() {
+        return new FactionCombatantList(getCombatantArrayList(), faction());
     }
+
+
 }

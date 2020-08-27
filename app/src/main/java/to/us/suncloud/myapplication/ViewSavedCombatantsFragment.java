@@ -1,7 +1,10 @@
 package to.us.suncloud.myapplication;
 
+import android.app.Dialog;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -41,7 +44,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
     HashMap<Combatant.Faction, FactionFragmentInfo> factionFragmentMap = new HashMap<>();
 
-    private AllFactionCombatantLists eligibleCombatantsList = null; // An list of Combatants that appear in the savedCombatantsList but DO NOT appear in the currentFactionCombatantList (those Combatants that may be added to the encounter safely)
+    private AllFactionCombatantLists eligibleCombatantsList = null; // An list of Combatants that appear in the savedCombatantsList plus any Combatants that have been added
     private AllFactionCombatantLists savedCombatantsList = null; // An exact copy of the Combatant list from the saved file
     private AllFactionCombatantLists currentFactionCombatantList = null;
 
@@ -90,6 +93,10 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
         // Load in combatants from file (process them later)
         savedCombatantsList = (AllFactionCombatantLists) LocalPersistence.readObjectFromFile(getContext(), combatantListSaveFile);
+        if (savedCombatantsList == null) {
+            // If there aren't any previously saved Combatants (not even a blank AllFactionCombatantList), then make a new empty list to represent them
+            savedCombatantsList = new AllFactionCombatantLists();
+        }
         eligibleCombatantsList = savedCombatantsList.clone();
 
         if (getArguments() != null) {
@@ -100,10 +107,11 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
                 // If this Fragment is intended to add a new Combatant to the Encounter...
                 if (getArguments().containsKey(CURRENT_COMBATANT_LIST)) {
                     // This list will be null if a) this is the first time this fragment has been used on this device, or b) no combatants have been saved previously
-                    currentFactionCombatantList = (AllFactionCombatantLists) getArguments().getSerializable(CURRENT_COMBATANT_LIST);
-                    eligibleCombatantsList.removeAll(currentFactionCombatantList); // Remove all of the Combatants in the incoming list from the list of Combatants found in the file (the user cannot add anyone
+                    currentFactionCombatantList = ((AllFactionCombatantLists) getArguments().getSerializable(CURRENT_COMBATANT_LIST)).clone(); // Get a "snapshot" clone of the incoming List, because this List may end up being modified over the lifetime of this Fragment (due to adding Combatants)
+//                    eligibleCombatantsList.removeAll(currentFactionCombatantList); // Remove all of the Combatants in the incoming list from the list of Combatants found in the file (the user cannot add anyone that already exists in the party) (REMOVED: They user can add a second "copy" of an existing Combatant, which will be dealt with automatically)
                 } else {
                     Log.e(TAG, "Did not receive Combatant list");
+                    currentFactionCombatantList = new AllFactionCombatantLists(); // No other Combatants need to be considered, aside from those that are saved
                 }
 
                 if (getArguments().containsKey(COMBATANT_DESTINATION)) {
@@ -138,9 +146,13 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
         if (expectingReturnedCombatant) {
             // We want to add a new Combatant to the encounter
             title.setText(R.string.add_combatant_title);
+
+            closeButton.setVisibility(View.GONE);
         } else {
             // We are just looking at/modifying the bookmarked Combatants
             title.setText(R.string.mod_saved_combatant);
+
+            closeButton.setVisibility(View.VISIBLE);
         }
 
         // Display the correct fragments for each faction
@@ -190,7 +202,8 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
             }
         });
 
-        return layoutContents;// If there is nothing in the file, then no combatants have previously been saved, so display the empty message
+        // TODO TEST
+        return layoutContents; // If there is nothing in the file, then no combatants have previously been saved, so display the empty message
     }
 
     void updateFactionFragmentDisplay() {
@@ -213,9 +226,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
         } else {
             // If there is nothing in the file, then no combatants have previously been saved, so display the empty message
             emptyCombatants.setVisibility(View.VISIBLE);
-
-            // Then, skip the rest of the this method (no factions to display)
-            return;
         }
 
         FragmentManager fm = getChildFragmentManager();
@@ -242,6 +252,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
                 // Create a new container view to add to the LinearLayout
                 FrameLayout thisFragmentContainer = new FrameLayout(getContext());
+                thisFragmentContainer.setId(facInd + 1000); // Set some id for the FrameLayout
                 combatantGroupParent.addView(thisFragmentContainer, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
                 // Create a new fragment, then place it in the container
@@ -276,11 +287,12 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
             // TODO CHECK: For AddCombatant: Try out the flow here.  Do I want the user to be able to add/remove an indefinite number of Combatants before choosing one?  Should the Combatant be returned immediately upon exiting the CreateOrModCombatant dialog if a Combatant is created?  Should there be a confirmation dialog/other method to confirm a Combatant selection aside from a single tap?
             // Just received a Combatant from the ListCombatantRecyclerAdapter because the user selected one
 
+            selectedCombatant.genUUID(); // Generate a new unique ID for this Combatant upon being chosen
             // First, send the Combatant back to the calling Activity/Fragment
-            combatantDestination.receiveAddedCombatant(selectedCombatant);
+            combatantDestination.receiveAddedCombatant(selectedCombatant.cloneUnique());
             if (currentFactionCombatantList.getCombatantNamesList().contains(selectedCombatant.getName())) {
                 // Possible uh-oh, if the AllFactionCombatantList.addCombatant() function doesn't work right...
-                Log.w(TAG, "Selected Combatant is already in the encounter list.");
+                Log.w(TAG, "Selected Combatant is already in the encounter list.  Adding another.");
             }
 
             // Next, try to add this Combatant to the Combatant list
@@ -296,17 +308,18 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     }
 
     @Override
-    public void combatantInListRemoved() {
+    public void combatantListModified() {
         // A Combatant in one of the Fragments was just removed.  Update the list, in case one of the Fragments needs to be removed
         updateFactionFragmentDisplay();
     }
 
     @Override
-    public void receiveNewCombatant(Combatant newCombatant, Bundle returnBundle) {
+    public void receiveCombatant(Combatant newCombatant, Bundle returnBundle) {
         // A new Combatant was just created (must be a new Combatant, because if it was a modified combatant, then it would have been sent to one of the adapter in factionFragmentMap)
         // TODO CHECK: Here is where we can change the flow.  If we don't like this, just need to add selection ability (relatively easy...) and a confirmation button (should already be there from the modifySavedCombatants version of this Fragment).
 
-        // Try to add this combatant to the save file (will only add the base-file
+        newCombatant.genUUID(); // Give this Combatant a new ID upon being created
+        // Try to add this combatant to the save file (will only add the base-name)
         addCombatantToSave(newCombatant);
         updateFactionFragmentDisplay();
 
@@ -341,15 +354,26 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
     private void saveAndClose() {
         // Save the Combatant data that we have now
-        AllFactionCombatantLists newSavedCombatantsList = eligibleCombatantsList.clone(); // Create a list that contains the eligible Combatants (Combatants from the save file PLUS any Combatants that were just made)...
-        newSavedCombatantsList.addAll(currentFactionCombatantList); // ... and the Combatants from the current Enounter
-        if (!newSavedCombatantsList.equals(savedCombatantsList)) {
+//        AllFactionCombatantLists newSavedCombatantsList = eligibleCombatantsList.clone(); // Create a list that contains the eligible Combatants (Combatants from the save file PLUS any Combatants that were just made)...
+//        newSavedCombatantsList.addAll(currentFactionCombatantList); // ... and the Combatants from the current Encounter
+        if (!eligibleCombatantsList.equals(savedCombatantsList)) {
             // If the test list is not equal to the list of Combatants from the file, that means that some Combatants were added (or possibly removed...?), so we should save the new list
-            LocalPersistence.writeObjectToFile(getContext(), newSavedCombatantsList, combatantListSaveFile);
+            LocalPersistence.writeObjectToFile(getContext(), eligibleCombatantsList, combatantListSaveFile);
         }
 
         // Finally, close the Fragment
         dismiss();
+    }
+
+    @NonNull
+    @Override
+    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+        return new Dialog(getActivity(), getTheme()) {
+            @Override
+            public void onBackPressed() {
+                saveAndClose();
+            }
+        };
     }
 
 

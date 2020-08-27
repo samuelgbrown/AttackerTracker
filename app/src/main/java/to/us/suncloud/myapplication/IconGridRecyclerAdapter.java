@@ -36,6 +36,7 @@ public class IconGridRecyclerAdapter extends RecyclerView.Adapter<IconGridRecycl
         super.onAttachedToRecyclerView(recyclerView);
         context = recyclerView.getContext();
 
+        // TODO LATER: This code is used in a few places...move to its own class, or something?
         // Create a list of resources that will be used to load svg's into the grid
         iconResourceIds = new ArrayList<>();
         int curNum = 0;
@@ -51,6 +52,8 @@ public class IconGridRecyclerAdapter extends RecyclerView.Adapter<IconGridRecycl
                 // If the id is invalid (equal to 0), then there are no more icons to load
                 break;
             }
+
+            curNum++;
         }
     }
 
