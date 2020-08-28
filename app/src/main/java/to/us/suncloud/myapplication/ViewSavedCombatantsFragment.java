@@ -247,6 +247,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
             if (mustAdd) {
                 // If we must add a fragment to display this faction
+
                 // Create a recyclerAdapter for each faction's recyclerview (done here so that item click handling will be simpler
                 ListCombatantRecyclerAdapter adapter = new ListCombatantRecyclerAdapter(this, getContext(), eligibleCombatantsList.getAllFactionLists().get(facInd), !expectingReturnedCombatant); // If we are expecting a Combatant to return from the Fragment (we are selecting a Combatant to add), then we CANNOT modify the list.   If we are just viewing/modifying at the saved Combatants list, then we CAN modify the list
 
@@ -272,6 +273,20 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
                 // Remove the fragment
                 fragTransaction.remove(factionFragmentMap.get(factionList.faction()).getFragment());
+
+                // Delete the key from the factionFragmentMap (it is no longer being displayed)
+                factionFragmentMap.remove(factionList.faction());
+
+                continue;
+            }
+
+            // Let the adapter know that the Combatants list *may* have changed, if we are neither adding a Fragment (nothing changed because we just initialized it) nor removing one (it no longer exists, so doesn't need to update)
+            if (factionFragmentMap.containsKey(factionList.faction())) {
+                factionFragmentMap.get(factionList.faction()).getFragment().getAdapter().notifyCombatantListChanged();
+
+                // Remove and re-add the Fragment view, so that the views are all in order, if we are neither adding a Fragment (already added this loop) nor removing a Fragment (don't need to worry about it anymore)
+                combatantGroupParent.removeView(factionFragmentMap.get(factionList.faction()).getContainer());
+                combatantGroupParent.addView(factionFragmentMap.get(factionList.faction()).getContainer());
             }
         }
 
@@ -308,8 +323,20 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     }
 
     @Override
-    public void combatantListModified() {
+    public void removeCombatant(Combatant combatantToRemove) {
+        // Remove the Combatant
+        eligibleCombatantsList.remove(combatantToRemove);
+
         // A Combatant in one of the Fragments was just removed.  Update the list, in case one of the Fragments needs to be removed
+        updateFactionFragmentDisplay();
+    }
+
+    @Override
+    public void addCombatant(Combatant combatantToAdd) {
+        // Add the Combatant indicated
+        eligibleCombatantsList.addCombatant(combatantToAdd);
+
+        // Update the Fragment displace
         updateFactionFragmentDisplay();
     }
 
@@ -369,11 +396,17 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         return new Dialog(getActivity(), getTheme()) {
+//            @Override
+//            public void onBackPressed() {
+//                saveAndClose();
+//            }
+
             @Override
-            public void onBackPressed() {
+            public void dismiss() {
                 saveAndClose();
             }
         };
+
     }
 
 

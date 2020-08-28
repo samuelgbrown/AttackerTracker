@@ -30,7 +30,7 @@ import java.util.Locale;
 
 import static android.graphics.Typeface.BOLD;
 
-public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListCombatantRecyclerAdapter.CombatantViewHolder> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface {
+public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListCombatantRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface {
     private static final int UNSET = -1;
 
     private static final String TAG = "ListCombatantRecycler";
@@ -122,7 +122,18 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         super.onAttachedToRecyclerView(recyclerView);
     }
 
-    class CombatantViewHolder extends RecyclerView.ViewHolder {
+    class bindableVH extends RecyclerView.ViewHolder {
+        public bindableVH(@NonNull View itemView) {
+            super(itemView);
+        }
+
+        void bind(int position) {
+        }
+
+        ;
+    }
+
+    class CombatantViewHolder extends bindableVH {
 
         int position = UNSET;
         boolean hasCompleted; // Has this combatant completed its turn?
@@ -299,6 +310,33 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         }
     }
 
+    // TODO: Fill out
+    class FactionBannerViewHolder extends bindableVH {
+        TextView FactionName;
+
+        public FactionBannerViewHolder(@NonNull View itemView) {
+            super(itemView);
+            FactionName = itemView.findViewById(R.id.faction_name);
+        }
+
+        @Override
+        void bind(int position) {
+            // Position here will just indicate which Faction in combatantList_Master this banner represents
+            switch (position) {
+                case 0:
+                    FactionName.setText(R.string.party_header);
+                    break;
+                case 1:
+                    FactionName.setText(R.string.enemy_header);
+                    break;
+                case 2:
+                    FactionName.setText(R.string.neutral_header);
+                    break;
+            }
+            super.bind(position);
+        }
+    }
+
     @Override
     public void notifyCombatantChanged(Bundle returnBundle) {
         // Receiving notification from the CreateOrModCombatant Fragment that the Combatant we sent to be modified has finished being changed
@@ -311,26 +349,28 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //            Log.e(TAG, "Did not get returnBundle from CreateOrModCombatant Fragment");
 //        }
 
-        // TODO CHECK: Make sure this ACTUALLY changes the Combatant (Java and its sneaky references...)
         // Let the Adapter know that the combatant list has been changed
         notifyCombatantListChanged();
     }
 
     @Override
     public void receiveCombatant(Combatant newCombatant, Bundle returnBundle) {
+        // If a combatant was MODIFIED
         if (returnBundle.containsKey(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION)) {
             int modCombatantLocation = returnBundle.getInt(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION); // Get the location of the Combatant being modified
             // NOTE: This location is relative to combatantList_Master(combatantFilteredIndices).
-            combatantList_Master.remove(combatantFilteredIndices.get(modCombatantLocation)); // Easiest to just remove the Combatant and add it again (the add function will take care of any "smart naming" needs)
+            parent.removeCombatant(combatantList_Master.get(combatantFilteredIndices.get(modCombatantLocation))); // Get the Combatant referred to by the modCombatantLocation and remove it (easiest to just remove the Combatant and add it again (the add function will take care of any "smart naming" needs))
+//            combatantList_Master.remove(combatantFilteredIndices.get(modCombatantLocation)); //
         }
 
         // Add a new combatant to master list
-        parent.getMasterCombatantList().addCombatant(newCombatant); // Add the Combatant to the master list (which will "trickle down" to this Fragment)
+//        parent.getMasterCombatantList().addCombatant(newCombatant); // Add the Combatant to the master list (which will "trickle down" to this Fragment)
 //        combatantList_Master.add(newCombatant);
+        parent.addCombatant(newCombatant);
 
         // Let the Adapter know that we have modified the combatant list
         notifyCombatantListChanged();
-        parent.combatantListModified();
+//        parent.removeCombatant();
     }
 
     private void removeCombatant(int position) {
@@ -341,13 +381,13 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         // Remove the given combatant
 //        combatantList_Display.remove(combatantToRemove);
 //        combatantList_Master.remove(combatantToRemove);
-        combatantList_Master.remove(combatantFilteredIndices.get(position));
+//        combatantList_Master.remove(combatantFilteredIndices.get(position));
+
+        // Tell the parent to remove a Combatant in the list
+        parent.removeCombatant(combatantList_Master.get(combatantFilteredIndices.get(position)));
 
         // Let the Adapter know that we have modified the combatant list
         notifyCombatantListChanged();
-
-        // Let the parent know that a Combatant in the list was removed
-        parent.combatantListModified();
     }
 
     private void copyCombatant(int position) {
@@ -356,7 +396,8 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
         // This is a little bit hacky, but I THINK it should work...
         // Add the Combatant to the Master list (so that a new Combatant name is generated that is unique to the entire Combatant list)
-        parent.getMasterCombatantList().addCombatant(newCombatant); // TODO CHECK: Now, after this, the AllFactionsCombatantList owned by the calling Activity/Fragment should have changed, as well as the combatantList_Master (a FactionCombatantList).
+//        parent.getMasterCombatantList().addCombatant(newCombatant); // TODO CHECK: Now, after this, the AllFactionsCombatantList owned by the calling Activity/Fragment should have changed, as well as the combatantList_Master (a FactionCombatantList).
+        parent.addCombatant(newCombatant);
 
         // Finally, let the adapter know that we have updated the list
         notifyCombatantListChanged();
@@ -384,7 +425,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //    }
 
     @Override
-    public void onBindViewHolder(@NonNull ListCombatantRecyclerAdapter.CombatantViewHolder holder, int position, @NonNull List<Object> payloads) {
+    public void onBindViewHolder(@NonNull ListCombatantRecyclerAdapter.bindableVH holder, int position, @NonNull List<Object> payloads) {
         super.onBindViewHolder(holder, position, payloads);
     }
 
@@ -394,7 +435,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     }
 
     @Override
-    public void onBindViewHolder(@NonNull CombatantViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull bindableVH holder, int position) {
         holder.bind(position);
     }
 
@@ -455,7 +496,9 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         // TODO: May be able to get rid of this method?  Just do changes on the master list and notify that the list was modified?  Maybe?
         void receiveChosenCombatant(Combatant selectedCombatant); // Receive a selected Combatant back from this Adapter
 
-        void combatantListModified(); // Used to notify parents that a Combatant was removed from this list, and the views may need to be laid out again
+        void removeCombatant(Combatant combatantToRemove); // Used to remove a Combatant from the master list because the delete button was pressed
+
+        void addCombatant(Combatant combatantToAdd); // Used to add a Combatant to the list because the copy button was pressed, or because a Combatant was modified (a remove followed by an add)
 
         AllFactionCombatantLists getMasterCombatantList();
 

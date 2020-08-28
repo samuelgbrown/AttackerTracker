@@ -32,16 +32,17 @@ public class CombatantGroupFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View fragView = inflater.inflate(R.layout.combatant_group, container, false);
         combatantRecyclerView = fragView.findViewById(R.id.groupCombatant_view);
-        TextView GroupTextView = fragView.findViewById(R.id.groupTextView);
+        TextView GroupTextView = fragView.findViewById(R.id.group_text_view);
 
         // Set the adapter and layout manager for the recycler view
+        // TODO SOON: Set RecyclerView so that it just creates ViewHolders for every member of the list or something?  Ug...
         combatantRecyclerView.setAdapter(combatantRecyclerAdapter);
-        LinearLayoutManager manager = new LinearLayoutManager(getContext()) {
-            @Override
-            public boolean canScrollVertically() {
-                return false; // Make the Recycler view unable to scroll
-            }
-        };
+        LinearLayoutManager manager = new LinearLayoutManager(getContext()); // {
+//            @Override
+//            public boolean canScrollVertically() {
+//                return false; // Make the Recycler view unable to scroll
+//            }
+//        };
         combatantRecyclerView.setLayoutManager(manager);
 
 

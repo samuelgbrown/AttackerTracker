@@ -2,6 +2,7 @@ package to.us.suncloud.myapplication;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
@@ -12,12 +13,15 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import android.os.ResultReceiver;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -84,7 +88,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
 
         CreateOrModCombatant fragment = new CreateOrModCombatant();
         Bundle args = new Bundle();
-        args.putSerializable(ORIGINAL_COMBATANT, originalCombatant);
+        args.putSerializable(ORIGINAL_COMBATANT, originalCombatant.cloneUnique()); // Create a clone of the incoming Combatant (even when modifying, the old Combatant will just be removed and the newly modified version re-added to the list.  This is a simple way to deal with issues of name uniqueness during modification)
         args.putSerializable(RECEIVER, receiver);
         args.putSerializable(COMBATANT_LIST_TO_BE_ADDED_TO, factionCombatantListToBeAddedTo.getCombatantNamesList());
         args.putBundle(RETURN_BUNDLE, returnBundle);
@@ -308,6 +312,19 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         combatantName.setText(currentCombatant.getName()); // Load the name
         updateFactionGUI(); // Load the Faction
 
+        combatantName.post(new Runnable() {
+            @Override
+            public void run() {
+                combatantName.setSelectAllOnFocus(true);
+                if (combatantName.requestFocus()) {
+                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.showSoftInput(combatantName, InputMethodManager.SHOW_IMPLICIT);
+                }
+                combatantName.setSelectAllOnFocus(false);
+            }
+        });
+
+
         return fragView;
     }
 
@@ -413,8 +430,8 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         // Depending on whether the Combatant is new or an old one being changed, do different things.
 
 //        if (creatingCombatant) {
-            // Send this new Combatant back to the calling object
-            receiver.receiveCombatant(currentCombatant, returnBundle);
+//            // Send this new Combatant back to the calling object
+        receiver.receiveCombatant(currentCombatant, returnBundle);
 //        } else {
 //            // Let the receiver know that the Combatant they sent has been changed
 //            receiver.notifyCombatantChanged(returnBundle);
@@ -426,6 +443,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
 
     interface receiveNewOrModCombatantInterface extends Serializable {
         void receiveCombatant(Combatant newCombatant, Bundle returnBundle);
+
         void notifyCombatantChanged(Bundle returnBundle);
     }
 }

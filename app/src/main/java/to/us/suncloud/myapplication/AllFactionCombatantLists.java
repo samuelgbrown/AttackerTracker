@@ -2,6 +2,7 @@ package to.us.suncloud.myapplication;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class AllFactionCombatantLists implements Serializable {
     ArrayList<FactionCombatantList> allFactionLists;
@@ -14,6 +15,7 @@ public class AllFactionCombatantLists implements Serializable {
         // Used as a shallow copy constructor
         // This method assumes that the inputted faction list has either 0 or 1 FactionCombatantList for each faction listed in Combatant.Faction (i.e. uniqueness)
         this.allFactionLists = allFactionLists;
+        sort();
     }
 
     AllFactionCombatantLists() {
@@ -24,7 +26,7 @@ public class AllFactionCombatantLists implements Serializable {
         // Perform a deep copy of c
         allFactionLists = new ArrayList<>(c.getAllFactionLists().size());
 
-        for (int i = 0; i < c.getAllFactionLists().size(); i++) {
+        for (int i = 0; i < c.getAllFactionLists().size(); i++) { // List should already be sorted
             allFactionLists.add(c.getAllFactionLists().get(i).clone()); // Create a clone of this FactionCombatantList, and save it to this list
         }
 
@@ -36,6 +38,8 @@ public class AllFactionCombatantLists implements Serializable {
             allFactionLists.add(listToAdd);
         }
 
+        // Sort the List
+        sort();
         // TODO LATER: Do a check for name uniqueness...?  Not sure how to deal with it if something goes wrong, though...perhaps just log error and deal with the code error later?
     }
 
@@ -52,7 +56,7 @@ public class AllFactionCombatantLists implements Serializable {
             case Combatant.NO_ORDINAL:
                 // If this Combatant's base name DOES appear, but with no ordinal, then that Combatant's name must be changed
                 // If newCombatant has an ordinal that's smaller than 2, then this Combatant's name must be changed to 1) preserve uniqueness, and 2) make it so that "Zombie" and "Zombie 1" don't both appear in the list (because that's weird)
-                getCombatant(newCombatant.getName()).setNameOrdinal(1); // Find the existing Combatant with this Combatant's name, and set its ordinal to 1
+                getCombatant(newCombatant.getBaseName()).setNameOrdinal(1); // Find the existing Combatant with this Combatant's name, and set its ordinal to 1
                 if (newCombatant.getOrdinal() < 2) {
                     newCombatant.setNameOrdinal(2); // Set the new Combatant's ordinal to 2
                     // If the new Combatant's ordinal is 2 or greater, then...well...it's not bothering anyone, I guess...
@@ -64,19 +68,7 @@ public class AllFactionCombatantLists implements Serializable {
         }
 
         // Now, the Combatant and the list are *guaranteed* to unique to each other, and ready to have the Combatant added
-
-        // Find the Faction that matches this Combatant, and add it
-        for (int i = 0; i < allFactionLists.size(); i++) {
-            if (newCombatant.getFaction() == allFactionLists.get(i).faction()) {
-                allFactionLists.get(i).add(newCombatant); // Upon adding, the list will automatically be sorted
-                return;
-            }
-        }
-
-        // If we got here, then no faction list exists for this combatant.  Therefore, we should make one
-        FactionCombatantList newList = new FactionCombatantList(newCombatant.getFaction());
-        newList.add(newCombatant);
-        allFactionLists.add(newList);
+        getFactionList(newCombatant.getFaction()).add(newCombatant); // If the faction list does not exist yet, getFactionList will create it
     }
 
     public boolean containsName(String name) {
@@ -119,15 +111,22 @@ public class AllFactionCombatantLists implements Serializable {
         }
     }
 
+    public void remove(Combatant combatantToRemove) {
+        if (getFactionList(combatantToRemove.getFaction()).containsName(combatantToRemove)) {
+            // If the associated FactionCombatantList has this Combatant, remove it
+            getFactionList(combatantToRemove.getFaction()).remove(combatantToRemove);
+        }
+    }
+
     public void addAll(AllFactionCombatantLists combatantListToAdd) {
         // Add all combatants present in the inputted AllFactionCombatantLists
-        for (int fac = 0; fac < allFactionLists.size(); fac++) {
-            // For each faction in this list...
+        for (int fac = 0; fac < combatantListToAdd.getAllFactionLists().size(); fac++) {
+            // For each faction in the new list...
             // Get the Combatants associated with this Faction
-            FactionCombatantList thisFactionCombatantsToAdd = combatantListToAdd.getFactionList(allFactionLists.get(fac).faction());
+            FactionCombatantList thisFactionCombatantsToAdd = combatantListToAdd.getAllFactionLists().get(fac);
 
-            // Remove all of these Combatants
-            allFactionLists.get(fac).addAll(thisFactionCombatantsToAdd);
+            // Add all of these Combatants
+            getFactionList(thisFactionCombatantsToAdd.faction()).addAll(thisFactionCombatantsToAdd); // If the FactionCombatant list doesn't exist yet, then the getFactionList() method will create it
         }
     }
 
@@ -141,6 +140,10 @@ public class AllFactionCombatantLists implements Serializable {
         // If we got here, then none of the faction lists match the desired faction, and we need to return an empty one.
         FactionCombatantList newList = new FactionCombatantList(faction);
         allFactionLists.add(newList);
+
+        // Sort the List
+        sort();
+
         return newList;
     }
 
@@ -158,7 +161,7 @@ public class AllFactionCombatantLists implements Serializable {
     }
 
     public boolean containsFaction(Combatant.Faction factionToCheck) {
-        // This method will check if the provided
+        // This method will check if the provided faction is in the list
         boolean containsFaction = false;
         for (int i = 0; i < allFactionLists.size(); i++) {
             if (allFactionLists.get(i).faction() == factionToCheck) {
@@ -197,4 +200,9 @@ public class AllFactionCombatantLists implements Serializable {
     } // Deep copy
     public AllFactionCombatantLists shallowCopy() {return new AllFactionCombatantLists(getAllFactionLists());} // Shallow copy
 
+    public void sort() {
+        // Sort the Faction lists according to the order we would like to see them on screen
+        // If the order should be changed, change the order of the constants defined in the enum Combatant.Faction
+        Collections.sort(allFactionLists, new CombatantSorter.SortFactionList());
+    }
 }

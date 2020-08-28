@@ -5,10 +5,8 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.AttributeSet;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -76,7 +74,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
     void updateFactionFragmentDisplay() {
         // First, get the parent for all of the combatant fragments
-        LinearLayout combatantFragmentParentLayout = findViewById(R.id.combatant_fragment_parent);
+        LinearLayout combatantGroupParent = findViewById(R.id.combatant_fragment_parent);
 
         noCombatantMessage = findViewById(R.id.configure_combatant_empty);
 
@@ -106,7 +104,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction fragTransaction = null; // We will use this if we actually need to add a fragment
 
-        ArrayList<FactionCombatantList> factionCombatantLists = combatantLists.getAllFactionLists();
+        ArrayList<FactionCombatantList> factionCombatantLists = combatantLists.getAllFactionLists(); // The list of FactionCombatantLists will now be in the order that they should be displayed
         for (int facInd = 0; facInd < factionCombatantLists.size(); facInd++) {
             FactionCombatantList factionList = factionCombatantLists.get(facInd);
 
@@ -121,15 +119,15 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
             }
 
             if (mustAdd) {
-                // If we must display this faction
+                // If we must add a fragment to display this faction
 
                 // Create a recyclerAdapter for each faction's recyclerview (done here so that item click handling will be simpler
                 ListCombatantRecyclerAdapter adapter = new ListCombatantRecyclerAdapter(this, getApplicationContext(), factionList, true, true);
 
                 // Create a new container view to add to the LinearLayout
                 FrameLayout thisFragmentContainer = new FrameLayout(getApplicationContext());
-                thisFragmentContainer.setId(12345); // Set some id for the FrameLayout
-                combatantFragmentParentLayout.addView(thisFragmentContainer, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                thisFragmentContainer.setId(facInd + 1000); // Set some id for the FrameLayout
+                combatantGroupParent.addView(thisFragmentContainer, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
                 // Create a new fragment, and place it in the container
                 CombatantGroupFragment newFrag = new CombatantGroupFragment(adapter, factionList.faction());
@@ -144,7 +142,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
             if (mustRemove) {
                 // If we must remove this faction
                 // Delete the view in which the faction fragment is contained
-                combatantFragmentParentLayout.removeView(factionFragmentMap.get(factionList.faction()).getContainer());
+                combatantGroupParent.removeView(factionFragmentMap.get(factionList.faction()).getContainer());
 
                 // Remove the fragment from the View
                 fragTransaction.remove(factionFragmentMap.get(factionList.faction()).getFragment());
@@ -155,8 +153,14 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                 continue;
             }
 
-            // Let the adapter know that the Combatants list *may* have changed, if we are neither adding a Fragment (nothing changed because we just initialized it) nor removing one (it no longer exists, so doesn't need to update)
-            factionFragmentMap.get(factionList.faction()).getFragment().getAdapter().notifyCombatantListChanged();
+            if (factionFragmentMap.containsKey(factionList.faction())) {
+                // Let the adapter know that the Combatants list *may* have changed, if we are neither adding a Fragment (nothing changed because we just initialized it) nor removing one (it no longer exists, so doesn't need to update)
+                factionFragmentMap.get(factionList.faction()).getFragment().getAdapter().notifyCombatantListChanged();
+
+                // Remove and re-add the Fragment view, so that the views are all in order, if we are neither adding a Fragment (already added this loop) nor removing a Fragment (don't need to worry about it anymore)
+                combatantGroupParent.removeView(factionFragmentMap.get(factionList.faction()).getContainer());
+                combatantGroupParent.addView(factionFragmentMap.get(factionList.faction()).getContainer());
+            }
         }
 
         if (fragTransaction != null) {
@@ -192,8 +196,20 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void combatantListModified() {
+    public void removeCombatant(Combatant combatantToRemove) {
+        // Remove the Combatant indicated
+        combatantLists.remove(combatantToRemove);
+
         // A Combatant in one of the Fragments was just removed.  Update the list, in case one of the Fragments needs to be removed
+        updateFactionFragmentDisplay();
+    }
+
+    @Override
+    public void addCombatant(Combatant combatantToAdd) {
+        // Add the Combatant indicated
+        combatantLists.addCombatant(combatantToAdd);
+
+        // Update the Fragment displace
         updateFactionFragmentDisplay();
     }
 

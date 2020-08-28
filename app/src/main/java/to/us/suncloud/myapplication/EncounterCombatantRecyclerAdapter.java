@@ -123,7 +123,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             CombatantIcon = itemView.findViewById(R.id.encounter_icon);
             CombatantIconBorder = itemView.findViewById(R.id.encounter_icon_border);
             RollLayout = itemView.findViewById(R.id.combatant_enc_roll_layout);
-            DuplicateIndicator = itemView.findViewById(R.id.enc_dup_background);
+            DuplicateIndicator = itemView.findViewById(R.id.check_enc_layout);
 
             CombatantCompletedCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
@@ -302,6 +302,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                         resourceID = R.color.duplicateInitiative2;
                         break;
                 }
+            } else {
+                resourceID = R.color.softBackground;
             }
 
             // Set the background color for the duplicate indicator

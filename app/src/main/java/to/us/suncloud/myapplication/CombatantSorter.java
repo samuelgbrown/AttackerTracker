@@ -49,7 +49,12 @@ public class CombatantSorter {
                 return combatant.getName().compareToIgnoreCase(t1.getName());
             }
         }
+    }
 
-
+    static public class SortFactionList implements Comparator<FactionCombatantList> {
+        @Override
+        public int compare(FactionCombatantList o1, FactionCombatantList o2) {
+            return o1.faction().compareTo(o2.faction()); // Sort according to the factions
+        }
     }
 }
