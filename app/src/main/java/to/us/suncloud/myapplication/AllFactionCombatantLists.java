@@ -1,6 +1,9 @@
 package to.us.suncloud.myapplication;
 
+import android.util.Log;
+
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -71,6 +74,59 @@ public class AllFactionCombatantLists implements Serializable {
         getFactionList(newCombatant.getFaction()).add(newCombatant); // If the faction list does not exist yet, getFactionList will create it
     }
 
+    public ArrayList<ArrayList<Integer>> getIndicesThatMatch(String text) {
+        // Return a List of Lists of Integers that indicate which Combatants in allFactionLists contain the filter text
+        ArrayList<ArrayList<Integer>> indices = new ArrayList<>();
+        for (int fac = 0; fac < allFactionLists.size(); fac++) {
+            indices.add(allFactionLists.get(fac).getIndicesThatMatch(text));
+        }
+
+        return indices;
+    }
+
+    public AllFactionCombatantLists subList(ArrayList<ArrayList<Integer>> indices) {
+        ArrayList<FactionCombatantList> factionList = new ArrayList<>();
+        for (int i = 0; i < allFactionLists.size(); i++) {
+            factionList.add(allFactionLists.get(i).subList(indices.get(i)));
+        }
+
+        return new AllFactionCombatantLists(factionList);
+    }
+
+    public Combatant get(int combatantInd) {
+        // Get the Combatant at the indicated index
+        for (int fac = 0; fac < allFactionLists.size(); fac++) {
+            if (combatantInd < allFactionLists.size()) {
+                return allFactionLists.get(fac).get(combatantInd); // Get this index in allFactionLists
+            }
+
+            combatantInd -= allFactionLists.size(); // Subtract the size of allFactionLists, to check the next Faction
+        }
+
+        throw new IndexOutOfBoundsException("Index " + combatantInd); // The Combatant index is out of bounds
+    }
+
+    public int posToCombatantInd(int position) {
+        // Convert an adapter position to an index in combatantList_Master (adapter position will include banners)
+        int facInd = 1; // How many banners are below the combatant at the given position
+        int testPos = position;
+        for (int fac = 0; fac < allFactionLists.size(); fac++) {
+            int thisCombatantInd = testPos - facInd;
+            if (thisCombatantInd == -1 || thisCombatantInd == allFactionLists.get(fac).size()) {
+                return -1*(facInd + ((thisCombatantInd == allFactionLists.get(fac).size()) ? 1 : 0)); // This index represents a banner, so make the returned number encode which banner is represented (-1 = Party, -2 = Enemy, etc).
+            } else if (thisCombatantInd < allFactionLists.get(fac).size()) {
+                return position - facInd; // Get this index in allFactionLists, removing a value for each banner needed above each Faction
+            }
+
+            testPos -= allFactionLists.get(fac).size(); // Subtract the size of allFactionLists, to check the next Faction
+            facInd++; // Going to the next Faction means we need to take into account another banner
+        }
+
+        throw new IndexOutOfBoundsException("Index " + position); // The Combatant index is out of bounds
+    }
+
+
+
     public boolean containsName(String name) {
         boolean contains = false;
         for (int i = 0; i < allFactionLists.size(); i++) {
@@ -83,6 +139,24 @@ public class AllFactionCombatantLists implements Serializable {
         return contains;
     }
 
+    public int size() {
+        // Get the number of Combatants
+        int returnSize = 0;
+        for (int fac = 0;fac < allFactionLists.size();fac++) {
+            returnSize += allFactionLists.get(fac).size();
+        }
+
+        return returnSize;
+    }
+
+    public int sizeWithBanners() {
+        int returnSize = 0;
+        for (int fac = 0;fac < allFactionLists.size();fac++) {
+            returnSize += allFactionLists.get(fac).size() + 1;
+        }
+
+        return returnSize;
+    }
 
     public int getHighestOrdinalInstance(Combatant combatantToCheck) {
         return getHighestOrdinalInstance(combatantToCheck.getBaseName());
@@ -198,7 +272,10 @@ public class AllFactionCombatantLists implements Serializable {
     public AllFactionCombatantLists clone() {
         return new AllFactionCombatantLists(this);
     } // Deep copy
-    public AllFactionCombatantLists shallowCopy() {return new AllFactionCombatantLists(getAllFactionLists());} // Shallow copy
+
+    public AllFactionCombatantLists shallowCopy() {
+        return new AllFactionCombatantLists(getAllFactionLists());
+    } // Shallow copy
 
     public void sort() {
         // Sort the Faction lists according to the order we would like to see them on screen

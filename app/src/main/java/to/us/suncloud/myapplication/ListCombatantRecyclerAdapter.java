@@ -7,6 +7,7 @@ import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.style.StyleSpan;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,53 +34,70 @@ import static android.graphics.Typeface.BOLD;
 public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListCombatantRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface {
     private static final int UNSET = -1;
 
+    private static final int COMBATANT_VIEW = 0;
+    private static final int BANNER_VIEW = 1;
+
     private static final String TAG = "ListCombatantRecycler";
 
     MasterCombatantKeeper parent = null; // If this is set, then the selected combatant will be sent to the parent
     boolean adapterCanModify = false; // Can the adapter modify the Combatant (used so that we can use this adapter for both Combatant display and modify+display purposes, because they are VERY similar)
     boolean adapterCanCopy = false; // Can the adapter copy the Combatant (used in the Configure Activity, but not for viewing the saved Combatants
 
-    private FactionCombatantList combatantList_Master; // The master version of the list
-    //    private FactionCombatantList combatantList_Display; // The version of the list that will be used for display (will take into account filtering from the search)
-    private ArrayList<Integer> combatantFilteredIndices; // The indices in combatantList_Master that contain the given filter string
-    private FactionCombatantList combatantList_Memory; // A memory version of the list, to see what changes have occurred
+//    private FactionCombatantList combatantList_Master; // The master version of the list
+//    //    private FactionCombatantList combatantList_Display; // The version of the list that will be used for display (will take into account filtering from the search)
+//    private ArrayList<Integer> combatantFilteredIndices; // The indices in combatantList_Master that contain the given filter string
+//    private FactionCombatantList combatantList_Memory; // A memory version of the list, to see what changes have occurred
+
+    private AllFactionCombatantLists combatantList_Master; // The master version of the list
+    private ArrayList<ArrayList<Integer>> combatantFilteredIndices; // The indices in combatantList_Master that contain the given filter string
+    private AllFactionCombatantLists combatantList_Memory; // A memory version of the list, to see what changes have occurred
 
     ArrayList<Integer> iconResourceIds; // A list of resource ID's of the icons that will be used for each Combatant
 
     private String filteredText = ""; // The string that is currently being used to filter the list
     private String filteredText_Memory = ""; // The string that was last used to filter the list, before the last call to notifyCombatantsChanged
 
-    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, FactionCombatantList combatantList) {
+//    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, FactionCombatantList combatantList) {
+//        this.parent = parent;
+//        this.combatantList_Master = combatantList; // Save the reference (master will be modified directly)
+////        this.combatantList_Display = combatantList.clone(); // COPY the main list for these two lists, so that the master is not changed
+//        this.combatantList_Memory = combatantList.clone();
+//
+//        setupIconResourceIDs(context);
+//        initializeCombatantFilteredIndices();
+//    }
+
+    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, AllFactionCombatantLists combatantList) {
         this.parent = parent;
         this.combatantList_Master = combatantList; // Save the reference (master will be modified directly)
 //        this.combatantList_Display = combatantList.clone(); // COPY the main list for these two lists, so that the master is not changed
         this.combatantList_Memory = combatantList.clone();
 
         setupIconResourceIDs(context);
-        initializeCombatantFilteredIndices();
+        combatantFilteredIndices = combatantList_Master.getIndicesThatMatch(filteredText);
     }
 
-    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, FactionCombatantList combatantList, boolean adapterCanModify) {
+    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, AllFactionCombatantLists combatantList, boolean adapterCanModify) {
         this.parent = parent;
         this.adapterCanModify = adapterCanModify;
         this.combatantList_Master = combatantList; // Save the reference (master will be modified directly)
 //        this.combatantList_Display = new FactionCombatantList(combatantList); // COPY the main list for these two lists, so that the master is not changed
-        this.combatantList_Memory = new FactionCombatantList(combatantList);
+        this.combatantList_Memory = new AllFactionCombatantLists(combatantList);
 
         setupIconResourceIDs(context);
-        initializeCombatantFilteredIndices();
+        combatantFilteredIndices = combatantList_Master.getIndicesThatMatch(filteredText);
     }
 
-    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, FactionCombatantList combatantList, boolean adapterCanModify, boolean adapterCanCopy) {
+    public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, Context context, AllFactionCombatantLists combatantList, boolean adapterCanModify, boolean adapterCanCopy) {
         this.parent = parent;
         this.adapterCanModify = adapterCanModify;
         this.adapterCanCopy = adapterCanCopy;
         this.combatantList_Master = combatantList; // Save the reference (master will be modified directly)
 //        this.combatantList_Display = new FactionCombatantList(combatantList); // COPY the main list for these two lists, so that the master is not changed
-        this.combatantList_Memory = new FactionCombatantList(combatantList);
+        this.combatantList_Memory = new AllFactionCombatantLists(combatantList);
 
         setupIconResourceIDs(context);
-        initializeCombatantFilteredIndices();
+        combatantFilteredIndices = combatantList_Master.getIndicesThatMatch(filteredText);
     }
 
     private void setupIconResourceIDs(Context context) {
@@ -103,19 +121,19 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         }
     }
 
-    private void initializeCombatantFilteredIndices() {
-//                 If there is something in the filter string, then filter out the combatants based on the string
-//                combatantList_Display = new FactionCombatantList(combatantList_Master.faction());
-
-        combatantFilteredIndices = new ArrayList<>();
-        for (int combatantInd = 0; combatantInd < combatantList_Master.size(); combatantInd++) {
-            if (filteredText.isEmpty() || combatantList_Master.get(combatantInd).getName().toLowerCase().contains(filteredText)) {
-                // If this combatant's name contains the string (or the string is empty), then include it in the display results
-//                        combatantList_Display.add(combatantList_Master.get(combatantInd).cloneUnique());
-                combatantFilteredIndices.add(combatantInd);
-            }
-        }
-    }
+//    private void initializeCombatantFilteredIndices() {
+////                 If there is something in the filter string, then filter out the combatants based on the string
+////                combatantList_Display = new FactionCombatantList(combatantList_Master.faction());
+//
+//        combatantFilteredIndices = new ArrayList<>();
+//        for (int combatantInd = 0; combatantInd < combatantList_Master.size(); combatantInd++) {
+//            if (filteredText.isEmpty() || combatantList_Master.get(combatantInd).getName().toLowerCase().contains(filteredText)) {
+//                // If this combatant's name contains the string (or the string is empty), then include it in the display results
+////                        combatantList_Display.add(combatantList_Master.get(combatantInd).cloneUnique());
+//                combatantFilteredIndices.add(combatantInd);
+//            }
+//        }
+//    }
 
     @Override
     public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
@@ -135,7 +153,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
     class CombatantViewHolder extends bindableVH {
 
-        int position = UNSET;
+        int combatantInd = UNSET;
         boolean hasCompleted; // Has this combatant completed its turn?
 
         TextView NameView;
@@ -171,7 +189,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                 public void onClick(View view) {
                     if (parent != null) {
 //                        parent.receiveChosenCombatant(combatantList_Display.get(getAdapterPosition()));
-                        parent.receiveChosenCombatant(combatantList_Master.get(combatantFilteredIndices.get(getAdapterPosition())).cloneUnique());
+                        parent.receiveChosenCombatant(combatantList_Master.subList(combatantFilteredIndices).get(posToCombatantInd(getAdapterPosition())).cloneUnique());
                     }
                 }
             };
@@ -190,8 +208,8 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                     public void onClick(View view) {
                         FragmentManager fm = ((AppCompatActivity) view.getContext()).getSupportFragmentManager();
                         Bundle returnBundle = new Bundle(); // Put information into this Bundle so that we know where to put the new Combatant when it comes back
-                        returnBundle.putInt(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION, getAdapterPosition());
-                        CreateOrModCombatant newDiag = CreateOrModCombatant.newInstance(ListCombatantRecyclerAdapter.this, combatantList_Master.get(combatantFilteredIndices.get(getAdapterPosition())), parent.getMasterCombatantList(), returnBundle);
+                        returnBundle.putInt(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION, posToCombatantInd(getAdapterPosition()));
+                        CreateOrModCombatant newDiag = CreateOrModCombatant.newInstance(ListCombatantRecyclerAdapter.this, combatantList_Master.subList(combatantFilteredIndices).get(posToCombatantInd(getAdapterPosition())), parent.getMasterCombatantList(), returnBundle);
                         newDiag.show(fm, "CreateOrModCombatant");
                     }
                 });
@@ -206,7 +224,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                                     @Override
                                     public void onClick(DialogInterface dialogInterface, int i) {
                                         // Remove this from the combatant list
-                                        removeCombatant(getAdapterPosition());
+                                        removeCombatant(posToCombatantInd(getAdapterPosition()));
                                     }
                                 })
                                 .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
@@ -236,7 +254,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                                     @Override
                                     public void onClick(DialogInterface dialogInterface, int i) {
                                         // Copy this in the combatant list
-                                        copyCombatant(getAdapterPosition());
+                                        copyCombatant(posToCombatantInd(getAdapterPosition()));
                                     }
                                 })
                                 .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
@@ -255,12 +273,13 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
             }
         }
 
-        public void bind(int combatant_ind) {
-            position = combatant_ind;
-            String combatantName = combatantList_Master.get(combatant_ind).getName();
+        public void bind(int position) {
+            combatantInd = posToCombatantInd(position);
+            Combatant thisCombatant = combatantList_Master.subList(combatantFilteredIndices).get(combatantInd);
+            String combatantName = thisCombatant.getName();
 
             // Load the icon image
-            int iconIndex = combatantList_Master.get(getAdapterPosition()).getIconIndex();
+            int iconIndex = thisCombatant.getIconIndex();
             if (iconIndex == 0) {
                 // If the icon index is 0, then the icon is blank
                 CombatantIcon.setImageResource(android.R.color.transparent);
@@ -271,7 +290,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
             // Set the color of the icon and the icon's border
             int colorId = -1;
-            switch (combatantList_Master.get(combatant_ind).getFaction()) {
+            switch (thisCombatant.getFaction()) {
                 case Party:
                     colorId = CombatantIcon.getContext().getResources().getColor(R.color.colorParty);
                     break;
@@ -321,20 +340,28 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
         @Override
         void bind(int position) {
+            int bannerInd = posToCombatantInd(position);
             // Position here will just indicate which Faction in combatantList_Master this banner represents
-            switch (position) {
-                case 0:
-                    FactionName.setText(R.string.party_header);
+            int textInd = R.string.party_header;
+            switch (bannerInd) {
+                case -1:
+                    textInd = R.string.party_header;
                     break;
-                case 1:
-                    FactionName.setText(R.string.enemy_header);
+                case -2:
+                    textInd = R.string.enemy_header;
                     break;
-                case 2:
-                    FactionName.setText(R.string.neutral_header);
+                case -3:
+                    textInd = R.string.neutral_header;
                     break;
             }
-            super.bind(position);
+
+            FactionName.setText(textInd);
         }
+    }
+
+    private int posToCombatantInd(int position) {
+        // Convert an adapter position to an index in combatantList_Master (adapter position will include banners)
+        return combatantList_Master.posToCombatantInd(position);
     }
 
     @Override
@@ -359,7 +386,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         if (returnBundle.containsKey(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION)) {
             int modCombatantLocation = returnBundle.getInt(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION); // Get the location of the Combatant being modified
             // NOTE: This location is relative to combatantList_Master(combatantFilteredIndices).
-            parent.removeCombatant(combatantList_Master.get(combatantFilteredIndices.get(modCombatantLocation))); // Get the Combatant referred to by the modCombatantLocation and remove it (easiest to just remove the Combatant and add it again (the add function will take care of any "smart naming" needs))
+            parent.removeCombatant(combatantList_Master.subList(combatantFilteredIndices).get(modCombatantLocation)); // Get the Combatant referred to by the modCombatantLocation and remove it (easiest to just remove the Combatant and add it again (the add function will take care of any "smart naming" needs))
 //            combatantList_Master.remove(combatantFilteredIndices.get(modCombatantLocation)); //
         }
 
@@ -384,7 +411,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //        combatantList_Master.remove(combatantFilteredIndices.get(position));
 
         // Tell the parent to remove a Combatant in the list
-        parent.removeCombatant(combatantList_Master.get(combatantFilteredIndices.get(position)));
+        parent.removeCombatant(combatantList_Master.subList(combatantFilteredIndices).get(position));
 
         // Let the Adapter know that we have modified the combatant list
         notifyCombatantListChanged();
@@ -392,7 +419,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
     private void copyCombatant(int position) {
         // Copy the Combatant at the given position
-        Combatant newCombatant = combatantList_Master.get(combatantFilteredIndices.get(position)).cloneUnique(); // Create a clone fo the Combatant to copy, but with a unique ID
+        Combatant newCombatant = combatantList_Master.subList(combatantFilteredIndices).get(position).cloneUnique(); // Create a clone fo the Combatant to copy, but with a unique ID
 
         // This is a little bit hacky, but I THINK it should work...
         // Add the Combatant to the Master list (so that a new Combatant name is generated that is unique to the entire Combatant list)
@@ -431,7 +458,12 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
     @Override
     public int getItemViewType(int position) {
-        return 0;
+        int combatantInd = posToCombatantInd(position); // Get the position in the Combatant list (negative numbers indicate a banner view)
+        if (combatantInd >= 0) {
+            return COMBATANT_VIEW;
+        } else {
+            return BANNER_VIEW;
+        }
     }
 
     @Override
@@ -441,25 +473,34 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
     @NonNull
     @Override
-    public CombatantViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public bindableVH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        View view = inflater.inflate(R.layout.combatant_item_mod, parent, false);
-
-        return new CombatantViewHolder(view);
+        if (viewType == COMBATANT_VIEW) {
+            View view = inflater.inflate(R.layout.combatant_item_mod, parent, false);
+            return new CombatantViewHolder(view);
+        } else if (viewType == BANNER_VIEW) {
+            View view = inflater.inflate(R.layout.faction_group_item, parent, false);
+            return new FactionBannerViewHolder(view);
+        } else {
+            Log.e(TAG, "Got illegal viewType");
+            return new bindableVH(new View(parent.getContext()));
+        }
     }
+
+
 
     @Override
     public int getItemCount() {
 //        return combatantList.size();
-        return combatantFilteredIndices.size();
+        return combatantList_Master.subList(combatantFilteredIndices).sizeWithBanners(); // Get the size of the post-filtering list, including the banners
     }
 
     public void notifyCombatantListChanged() {
-        // Update the list of combatants to be displayed, taking into account the current filter string
-        initializeCombatantFilteredIndices();
+//        // Update the list of combatants to be displayed, taking into account the current filter string
+//        initializeCombatantFilteredIndices();
 
         // If anything about the combatants has changed (specifically the viewed version of the list according to combatantFilteredIndices), see if we need to rearrange the list
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantFilteredDiffUtil(combatantList_Memory, filteredText_Memory, combatantList_Master.subList(combatantFilteredIndices), filteredText));
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantFilteredDiffUtil(combatantList_Memory, combatantList_Master.subList(combatantFilteredIndices)));
         diffResult.dispatchUpdatesTo(this); // If anything has changed, move the list items around
 
         // Update the memory list
@@ -472,9 +513,8 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         return new Filter() {
             @Override
             protected FilterResults performFiltering(CharSequence charSequence) {
-                String filterString = charSequence.toString().toLowerCase();
-                filteredText = filterString;
-
+                filteredText = charSequence.toString().toLowerCase();
+                combatantFilteredIndices = combatantList_Master.getIndicesThatMatch(filteredText);
 
                 FilterResults results = new FilterResults();
 //                results.values = combatantList_Display;
@@ -485,7 +525,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
             @Override
             protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
 //                combatantList_Display = (FactionCombatantList) filterResults.values;
-                combatantFilteredIndices = (ArrayList<Integer>) filterResults.values;
+//                combatantFilteredIndices = (ArrayList<Integer>) filterResults.values;
                 notifyCombatantListChanged();
             }
         };

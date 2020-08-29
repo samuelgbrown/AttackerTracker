@@ -100,6 +100,8 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
             noCombatantMessage.setVisibility(View.VISIBLE);
         }
 
+        // TODO SOON: Replace all of this with a single RecyclerView with a ListCombatantRecyclerAdapter
+
         // Create a fragment for each faction, if we need to
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction fragTransaction = null; // We will use this if we actually need to add a fragment

@@ -67,7 +67,7 @@ public class FactionCombatantList implements Serializable {
 
     public FactionCombatantList subList(ArrayList<Integer> subListIndices) {
         ArrayList<Combatant> subList = new ArrayList<>();
-        for (int i = 0;i < subListIndices.size();i++) {
+        for (int i = 0; i < subListIndices.size(); i++) {
             subList.add(combatantArrayList.get(subListIndices.get(i))); // Go through each member of subListIndices and get the Combatant at that index
         }
 
@@ -188,12 +188,25 @@ public class FactionCombatantList implements Serializable {
     public int size() {
         return combatantArrayList.size();
     }
+
     public FactionCombatantList clone() {
         return new FactionCombatantList(this);
     }
 
     public FactionCombatantList shallowCopy() {
         return new FactionCombatantList(getCombatantArrayList(), faction());
+    }
+
+    public ArrayList<Integer> getIndicesThatMatch(String text) {
+        // Get indices in this List of Combatants whose name contains this text
+        ArrayList<Integer> indices = new ArrayList<>();
+        for (int i = 0; i < combatantArrayList.size(); i++) {
+            if (text.isEmpty() || combatantArrayList.get(i).getName().toLowerCase().contains(text)) {
+                indices.add(i);
+            }
+        }
+
+        return indices;
     }
 
 
