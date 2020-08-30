@@ -8,7 +8,6 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AlphaAnimation;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -21,7 +20,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -40,7 +39,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
     private EncounterCombatantList combatantList;
     private EncounterCombatantList combatantList_Memory; // A memory version of the list, to see what changes have occurred
-    private ArrayList<Boolean> isCheckedList;
+    //    private ArrayList<Boolean> isCheckedList;
+    private HashMap<String, Boolean> isCheckedMap; // A Map to keep track of which Combatants have been checked off
 
     ArrayList<Integer> iconResourceIds; // A list of resource ID's of the icons that will be used for each Combatant
 
@@ -53,7 +53,14 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         // Turn the AllFactionCombatantList into an EncounterCombatantList
         this.combatantList = new EncounterCombatantList(combatantList); // Hold onto the combatant list (deep copy clone)
         this.combatantList_Memory = this.combatantList.clone(); // Keep a second copy, for memory (a second clone)
-        isCheckedList = new ArrayList<>(Collections.nCopies(this.combatantList.size(), false));
+//        isCheckedList = new ArrayList<>(Collections.nCopies(this.combatantList.size(), false));
+
+        // Initialize the isCheckedMap using the
+        isCheckedMap = new HashMap<>();
+
+        for (int combatantNum = 0; combatantNum < combatantList.size(); combatantNum++) {
+            isCheckedMap.put(combatantList.get(combatantNum).getName(), false); // Initialize each Combatant to being unchecked
+        }
 
         // Preload a list of resources that will be used to load svg's into the grid
         iconResourceIds = new ArrayList<>();
@@ -130,8 +137,12 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             CombatantCompletedCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    if (modifyingSelf) {
+                        return;
+                    }
+
                     // Update the isChecked List
-                    isCheckedList.set(getAdapterPosition(), b);
+                    isCheckedMap.put(combatantList.get(getAdapterPosition()).getName(), b);
 
                     // The has completed value should follow the state of the boolean
                     setCombatProgression();
@@ -200,6 +211,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
                 @Override
                 public void afterTextChanged(Editable editable) {
+                    // TODO SOON: if initiative is altered mid-combat, and the Combatant moves before the currently active combatant, then the currently active combatant appears to become a Combatant that already went.  Fix this!!
+
                     // If this is being called due to a programmatic change, ignore it
                     if (modifyingSelf) {
                         return;
@@ -241,13 +254,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             Combatant thisCombatant = combatantList.get(combatant_ind);
 
             NameView.setText(thisCombatant.getName());
-            TotalInitiativeView.setText(String.valueOf(thisCombatant.getTotalInitiative()));
-            RollView.setText(String.valueOf(thisCombatant.getRoll()));
 
-            modifyingSelf = true;
-            SpeedFactorView.setText(String.valueOf(thisCombatant.getSpeedFactor()));
-            RollViewEdit.setText(String.valueOf(thisCombatant.getRoll()));
-            modifyingSelf = false;
 
             // Load the icon image
             int iconIndex = thisCombatant.getIconIndex();
@@ -277,13 +284,27 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
             // Update the GUI indicators
             updateState();
+            setInitValues();
             setDiceCheatGUI();
         }
 
         public void updateState() {
             // Update the full state of the Combatant
             setDuplicateInitiativeView();
+            setInitValues();
             setCombatProgression();
+        }
+
+        public void setInitValues() {
+            // Update the values of the initiative counters
+            Combatant thisCombatant = combatantList.get(getAdapterPosition());
+            TotalInitiativeView.setText(String.valueOf(thisCombatant.getTotalInitiative()));
+            RollView.setText(String.valueOf(thisCombatant.getRoll()));
+
+            modifyingSelf = true;
+            SpeedFactorView.setText(String.valueOf(thisCombatant.getSpeedFactor()));
+            RollViewEdit.setText(String.valueOf(thisCombatant.getRoll()));
+            modifyingSelf = false;
         }
 
         public void setDiceCheatGUI() {
@@ -324,6 +345,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         public void setCombatProgression() {
             int position = getAdapterPosition();
             int positionInInitiative = getInitiativeInd(position); // Get the initiative index
+//            int positionInInitiative = position;
 
             // Set up variables for everything that may change
             float targetAlpha;
@@ -333,19 +355,28 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
             // Get some useful parameters
             float currentAlpha = CombatantGrayout.getAlpha();
-            boolean isChecked = isCheckedList.get(positionInInitiative);
+            boolean isChecked;
+            try {
+                isChecked = isCheckedMap.get(combatantList.get(position).getName());
+            } catch (NullPointerException e) {
+                isChecked = false;
+            }
 
             // Get the current state, and assign appropriate values to the variables
+
+            // If the Combatant is checked off in the ArrayList (could happen without the ViewHolder knowing if the user uses the Next/Previous buttons), then make sure the GUI checkbox is checked
             modifyingSelf = true;
-            CombatantCompletedCheck.setChecked(isChecked);
+            CombatantCompletedCheck.setChecked(isChecked); // Will not run code in Listener as long as modifyingSelf is true during the call
             modifyingSelf = false;
-            if (isChecked) {
-                // If the Combatant is checked off, then they should be grayed out
+
+            // See if the Combatant should be grayed out or not
+            if (!isChecked || curActiveCombatant == UNSET) {
                 // TODO CHECK: If Combatant is currently active but checked, what should happen...?  Nothing?  Should they be skipped?  Settings option? "Autoskip checked Combatants"?
-                targetAlpha = GRAYED_OUT;
-            } else {
-                // If the Combatant is unchecked, then their ViewHolder should be visible
+                // If the Combatant is unchecked, or we are between combat rounds, then their ViewHolder should be visible
                 targetAlpha = CLEAR;
+            } else {
+                // If the Combatant is checked off and we are in combat, then they should be grayed out
+                targetAlpha = GRAYED_OUT;
             }
 
             if (curActiveCombatant == positionInInitiative) {
@@ -396,7 +427,13 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     }
 
     private int getInitiativeInd(int position) {
+        // Given a Combatant index in combatantList, get that Combatant's index in the initiative order
         return combatantList.getInitiativeIndexOf(position);
+    }
+
+    private int getViewInd(int position) {
+        // Given a Combatant's position in the initiative order, get that Combatant's index in the current order
+        return combatantList.getViewIndexOf(position);
     }
 
     private void setRollValue(int combatantInd, int newRollVal) {
@@ -414,14 +451,14 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     private void reSortInitiative() {
         if (combatantList.getCurrentSortMethod() == EncounterCombatantList.SortMethod.INITIATIVE) {
             // If the Combatant list is currently sorted by initiative, then resort the list and reset the GUI
-            combatantList.reSort();
-
-            // Let the adapter know that at least one Combatant has changed its Initiative values, so all of the orders may now be different
-            notifyCombatantsChanged();
-
-            // Also, make ALL Combatants update their progress-related GUI
-            updateAllViewStates();
+            combatantList.resort();
         }
+
+        // Let the adapter know that at least one Combatant has changed its Initiative values, so all of the orders may now be different
+        notifyCombatantsChanged();
+
+        // Also, make ALL Combatants update their progress-related GUI
+        updateAllViewStates();
     }
 
     @NonNull
@@ -506,10 +543,15 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         return curRoundNumber;
     }
 
+    public void setRoundNumber(int curRoundNumber) {
+        this.curRoundNumber = curRoundNumber;
+    }
+
     public void iterateCombatStep() {
         // Before changing the combatant step, let the currently selected Combatant (if it exists) know that they should be checked off before we move on
         if (curActiveCombatant != UNSET) {
-            setViewIsChecked(curActiveCombatant, true);
+            // TODO SOON: Really nail down exactly what curActiveCombatant refers to, and how to get the Combatant we want using getInitiativeInd
+            setViewIsChecked(getViewInd(curActiveCombatant), true);
         }
 
         // Depending on where we are in the combat cycle, iterate the curActiveCombatant value differently
@@ -534,7 +576,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             combatantList.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION); // Go back to sorting by alphabet/faction, for pre-round prep
 
             // Let the adapter know to change the Views
-            setViewIsChecked(0, combatantList.size(), false); // Uncheck all of the combatants
+            setAllViewIsChecked(false); // Uncheck all of the combatants
             notifyCombatantsChanged(); // Let the adapter know that the views will likely need to rearrange
         } else {
             // Staying in combat
@@ -559,7 +601,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             combatantList.sort(EncounterCombatantList.SortMethod.INITIATIVE); // Sort by initiative, now that we are back in the previous round
 
             // Let the adapter know to change the Views
-            setViewIsChecked(0, combatantList.size(), true);
+            setAllViewIsChecked(true);
 
             notifyCombatantsChanged(); // Let the adapter know that the views will likely need to rearrange
         } else if (curActiveCombatant == 0) {
@@ -582,7 +624,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         // Uncheck the current Combatant
         if (curActiveCombatant != UNSET) {
             // ...and we are not between rounds, then the now currently active Combatant should be unchecked
-            setViewIsChecked(curActiveCombatant, false);
+            setViewIsChecked(getViewInd(curActiveCombatant), false);
         }
 
         if (curActiveCombatant == (combatantList.size() - 1)) {
@@ -596,31 +638,38 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
     private void updateAllViewStates() {
         // Update the GUI of all Combatants
-//        Bundle payload = new Bundle();
-//        payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true); // We are ending the combat round, so progress must be changed (roll and initiative views will go away, etc)
-//
-//        notifyItemRangeChanged(0, combatantList.size(), payload); // Let the adapter know that every Combatant's view should update its duplicate indicator
-        notifyDataSetChanged();
+        Bundle payload = new Bundle();
+        payload.putBoolean(PAYLOAD_UPDATE_PROGRESS, true); // We are ending the combat round, so progress must be changed (roll and initiative views will go away, etc)
+
+        notifyItemRangeChanged(0, combatantList.size(), payload); // Let the adapter know that every Combatant's view should update its duplicate indicator
+//        notifyDataSetChanged();
+    }
+
+    private void setAllViewIsChecked(boolean isChecked) {
+        for (int i = 0;i < combatantList.size();i++) {
+            isCheckedMap.put(combatantList.get(i).getName(), isChecked);
+        }
     }
 
     private void setViewIsChecked(int viewPos, boolean isChecked) {
-        // Only check a single Combatant
-        setViewIsChecked(viewPos, 1, isChecked);
+        // Only check a single Combatant (viewPos is according to the current layout)
+//        setViewIsChecked(viewPos, 1, isChecked);
+        isCheckedMap.put(combatantList.get(viewPos).getName(), isChecked);
     }
 
-    private void setViewIsChecked(int positionStart, int numViews, boolean isChecked) {
-        // Set a range of Combatants to be checked off
-        for (int i = 0; i < numViews; i++) {
-
-            isCheckedList.set(i + positionStart, isChecked);
-        }
-
-        notifyDataSetChanged();
-
-//        Bundle payload = new Bundle();
-//        payload.putBoolean(PAYLOAD_CHECK, isChecked); // Check all of the combatants
-//        notifyItemRangeChanged(positionStart, numViews, payload); // Let the adapter know that all Combatants except the last should now become checked (the last Combatant is technically never checked off...)
-    }
+//    private void setViewIsChecked(int positionStart, int numViews, boolean isChecked) {
+//        // Set a range of Combatants to be checked off (positions all according to the initiative sorted order
+//        for (int i = 0; i < numViews; i++) {
+//            // Find the Combatant currently at this position *in the initiative order*, then use its name as a key to update the current value of isChecked
+//            isCheckedMap.put(combatantList.get(getInitiativeInd(positionStart)).getName(), isChecked);
+//        }
+//
+////        notifyDataSetChanged();
+//
+////        Bundle payload = new Bundle();
+////        payload.putBoolean(PAYLOAD_CHECK, isChecked); // Check all of the combatants
+////        notifyItemRangeChanged(positionStart, numViews, payload); // Let the adapter know that all Combatants except the last should now become checked (the last Combatant is technically never checked off...)
+//    }
 
     public void toggleDiceCheat() {
         diceCheatModeOn = !diceCheatModeOn; // Toggle the state of Dice Cheat mode

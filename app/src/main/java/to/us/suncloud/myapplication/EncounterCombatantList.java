@@ -64,7 +64,7 @@ public class EncounterCombatantList {
         doSorting();
     }
 
-    public void reSort() {
+    public void resort() {
         // Sort the list again, using the current sort method
         doSorting();
     }
@@ -134,7 +134,8 @@ public class EncounterCombatantList {
     }
 
     public int getInitiativeIndexOf(int indexInCurrentList) {
-        // A method to find the index in combatantArrayList of a Combatant when the list is sorted by initiative, regardless of the actual sorted state of the list
+        // TODO: May want to try and optimize this...?  Store the sorted list, and update it every time it changes? Will need to figure out how to know when roll/speed factor is changed, though...
+        // A method to find the initiative index in combatantArrayList of a Combatant, regardless of the actual sorted state of the list
         if (currentSortMethod == SortMethod.INITIATIVE) {
             // If the array is already sorted by initiative, then just return the input index
             return indexInCurrentList;
@@ -148,6 +149,23 @@ public class EncounterCombatantList {
 
             // Finally, find the index in the initiative sorted list of the selected Combatant
             return sortedList.indexOf(c);
+        }
+    }
+
+    public int getViewIndexOf(int indexInInitiativeOrder) {
+        // A method to find the current index in this list of a Combatant given its position in the initiative order
+        if (currentSortMethod == SortMethod.INITIATIVE) {
+            // If the array is already sorted by initiative, then just return the input index
+            return indexInInitiativeOrder;
+        } else {
+            // The combatantArrayList is currently sorted alphabetically_by_faction, so we're going to need to sort the list
+            ArrayList<Combatant> sortedList = new ArrayList<>(combatantArrayList); // Create a SHALLOW copy of the list (the Combatants themselves are not cloned, only their references are copied)
+
+            // Do initiative sorting on the sortedList
+            Collections.sort(sortedList, new CombatantSorter.SortByInitiative());
+            Combatant c = sortedList.get(indexInInitiativeOrder);
+
+            return combatantArrayList.indexOf(c);
         }
     }
 

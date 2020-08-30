@@ -24,7 +24,7 @@
 
     <string name="encounter_next_combatant">Next Combatant!</string>
     <string name="encounter_roll_initiative">Roll Initiative!</string>
-    <string name="encounter_prepare_next_round">Prepare Next Round!</string>
+    <string name="encounter_prepare_next_round">Next Round!</string>
 
     <string name="encounter_round_number">Round:</string>
 

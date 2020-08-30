@@ -149,6 +149,7 @@ public class Combatant implements Serializable {
 
     public void setSpeedFactor(int speedFactor) {
         this.speedFactor = speedFactor;
+        calcTotalInitiative();
     }
 
     //
@@ -179,7 +180,14 @@ public class Combatant implements Serializable {
     }
 
     public void clearRoll() {
+        // Clear the roll (also affects total initiative)
         setRoll(0);
+    }
+
+    public void clearVals() {
+        // Clear all values
+        clearRoll();
+        setSpeedFactor(0);
     }
 
     //
@@ -288,9 +296,10 @@ public class Combatant implements Serializable {
     }
 
     public Combatant cloneUnique() {
-        // Generate a Combatant with a unique ID
+        // Generate a Combatant with a unique ID and no roll/initiative/speed factor
         Combatant newCombatant = clone();
         newCombatant.genUUID();
+        newCombatant.clearVals();
         return newCombatant;
     }
 

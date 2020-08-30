@@ -27,7 +27,7 @@
 
     <item
         android:id="@+id/settings"
-        android:icon="@drawable/settings"
+        android:icon="@drawable/settings_24dp"
         android:menuCategory="alternative"
         android:title="@string/settings"
         android:visible="true"

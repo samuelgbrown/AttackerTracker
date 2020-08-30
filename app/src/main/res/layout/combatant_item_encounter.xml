@@ -4,19 +4,21 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/encounter_main"
     android:layout_width="match_parent"
-    android:layout_height="110dp"
+    android:layout_height="wrap_content"
     android:background="@color/standardBackground">
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="4dp"
-        app:cardCornerRadius="10dp">
+        app:cardCornerRadius="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/check_enc_layout"
@@ -49,7 +51,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="2dp"
                     android:layout_marginEnd="2dp"
-                    android:layout_marginBottom="2dp"
+                    android:layout_marginBottom="8dp"
                     android:text="10"
                     android:textAlignment="center"
                     android:textSize="36sp"
@@ -61,178 +63,205 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/encounter_combatant_border"
                 android:layout_width="0dp"
-                android:layout_height="0dp"
+                android:layout_height="wrap_content"
                 android:background="@color/standardBackground"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@id/check_enc_layout"
                 app:layout_constraintTop_toTopOf="parent">
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/constraintLayout"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/standardBackground"
                     android:layout_marginTop="8dp"
                     android:layout_marginEnd="8dp"
+                    android:layout_marginStart="-10dp"
                     android:layout_marginBottom="8dp"
-                    android:background="@color/standardBackground"
+                    app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-
-                    <TextView
-                        android:id="@+id/text_equals"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginBottom="4dp"
-                        android:scaleType="fitCenter"
-                        android:text="="
-                        android:textAlignment="center"
-                        android:textSize="30sp"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintDimensionRatio="1:1"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/combatant_enc_name" />
-
-                    <ImageView
-                        android:id="@+id/imageView"
-                        android:layout_width="@dimen/encounter_icon_size"
-                        android:layout_height="35dp"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginBottom="4dp"
-                        android:scaleType="fitCenter"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintDimensionRatio="1:1"
-                        app:layout_constraintStart_toEndOf="@+id/text_equals"
-                        app:layout_constraintTop_toBottomOf="@+id/combatant_enc_name"
-                        app:srcCompat="@drawable/ic_d20" />
+                    app:cardCornerRadius="10dp">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
-                        android:id="@+id/combatant_enc_roll_layout"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        app:layout_constraintBottom_toBottomOf="@id/imageView"
-                        app:layout_constraintDimensionRatio="1:1"
-                        app:layout_constraintStart_toEndOf="@+id/imageView"
-                        app:layout_constraintTop_toTopOf="@id/imageView">
+                        android:id="@+id/constraintLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="10dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
 
                         <TextView
-                            android:id="@+id/combatant_enc_roll"
-                            android:layout_width="50dp"
+                            android:id="@+id/text_equals"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="7"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginBottom="4dp"
+                            android:scaleType="fitCenter"
+                            android:text="="
                             android:textAlignment="center"
                             android:textSize="30sp"
-                            android:visibility="visible"
                             app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintDimensionRatio="1:1"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
+                            app:layout_constraintTop_toBottomOf="@+id/combatant_enc_name" />
+
+                        <ImageView
+                            android:id="@+id/imageView"
+                            android:layout_width="@dimen/encounter_icon_size"
+                            android:layout_height="35dp"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginBottom="4dp"
+                            android:scaleType="fitCenter"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintDimensionRatio="1:1"
+                            app:layout_constraintStart_toEndOf="@+id/text_equals"
+                            app:layout_constraintTop_toBottomOf="@+id/combatant_enc_name"
+                            app:srcCompat="@drawable/ic_d20" />
+
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/combatant_enc_roll_layout"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            app:layout_constraintBottom_toBottomOf="@id/imageView"
+                            app:layout_constraintDimensionRatio="1:1"
+                            app:layout_constraintStart_toEndOf="@+id/imageView"
+                            app:layout_constraintTop_toTopOf="@id/imageView">
+
+                            <TextView
+                                android:id="@+id/combatant_enc_roll"
+                                android:layout_width="40dp"
+                                android:layout_height="wrap_content"
+                                android:text="7"
+                                android:textAlignment="center"
+                                android:textSize="30sp"
+                                android:visibility="visible"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toTopOf="parent" />
+
+                            <EditText
+                                android:id="@+id/combatant_enc_roll_edit"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:inputType="number"
+                                android:text="7"
+                                android:textAlignment="center"
+                                android:textSize="24sp"
+                                android:visibility="gone"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintDimensionRatio="1:1"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toTopOf="parent" />
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        <ImageView
+                            android:id="@+id/image_plus"
+                            android:layout_width="30dp"
+                            android:layout_height="0dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginBottom="4dp"
+                            android:layout_marginTop="4dp"
+                            android:scaleType="fitCenter"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintDimensionRatio="1:1"
+                            app:layout_constraintStart_toEndOf="@+id/combatant_enc_roll_layout"
+                            app:layout_constraintTop_toBottomOf="@+id/combatant_enc_name"
+                            app:srcCompat="@drawable/ic_baseline_add_24" />
+
+                        <ImageView
+                            android:id="@+id/imageView2"
+                            android:layout_width="@dimen/encounter_icon_size"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginBottom="4dp"
+                            android:scaleType="fitCenter"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintDimensionRatio="1:1"
+                            app:layout_constraintStart_toEndOf="@+id/image_plus"
+                            app:layout_constraintTop_toBottomOf="@+id/combatant_enc_name"
+                            app:srcCompat="@drawable/ic_run" />
 
                         <EditText
-                            android:id="@+id/combatant_enc_roll_edit"
+                            android:id="@+id/combatant_enc_speed_factor"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
-                            android:inputType="number"
-                            android:text="7"
+                            android:inputType="numberSigned"
+                            android:text="3"
                             android:textAlignment="center"
                             android:textSize="24sp"
-                            android:visibility="gone"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintDimensionRatio="1:1"
+                            app:layout_constraintStart_toEndOf="@+id/imageView2" />
+
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/encounter_icon_border"
+                            android:layout_width="@dimen/medium_icon_size"
+                            android:layout_height="@dimen/medium_icon_size"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="8dp"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintDimensionRatio="1:1"
                             app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
-                    </androidx.constraintlayout.widget.ConstraintLayout>
+                            app:layout_constraintTop_toTopOf="parent">
 
-                    <ImageView
-                        android:id="@+id/imageView2"
-                        android:layout_width="@dimen/encounter_icon_size"
-                        android:layout_height="40dp"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginBottom="4dp"
-                        android:scaleType="fitCenter"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintDimensionRatio="1:1"
-                        app:layout_constraintStart_toEndOf="@+id/combatant_enc_roll_layout"
-                        app:layout_constraintTop_toBottomOf="@+id/combatant_enc_name"
-                        app:srcCompat="@drawable/ic_run" />
+                            <ImageView
+                                android:id="@+id/encounter_icon"
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_marginStart="4dp"
+                                android:layout_marginTop="4dp"
+                                android:layout_marginEnd="4dp"
+                                android:layout_marginBottom="4dp"
+                                android:background="@color/standardBackground"
+                                android:tint="@color/colorNeutral"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:srcCompat="@drawable/icon_29" />
+                        </androidx.constraintlayout.widget.ConstraintLayout>
 
-                    <EditText
-                        android:id="@+id/combatant_enc_speed_factor"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:inputType="numberSigned"
-                        android:text="3"
-                        android:textAlignment="center"
-                        android:textSize="24sp"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintDimensionRatio="1:1"
-                        app:layout_constraintStart_toEndOf="@+id/imageView2" />
+                        <!--        TO_DO: Get rid of remove button?  Only able to remove in add/modify combatants screen?-->
+                        <!--        <ImageButton-->
+                        <!--            android:id="@+id/combatant_enc_remove"-->
+                        <!--            android:layout_width="30dp"-->
+                        <!--            android:layout_height="0dp"-->
+                        <!--            android:layout_marginTop="8dp"-->
+                        <!--            android:layout_marginEnd="8dp"-->
+                        <!--            android:layout_marginBottom="8dp"-->
+                        <!--            app:layout_constraintBottom_toBottomOf="parent"-->
+                        <!--            app:layout_constraintDimensionRatio="1:1"-->
+                        <!--            app:layout_constraintEnd_toEndOf="parent"-->
+                        <!--            app:layout_constraintTop_toTopOf="parent"-->
+                        <!--            app:srcCompat="@android:drawable/btn_dialog" />-->
 
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:id="@+id/encounter_icon_border"
-                        android:layout_width="0dp"
-                        android:layout_height="0dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginBottom="8dp"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintDimensionRatio="1:1"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent">
-
-                        <ImageView
-                            android:id="@+id/encounter_icon"
+                        <TextView
+                            android:id="@+id/combatant_enc_name"
                             android:layout_width="0dp"
-                            android:layout_height="0dp"
+                            android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
                             android:layout_marginTop="4dp"
                             android:layout_marginEnd="4dp"
-                            android:layout_marginBottom="4dp"
-                            android:background="@color/standardBackground"
-                            android:tint="@color/colorNeutral"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
+                            android:text="@string/combatant_name_placeholder"
+                            android:textSize="30sp"
+                            app:layout_constraintEnd_toStartOf="@id/encounter_icon_border"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:srcCompat="@drawable/icon_29" />
+                            app:layout_constraintTop_toTopOf="parent" />
+
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
-                    <!--        TO_DO: Get rid of remove button?  Only able to remove in add/modify combatants screen?-->
-                    <!--        <ImageButton-->
-                    <!--            android:id="@+id/combatant_enc_remove"-->
-                    <!--            android:layout_width="30dp"-->
-                    <!--            android:layout_height="0dp"-->
-                    <!--            android:layout_marginTop="8dp"-->
-                    <!--            android:layout_marginEnd="8dp"-->
-                    <!--            android:layout_marginBottom="8dp"-->
-                    <!--            app:layout_constraintBottom_toBottomOf="parent"-->
-                    <!--            app:layout_constraintDimensionRatio="1:1"-->
-                    <!--            app:layout_constraintEnd_toEndOf="parent"-->
-                    <!--            app:layout_constraintTop_toTopOf="parent"-->
-                    <!--            app:srcCompat="@android:drawable/btn_dialog" />-->
-
-                    <TextView
-                        android:id="@+id/combatant_enc_name"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/combatant_name_placeholder"
-                        android:textSize="30sp"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
+                </androidx.cardview.widget.CardView>
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout

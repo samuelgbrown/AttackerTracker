@@ -16,13 +16,17 @@ import android.widget.TextView;
 
 public class ConfigureCombatantListActivity extends AppCompatActivity implements ListCombatantRecyclerAdapter.MasterCombatantKeeper, ViewSavedCombatantsFragment.ReceiveAddedCombatant {
 
-    public static final String COMBATANT_LIST = "COMBATANT_LIST_LIST"; // ID for inputs to the activity
-    public static final String COMBAT_BEGIN = "COMBAT_BEGIN"; // Is this activity used for the beginning of combat, or in the middle of combat?
+    public static final String COMBATANT_LIST = "combatantListList"; // ID for inputs to the activity
+    public static final String ROUND_NUMBER = "roundNumber"; // ID for inputs to the activity
+    public static final String COMBAT_BEGIN = "combatBegin"; // Is this activity used for the beginning of combat, or in the middle of combat?
     public static final int COMBATANT_LIST_CODE = 0; // The Code to represent requesting a Combatant List back from the Encounter Activity, used in startActivityForResult()
 
+    TextView mainButton; // The Main button at the bottom, to transfer over to the Encounter Activity
     TextView noCombatantMessage; // Text message to show the use when there are no combatants
     RecyclerView combatantListView; // RecyclerView that holds the Combatant List
     ListCombatantRecyclerAdapter adapter; // Adapter that holds the combatantList
+
+    int roundNumber = 1; // The current round number of the Encounter
 
 //    HashMap<Combatant.Faction, FactionFragmentInfo> factionFragmentMap = new HashMap<>();
 
@@ -39,7 +43,6 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
         // Get the combatantList and any other initialization parameters
         AllFactionCombatantLists combatantLists = new AllFactionCombatantLists();
-        boolean isBegin = true;
         if (thisBundleData != null) {
             // Get the combatant lists
             if (thisBundleData.containsKey(COMBATANT_LIST)) {
@@ -47,36 +50,32 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                 combatantLists = (AllFactionCombatantLists) thisBundleData.getSerializable(COMBATANT_LIST);
             }
 
-            // Get the "purpose" of this activity (beginning or middle of combat)
-            if (thisBundleData.containsKey(COMBAT_BEGIN)) {
-                isBegin = thisBundleData.getBoolean(COMBAT_BEGIN);
+            // Get the current round number
+            if (thisBundleData.containsKey(ROUND_NUMBER)) {
+                roundNumber = thisBundleData.getInt(ROUND_NUMBER, 0);
             }
         }
 
         // Store all of the Views we will need
-        TextView mainButton = findViewById(R.id.finish_button);
+        mainButton = findViewById(R.id.finish_button);
         Toolbar toolbar = findViewById(R.id.configure_toolbar);
         noCombatantMessage = findViewById(R.id.configure_combatant_empty);
         combatantListView = findViewById(R.id.configure_combatant_list);
 
         // Set up the Views
         // Main Button
-        if (isBegin) {
-            mainButton.setText(R.string.begin_encounter);
-        } else {
-            mainButton.setText(R.string.resume_encounter);
-        }
+        updateMainButton();
+
         mainButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 // Start the Encounter!  WOOO!!
                 Intent encounterIntent = new Intent(ConfigureCombatantListActivity.this, EncounterActivity.class);
                 encounterIntent.putExtra(COMBATANT_LIST, adapter.getCombatantList());
+                encounterIntent.putExtra(ROUND_NUMBER, roundNumber);
                 startActivityForResult(encounterIntent, COMBATANT_LIST_CODE);
             }
         });
-
-        // TODO: Set main button funciton: Start an Encounter Activity and pass the combatantList!
 
         // Toolbar
         setSupportActionBar(toolbar); // TODO: Add toolbar buttons (Settings, like which DnD version is being used?)
@@ -88,16 +87,29 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         combatantListView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
     }
 
+    public void updateMainButton() {
+        if (roundNumber > 1) {
+            mainButton.setText(R.string.resume_encounter);
+        } else {
+            mainButton.setText(R.string.begin_encounter);
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == COMBATANT_LIST_CODE) {
             // Don't know what else it would be...
             if (resultCode == RESULT_OK) {
                 if (data != null) {
+                    // Get the Combatant list
                     AllFactionCombatantLists newCombatantList = (AllFactionCombatantLists) data.getSerializableExtra(COMBATANT_LIST);
                     if (newCombatantList != null) {
                         adapter.setCombatantList(newCombatantList); // Get a Combatant list back from the Encounter (useful just to preserve speed factors and rolls and such
                     }
+
+                    // Get the current round number
+                    roundNumber = data.getIntExtra(ROUND_NUMBER, 0);
+                    updateMainButton();
                 }
             }
         }

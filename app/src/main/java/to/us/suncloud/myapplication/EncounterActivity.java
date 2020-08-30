@@ -20,7 +20,7 @@ public class EncounterActivity extends AppCompatActivity {
     AllFactionCombatantLists masterCombatantList;
     EncounterCombatantRecyclerAdapter adapter; // The adapter for the main Combatant list
 
-    int roundNumber = 0;
+    int roundNumber;
 
     RecyclerView encounterRecyclerView;
     Toolbar encounterToolbar;
@@ -38,6 +38,7 @@ public class EncounterActivity extends AppCompatActivity {
         Intent intent = getIntent();
         Bundle thisBundleData = intent.getExtras();
 
+        // Get the Combatant List
         if (thisBundleData.containsKey(ConfigureCombatantListActivity.COMBATANT_LIST)) {
             AllFactionCombatantLists newList = (AllFactionCombatantLists) thisBundleData.getSerializable(ConfigureCombatantListActivity.COMBATANT_LIST);
             if (newList != null) {
@@ -45,6 +46,13 @@ public class EncounterActivity extends AppCompatActivity {
             }
         } else {
             masterCombatantList = new AllFactionCombatantLists();
+        }
+
+        // Get the current round number
+        if (thisBundleData.containsKey(ConfigureCombatantListActivity.ROUND_NUMBER)) {
+            roundNumber = thisBundleData.getInt(ConfigureCombatantListActivity.ROUND_NUMBER);
+        } else {
+            roundNumber = 1;
         }
 
         // TODO: Get saved Instance state data?  Probably happens if we go back to the Configure screen and then come back here without destroying the Activity.  Learn how to use backstacks!!!! :P
@@ -59,6 +67,7 @@ public class EncounterActivity extends AppCompatActivity {
 
         // Set up the RecyclerView
         adapter = new EncounterCombatantRecyclerAdapter(getApplicationContext(), masterCombatantList);
+        adapter.setRoundNumber(roundNumber);
         encounterRecyclerView.setAdapter(adapter);
         encounterRecyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
 
@@ -182,6 +191,7 @@ public class EncounterActivity extends AppCompatActivity {
     public void onBackPressed() {
         Intent returnIntent = new Intent();
         returnIntent.putExtra(ConfigureCombatantListActivity.COMBATANT_LIST, adapter.getCombatantList()); // Create an Intent that has the current Combatant List (complete with rolls, speed factors, etc)
+        returnIntent.putExtra(ConfigureCombatantListActivity.ROUND_NUMBER, roundNumber); // Create an Intent that has the current Combatant List (complete with rolls, speed factors, etc)
         setResult(RESULT_OK, returnIntent);
         super.onBackPressed();
     }

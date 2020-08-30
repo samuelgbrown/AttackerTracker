@@ -13,7 +13,7 @@
     -->
     <dimen name="inner_frame_layout_padding">5dp</dimen>
 
-    <dimen name="encounter_icon_size">35dp</dimen>
+    <dimen name="encounter_icon_size">25dp</dimen>
     <dimen name="small_icon_size">45dp</dimen>
     <dimen name="medium_icon_size">60dp</dimen>
     <dimen name="large_icon_size">100dp</dimen>

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/active_combatant_border"
     android:layout_width="match_parent"
-    android:layout_height="140dp">
+    android:layout_height="wrap_content">
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
@@ -14,7 +14,10 @@
         android:layout_marginEnd="1dp"
         android:layout_marginStart="1dp"
         app:cardCornerRadius="10dp"
-        >
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/constraintLayout"
@@ -35,40 +38,40 @@
                 android:layout_width="50dp"
                 android:layout_height="0dp"
                 android:layout_marginStart="8dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintDimensionRatio="1:1"
-                app:layout_constraintStart_toEndOf="@+id/combatant_mod_change_combatant"
-                app:layout_constraintTop_toBottomOf="@+id/combatant_mod_name"
-                app:srcCompat="@android:drawable/btn_dialog" />
-
-            <ImageButton
-                android:id="@+id/combatant_mod_change_combatant"
-                android:layout_width="50dp"
-                android:layout_height="0dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintDimensionRatio="1:1"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/combatant_mod_name"
-                app:srcCompat="@drawable/settings" />
+                app:srcCompat="@drawable/ic_baseline_delete_24" />
 
             <ImageButton
                 android:id="@+id/combatant_mod_copy"
                 android:layout_width="50dp"
                 android:layout_height="0dp"
                 android:layout_marginStart="8dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
-                android:cropToPadding="false"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintDimensionRatio="1:1"
                 app:layout_constraintStart_toEndOf="@+id/combatant_mod_remove"
                 app:layout_constraintTop_toBottomOf="@+id/combatant_mod_name"
                 app:srcCompat="@drawable/ic_baseline_file_copy_24" />
+
+            <ImageButton
+                android:id="@+id/combatant_mod_change_combatant"
+                android:layout_width="50dp"
+                android:layout_height="0dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"
+                android:cropToPadding="false"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintDimensionRatio="1:1"
+                app:layout_constraintStart_toEndOf="@+id/combatant_mod_copy"
+                app:layout_constraintTop_toBottomOf="@+id/combatant_mod_name"
+                app:srcCompat="@drawable/settings_dark_24dp" />
 
             <TextView
                 android:id="@+id/combatant_mod_name"
@@ -79,7 +82,7 @@
                 android:layout_marginEnd="8dp"
                 android:text="@string/combatant_name_placeholder"
                 android:textSize="30sp"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/combatant_mod_icon_border"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
@@ -87,10 +90,10 @@
                 android:id="@+id/combatant_mod_icon_border"
                 android:layout_width="@dimen/medium_icon_size"
                 android:layout_height="@dimen/medium_icon_size"
+                android:layout_marginTop="8dp"
                 android:layout_marginEnd="8dp"
-                android:layout_marginBottom="8dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
                 <ImageView
                     android:id="@+id/combatant_mod_icon"

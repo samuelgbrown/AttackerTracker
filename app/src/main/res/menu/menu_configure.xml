@@ -4,7 +4,7 @@
 
     <item
         android:id="@+id/add_combatant"
-        android:icon="@drawable/plus_sign_dark"
+        android:icon="@drawable/plus_sign"
         android:menuCategory="alternative"
         android:title="@string/add_combatant"
         android:visible="true"
@@ -20,7 +20,7 @@
 
     <item
         android:id="@+id/settings"
-        android:icon="@drawable/settings"
+        android:icon="@drawable/settings_24dp"
         android:menuCategory="system"
         android:title="@string/settings"
         android:visible="true"
