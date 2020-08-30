@@ -14,12 +14,12 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
 
     @Override
     public int getOldListSize() {
-        return oldList.size();
+        return oldList.sizeWithBanners();
     }
 
     @Override
     public int getNewListSize() {
-        return newList.size();
+        return newList.sizeWithBanners();
     }
 
     @Override
@@ -27,11 +27,12 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
         // First, see if these positions are Combatants or banners
         int oldCombatantInd = oldList.posToCombatantInd(oldItemPosition);
         int newCombatantInd = newList.posToCombatantInd(newItemPosition);
-        if (oldCombatantInd*newCombatantInd > 0 ) {
+        if ((2*oldCombatantInd + 1)*(2*newCombatantInd + 1) > 0 ) {
             if (oldCombatantInd >= 0) {
                 // Both items are Combatants
                 // Compare the UUID of the Combatants
-                return oldList.get(oldCombatantInd).getId().equals(newList.get(newCombatantInd).getId());
+                boolean areSame = oldList.get(oldCombatantInd).getId().equals(newList.get(newCombatantInd).getId());
+                return areSame;
             } else {
                 // Both items are banners
                 return oldCombatantInd == newCombatantInd;
@@ -48,11 +49,12 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
         // First, see if these positions are Combatants or banners
         int oldCombatantInd = oldList.posToCombatantInd(oldItemPosition);
         int newCombatantInd = newList.posToCombatantInd(newItemPosition);
-        if (oldCombatantInd*newCombatantInd > 0 ) {
+        if ((2*oldCombatantInd + 1)*(2*newCombatantInd + 1) > 0 ) {
             if (oldCombatantInd >= 0) {
                 // Both items are Combatants
-                // Make sure both Combatants are identical
-                return oldList.get(oldCombatantInd).equals(newList.get(newCombatantInd));
+                // Make sure both Combatant displays are identical
+                boolean contentsSame = oldList.get(oldCombatantInd).displayEquals(newList.get(newCombatantInd));
+                return contentsSame;
             } else {
                 // Both items are banners
                 return oldCombatantInd == newCombatantInd;

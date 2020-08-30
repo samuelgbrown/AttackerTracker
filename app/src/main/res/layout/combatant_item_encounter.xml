@@ -30,17 +30,32 @@
 
                 <CheckBox
                     android:id="@+id/combatant_enc_completed_check"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginEnd="8dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_marginStart="2dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginEnd="2dp"
+                    android:background="?android:attr/listChoiceIndicatorMultiple"
+                    android:button="@null"
                     android:translationZ="10dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintDimensionRatio="1:1"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/combatant_enc_total_initiative"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="2dp"
+                    android:layout_marginEnd="2dp"
+                    android:layout_marginBottom="2dp"
+                    android:text="10"
+                    android:textAlignment="center"
+                    android:textSize="36sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -60,11 +75,27 @@
                     android:layout_marginTop="8dp"
                     android:layout_marginEnd="8dp"
                     android:layout_marginBottom="8dp"
+                    android:background="@color/standardBackground"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent">
 
+                    <TextView
+                        android:id="@+id/text_equals"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="4dp"
+                        android:scaleType="fitCenter"
+                        android:text="="
+                        android:textAlignment="center"
+                        android:textSize="30sp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintDimensionRatio="1:1"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/combatant_enc_name" />
 
                     <ImageView
                         android:id="@+id/imageView"
@@ -76,7 +107,7 @@
                         android:scaleType="fitCenter"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintDimensionRatio="1:1"
-                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintStart_toEndOf="@+id/text_equals"
                         app:layout_constraintTop_toBottomOf="@+id/combatant_enc_name"
                         app:srcCompat="@drawable/ic_d20" />
 
@@ -146,19 +177,6 @@
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintDimensionRatio="1:1"
                         app:layout_constraintStart_toEndOf="@+id/imageView2" />
-
-                    <TextView
-                        android:id="@+id/combatant_enc_total_initiative"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="10"
-                        android:textAlignment="center"
-                        android:textSize="36sp"
-                        app:layout_constraintBottom_toBottomOf="@id/combatant_enc_speed_factor"
-                        app:layout_constraintDimensionRatio="w,1:1"
-                        app:layout_constraintStart_toEndOf="@+id/combatant_enc_speed_factor"
-                        app:layout_constraintTop_toTopOf="@+id/combatant_enc_speed_factor" />
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/encounter_icon_border"

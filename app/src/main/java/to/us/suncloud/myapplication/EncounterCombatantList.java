@@ -7,7 +7,7 @@ import java.util.HashSet;
 // This Combatant list is used for the encounter.  It keeps a list of Combatants that are not organized/separated (unlike the AllFactionsCombatantList) that can be reorganized easily.
 // It will also perform all functions relevant to calculating initiative
 public class EncounterCombatantList {
-    private ArrayList<Combatant> combatantArrayList;
+    private ArrayList<Combatant> combatantArrayList = new ArrayList<>();
     private ArrayList<Integer> duplicateInitiatives; // Keep track of any initiative values that are duplicated across multiple Combatants
     private SortMethod currentSortMethod = SortMethod.ALPHABETICALLY_BY_FACTION;
 
@@ -16,7 +16,6 @@ public class EncounterCombatantList {
     }
 
     public EncounterCombatantList(ArrayList<Combatant> combatantArrayList) {
-        this.combatantArrayList = new ArrayList<>(combatantArrayList.size()); // Shallow copy! (TODO CHECK: Check other copies, such as in adapter, that the memory etc lists are deep copies)
         for (int i = 0; i < combatantArrayList.size(); i++) {
             this.combatantArrayList.add(combatantArrayList.get(i).clone()); // Create a clone of the referenced Combatant, and save it
         }
@@ -38,7 +37,6 @@ public class EncounterCombatantList {
 
     public EncounterCombatantList(EncounterCombatantList c) {
         // Perform a deep copy of the incoming EncounterCombatantList
-        combatantArrayList = new ArrayList<>(c.size());
         for (int i = 0; i < c.size(); i++) {
             combatantArrayList.add(c.get(i).clone()); // Create a clone of the Combatant, and save it to this object's ArrayList
         }
@@ -47,7 +45,7 @@ public class EncounterCombatantList {
         duplicateInitiatives = c.getDuplicateInitiatives(); // List should already be in a prepared state
     }
 
-    private ArrayList<Combatant> getCombatantArrayList() {
+    public ArrayList<Combatant> getCombatantArrayList() {
         return combatantArrayList;
     }
 

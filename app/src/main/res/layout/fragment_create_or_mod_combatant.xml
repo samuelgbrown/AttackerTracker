@@ -115,7 +115,7 @@
                 android:layout_marginBottom="4dp"
                 android:foreground="@drawable/icon_00"
                 android:foregroundTint="@color/colorParty"
-                android:background="@color/standardBackground"
+                android:background="@color/colorWhite"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"

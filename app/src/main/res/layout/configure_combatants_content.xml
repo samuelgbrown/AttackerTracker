@@ -20,7 +20,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <ScrollView
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/configure_combatant_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
@@ -29,121 +32,122 @@
         app:layout_constraintBottom_toTopOf="@+id/finish_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <LinearLayout
-            android:id="@+id/combatant_fragment_parent"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/configure_combatant_empty"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:text="@string/empty_configure_list"
-                android:textAlignment="center"
-                android:textSize="18sp"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-        </LinearLayout>
-
-        <!--            <androidx.constraintlayout.widget.ConstraintLayout-->
-        <!--                android:id="@+id/partyViewsLayout"-->
-        <!--                android:layout_width="match_parent"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                app:layout_constraintEnd_toEndOf="parent"-->
-        <!--                app:layout_constraintStart_toStartOf="parent"-->
-        <!--                app:layout_constraintTop_toTopOf="parent">-->
-
-        <!--            <TextView-->
-        <!--                android:id="@+id/partyTextView"-->
-        <!--                android:layout_width="match_parent"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                android:background="@color/colorAccent"-->
-        <!--                android:text="@string/party_header"-->
-        <!--                android:textAlignment="center"-->
-        <!--                android:textSize="20sp"-->
-        <!--                android:textStyle="bold"-->
-        <!--                app:layout_constraintEnd_toEndOf="parent"-->
-        <!--                app:layout_constraintStart_toStartOf="parent"-->
-        <!--                app:layout_constraintTop_toTopOf="parent" />-->
-
-        <!--            <androidx.recyclerview.widget.RecyclerView-->
-        <!--                android:id="@+id/partyCombatant_view"-->
-        <!--                android:layout_width="match_parent"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                app:layout_constraintEnd_toEndOf="parent"-->
-        <!--                app:layout_constraintStart_toStartOf="parent"-->
-        <!--                app:layout_constraintTop_toBottomOf="@+id/partyTextView" />-->
-
-        <!--        </androidx.constraintlayout.widget.ConstraintLayout>-->
-
-        <!--    <androidx.constraintlayout.widget.ConstraintLayout-->
-        <!--        android:id="@+id/enemyViewsLayout"-->
-        <!--        android:layout_width="match_parent"-->
-        <!--        android:layout_height="wrap_content"-->
-        <!--        app:layout_constraintEnd_toEndOf="parent"-->
-        <!--        app:layout_constraintStart_toStartOf="parent"-->
-        <!--        app:layout_constraintTop_toBottomOf="@id/partyViewsLayout">-->
-
-        <!--        <TextView-->
-        <!--            android:id="@+id/enemyTextView"-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            android:background="@color/colorAccent"-->
-        <!--            android:text="@string/enemy_header"-->
-        <!--            android:textAlignment="center"-->
-        <!--            android:textSize="20sp"-->
-        <!--            android:textStyle="bold"-->
-        <!--            app:layout_constraintEnd_toEndOf="parent"-->
-        <!--            app:layout_constraintStart_toStartOf="parent"-->
-        <!--            app:layout_constraintTop_toTopOf="parent" />-->
-
-        <!--        <androidx.recyclerview.widget.RecyclerView-->
-        <!--            android:id="@+id/enemyCombatant_view"-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            app:layout_constraintEnd_toEndOf="parent"-->
-        <!--            app:layout_constraintStart_toStartOf="parent"-->
-        <!--            app:layout_constraintTop_toBottomOf="@+id/enemyTextView" />-->
-        <!--    </androidx.constraintlayout.widget.ConstraintLayout>-->
-
-        <!--    <androidx.constraintlayout.widget.ConstraintLayout-->
-        <!--        android:id="@+id/neutralViewsLayout"-->
-        <!--        android:layout_width="match_parent"-->
-        <!--        android:layout_height="wrap_content"-->
-        <!--        app:layout_constraintEnd_toEndOf="parent"-->
-        <!--        app:layout_constraintStart_toStartOf="parent"-->
-        <!--        app:layout_constraintTop_toBottomOf="@id/enemyViewsLayout">-->
-
-        <!--        <TextView-->
-        <!--            android:id="@+id/neutralTextView"-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            android:background="@color/colorAccent"-->
-        <!--            android:text="@string/neutral_header"-->
-        <!--            android:textAlignment="center"-->
-        <!--            android:textSize="20sp"-->
-        <!--            android:textStyle="bold"-->
-        <!--            app:layout_constraintEnd_toEndOf="parent"-->
-        <!--            app:layout_constraintStart_toStartOf="parent"-->
-        <!--            app:layout_constraintTop_toTopOf="parent" />-->
-
-        <!--        <androidx.recyclerview.widget.RecyclerView-->
-        <!--            android:id="@+id/neutralCombatant_view"-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            app:layout_constraintEnd_toEndOf="parent"-->
-        <!--            app:layout_constraintStart_toStartOf="parent"-->
-        <!--            app:layout_constraintTop_toBottomOf="@+id/neutralTextView" />-->
-        <!--    </androidx.constraintlayout.widget.ConstraintLayout>-->
+    <TextView
+        android:id="@+id/configure_combatant_empty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="@string/empty_configure_list"
+        android:textAlignment="center"
+        android:textSize="18sp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+<!--        <LinearLayout-->
+<!--            android:id="@+id/combatant_fragment_parent"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="vertical">-->
 
 
-    </ScrollView>
+<!--        </LinearLayout>-->
+
+<!--        &lt;!&ndash;            <androidx.constraintlayout.widget.ConstraintLayout&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:id="@+id/partyViewsLayout"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;                app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                app:layout_constraintTop_toTopOf="parent">&ndash;&gt;-->
+
+<!--        &lt;!&ndash;            <TextView&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:id="@+id/partyTextView"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:background="@color/colorAccent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:text="@string/party_header"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:textAlignment="center"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:textSize="20sp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:textStyle="bold"&ndash;&gt;-->
+<!--        &lt;!&ndash;                app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                app:layout_constraintTop_toTopOf="parent" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;            <androidx.recyclerview.widget.RecyclerView&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:id="@+id/partyCombatant_view"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;                app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                app:layout_constraintTop_toBottomOf="@+id/partyTextView" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;        </androidx.constraintlayout.widget.ConstraintLayout>&ndash;&gt;-->
+
+<!--        &lt;!&ndash;    <androidx.constraintlayout.widget.ConstraintLayout&ndash;&gt;-->
+<!--        &lt;!&ndash;        android:id="@+id/enemyViewsLayout"&ndash;&gt;-->
+<!--        &lt;!&ndash;        android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;        android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;        app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;        app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;        app:layout_constraintTop_toBottomOf="@id/partyViewsLayout">&ndash;&gt;-->
+
+<!--        &lt;!&ndash;        <TextView&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:id="@+id/enemyTextView"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:background="@color/colorAccent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:text="@string/enemy_header"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:textAlignment="center"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:textSize="20sp"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:textStyle="bold"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintTop_toTopOf="parent" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;        <androidx.recyclerview.widget.RecyclerView&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:id="@+id/enemyCombatant_view"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintTop_toBottomOf="@+id/enemyTextView" />&ndash;&gt;-->
+<!--        &lt;!&ndash;    </androidx.constraintlayout.widget.ConstraintLayout>&ndash;&gt;-->
+
+<!--        &lt;!&ndash;    <androidx.constraintlayout.widget.ConstraintLayout&ndash;&gt;-->
+<!--        &lt;!&ndash;        android:id="@+id/neutralViewsLayout"&ndash;&gt;-->
+<!--        &lt;!&ndash;        android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;        android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;        app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;        app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;        app:layout_constraintTop_toBottomOf="@id/enemyViewsLayout">&ndash;&gt;-->
+
+<!--        &lt;!&ndash;        <TextView&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:id="@+id/neutralTextView"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:background="@color/colorAccent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:text="@string/neutral_header"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:textAlignment="center"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:textSize="20sp"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:textStyle="bold"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintTop_toTopOf="parent" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;        <androidx.recyclerview.widget.RecyclerView&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:id="@+id/neutralCombatant_view"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:layout_constraintTop_toBottomOf="@+id/neutralTextView" />&ndash;&gt;-->
+<!--        &lt;!&ndash;    </androidx.constraintlayout.widget.ConstraintLayout>&ndash;&gt;-->
+
+
+<!--    </ScrollView>-->
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

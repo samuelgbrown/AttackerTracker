@@ -88,7 +88,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
 
         CreateOrModCombatant fragment = new CreateOrModCombatant();
         Bundle args = new Bundle();
-        args.putSerializable(ORIGINAL_COMBATANT, originalCombatant.cloneUnique()); // Create a clone of the incoming Combatant (even when modifying, the old Combatant will just be removed and the newly modified version re-added to the list.  This is a simple way to deal with issues of name uniqueness during modification)
+        args.putSerializable(ORIGINAL_COMBATANT, originalCombatant.clone()); // Create a clone of the incoming Combatant (even when modifying, the old Combatant will just be removed and the newly modified version re-added to the list.  This is a simple way to deal with issues of name uniqueness during modification)
         args.putSerializable(RECEIVER, receiver);
         args.putSerializable(COMBATANT_LIST_TO_BE_ADDED_TO, factionCombatantListToBeAddedTo.getCombatantNamesList());
         args.putBundle(RETURN_BUNDLE, returnBundle);
@@ -312,17 +312,20 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         combatantName.setText(currentCombatant.getName()); // Load the name
         updateFactionGUI(); // Load the Faction
 
-        combatantName.post(new Runnable() {
-            @Override
-            public void run() {
-                combatantName.setSelectAllOnFocus(true);
-                if (combatantName.requestFocus()) {
-                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.showSoftInput(combatantName, InputMethodManager.SHOW_IMPLICIT);
+        if (creatingCombatant) {
+            // If we're making a new Combatant, ask for the Combatant's Name field to get focus, and show the keyboard (if we're just modifying a Combatant, we don't KNOW that it's the name that they want to change)
+            combatantName.post(new Runnable() {
+                @Override
+                public void run() {
+                    combatantName.setSelectAllOnFocus(true);
+                    if (combatantName.requestFocus()) {
+                        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                        imm.showSoftInput(combatantName, InputMethodManager.SHOW_IMPLICIT);
+                    }
+                    combatantName.setSelectAllOnFocus(false);
                 }
-                combatantName.setSelectAllOnFocus(false);
-            }
-        });
+            });
+        }
 
 
         return fragView;

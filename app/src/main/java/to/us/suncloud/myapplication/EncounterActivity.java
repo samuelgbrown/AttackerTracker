@@ -17,8 +17,6 @@ import android.widget.TextView;
 import androidx.appcompat.widget.Toolbar;
 
 public class EncounterActivity extends AppCompatActivity {
-    private static final String COMBATANT_LIST = "combatant_list";
-
     AllFactionCombatantLists masterCombatantList;
     EncounterCombatantRecyclerAdapter adapter; // The adapter for the main Combatant list
 
@@ -40,8 +38,11 @@ public class EncounterActivity extends AppCompatActivity {
         Intent intent = getIntent();
         Bundle thisBundleData = intent.getExtras();
 
-        if (thisBundleData.containsKey(COMBATANT_LIST)) {
-            masterCombatantList = (AllFactionCombatantLists) thisBundleData.getSerializable(COMBATANT_LIST);
+        if (thisBundleData.containsKey(ConfigureCombatantListActivity.COMBATANT_LIST)) {
+            AllFactionCombatantLists newList = (AllFactionCombatantLists) thisBundleData.getSerializable(ConfigureCombatantListActivity.COMBATANT_LIST);
+            if (newList != null) {
+                masterCombatantList = newList;
+            }
         } else {
             masterCombatantList = new AllFactionCombatantLists();
         }
@@ -65,6 +66,12 @@ public class EncounterActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 adapter.iterateCombatStep();
+                // If there is a currently active combatant that is NOT the last Combatant, then we are in the middle of combat
+                if (adapter.getCurActiveCombatant() == 0) {
+                    // If we just started the round, then emphasize the Roll Initiative button (for fun)!
+                    nextButton.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.emphize_wobble));
+                    // TODO LATER: Will probably need to make sure that text change (below) only happens AFTER the animation finishes, otherwise it won't make much sense!
+                }
                 updateGUIState();
             }
         });
@@ -88,6 +95,7 @@ public class EncounterActivity extends AppCompatActivity {
     private void updateGUIState() {
         // First, prepare parameters for everything that may change in the GUI
         int nextButtonText;
+        int nextButtonVisibility = View.VISIBLE; // The only time this would become invisible is if there were no Combatants
         int previousButtonVisibility = View.VISIBLE; // The only time this would become invisible is if we are at the Roll Initiative stage of Round 1
 
         // Next, get the current active combatant and current round
@@ -95,32 +103,36 @@ public class EncounterActivity extends AppCompatActivity {
         int currentRoundNumber = adapter.getCurRoundNumber();
 
         // Change GUI elements based on the current state
+        if (adapter.getCombatantList().size() == 0) {
+            // If there aren't any Combatants, then make the next button Gone
+            nextButtonVisibility = View.GONE;
+        } else {
+            nextButtonVisibility = View.VISIBLE;
+        }
+
         if (currentlyActiveCombatant == EncounterCombatantRecyclerAdapter.UNSET) {
             // If the currently active combatant is unset, then we are currently between rounds, waiting to roll initiative
             nextButtonText = R.string.encounter_roll_initiative;
+            if (currentRoundNumber == 1) {
+                // If this is the 0th round prepare phase, then don't display the previous button
+                previousButtonVisibility = View.GONE;
+            }
         } else if (currentlyActiveCombatant == (adapter.getItemCount() - 1)) {
             // If the currently active combatant is the final Combatant, then the next action will be to prepare for the next round of combat
             nextButtonText = R.string.encounter_prepare_next_round;
-            if (currentRoundNumber == 1) {
-                previousButtonVisibility = View.GONE;
-            }
         } else {
-            // If there is a currently active combatant that is NOT the last Combatant, then we are in the middle of combat
-            if (currentlyActiveCombatant == 0) {
-                // If we just started the round, then emphasize the Roll Initiative button (for fun)!
-                nextButton.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.emphize_wobble));
-                // TODO LATER: Will probably need to make sure that text change (below) only happens AFTER the animation finishes, otherwise it won't make much sense!
-            }
             nextButtonText = R.string.encounter_next_combatant;
         }
 
         // Update the text on the nextButton
         nextButton.setText(nextButtonText);
+        nextButton.setVisibility(nextButtonVisibility);
 
         // Make sure the previous button is visible
         previousButton.setVisibility(previousButtonVisibility);
 
         // Update the number on the round counter, from the adapter
+        roundNumber = currentRoundNumber;
         roundCounter.setText(String.valueOf(roundNumber));
     }
 
@@ -164,5 +176,13 @@ public class EncounterActivity extends AppCompatActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        Intent returnIntent = new Intent();
+        returnIntent.putExtra(ConfigureCombatantListActivity.COMBATANT_LIST, adapter.getCombatantList()); // Create an Intent that has the current Combatant List (complete with rolls, speed factors, etc)
+        setResult(RESULT_OK, returnIntent);
+        super.onBackPressed();
     }
 }

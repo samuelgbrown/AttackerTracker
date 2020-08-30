@@ -13,7 +13,7 @@
     <string name="cheat_mode">Dice Cheat Mode</string>
     <string name="mod_saved_combatant">Modify Bookmarked Combatants</string>
     <string name="new_combatant">+ New Combatant</string>
-    <string name="empty_add_combatants">There don\'t seem to be any saved combatants here.  Make some using the button below, and they will appear here for quick referencing later!</string>
+    <string name="empty_add_combatants">There don\'t seem to be any saved combatants here.  Make some using the button below (give them a name, faction, and optional icon), and they will appear here for quick referencing later!</string>
     <string name="confirm_delete">Are you sure you want to delete this combatant?</string>
     <string name="confirm_copy">Copy this combatant?</string>
     <string name="yes">yes</string>

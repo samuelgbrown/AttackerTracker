@@ -203,6 +203,19 @@ public class Combatant implements Serializable {
         return isEqual;
     }
 
+    public boolean displayEquals(@Nullable Object obj) {
+        // Check if the Combatants are the same, for RecyclerView viewing purpose
+        boolean isEqual = false;
+        if (obj instanceof Combatant) {
+            boolean nameEqual = getName().equals(((Combatant) obj).getName());
+            boolean facEqual = getFaction() == ((Combatant) obj).getFaction();
+            boolean iconEqual = getIconIndex() == ((Combatant) obj).getIconIndex();
+
+            isEqual = nameEqual && facEqual &&iconEqual;
+        }
+
+        return isEqual;
+    }
 
     public static String factionToString(Faction faction) {
         switch (faction) {

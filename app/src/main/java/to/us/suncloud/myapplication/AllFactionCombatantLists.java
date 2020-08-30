@@ -1,14 +1,11 @@
 package to.us.suncloud.myapplication;
 
-import android.util.Log;
-
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 
 public class AllFactionCombatantLists implements Serializable {
-    ArrayList<FactionCombatantList> allFactionLists;
+    ArrayList<FactionCombatantList> allFactionLists = new ArrayList<>();
 
     public ArrayList<FactionCombatantList> getAllFactionLists() {
         return allFactionLists;
@@ -23,6 +20,10 @@ public class AllFactionCombatantLists implements Serializable {
 
     AllFactionCombatantLists() {
         allFactionLists = new ArrayList<>();
+    }
+
+    AllFactionCombatantLists(EncounterCombatantList encounterList) {
+        addAll(encounterList.getCombatantArrayList()); // Add all elements in this list
     }
 
     AllFactionCombatantLists(AllFactionCombatantLists c) {
@@ -66,8 +67,10 @@ public class AllFactionCombatantLists implements Serializable {
                 }
                 break;
             default:
-                // If the Combatant's base name DOES appear in the list already, and it has an ordinal, then simply modify this combatant's ordinal (if needed) to be at least one higher than the current highest ordinal.
-                newCombatant.setNameOrdinal(Math.max(highestExistingOrdinal + 1, newCombatant.getOrdinal()));
+                // If the Combatant's base name DOES appear in the list already with an ordinal, and the new Combatant's ordinal is already being used, then simply modify this combatant's ordinal (if needed) to be at least one higher than the current highest ordinal.
+                if (containsName(newCombatant.getName())) {
+                    newCombatant.setNameOrdinal(Math.max(highestExistingOrdinal + 1, newCombatant.getOrdinal())); // If the new Combatant's ordinal is not already being used, then it was probably already a part of the List already (a Combatant being re-added after being modified), so don't mess with it!
+                }
         }
 
         // Now, the Combatant and the list are *guaranteed* to unique to each other, and ready to have the Combatant added
@@ -95,36 +98,53 @@ public class AllFactionCombatantLists implements Serializable {
 
     public Combatant get(int combatantInd) {
         // Get the Combatant at the indicated index
+        int originalCombatantInd = combatantInd;
         for (int fac = 0; fac < allFactionLists.size(); fac++) {
-            if (combatantInd < allFactionLists.size()) {
+            if (combatantInd < allFactionLists.get(fac).size()) {
                 return allFactionLists.get(fac).get(combatantInd); // Get this index in allFactionLists
             }
 
-            combatantInd -= allFactionLists.size(); // Subtract the size of allFactionLists, to check the next Faction
+            combatantInd -= allFactionLists.get(fac).size(); // Subtract the size of the faction list, to check the next Faction
         }
 
-        throw new IndexOutOfBoundsException("Index " + combatantInd); // The Combatant index is out of bounds
+        throw new IndexOutOfBoundsException("Index " + originalCombatantInd + ", Size " + size()); // The Combatant index is out of bounds
     }
 
-    public int posToCombatantInd(int position) {
+    int posToCombatantInd(int position) {
         // Convert an adapter position to an index in combatantList_Master (adapter position will include banners)
-        int facInd = 1; // How many banners are below the combatant at the given position
-        int testPos = position;
-        for (int fac = 0; fac < allFactionLists.size(); fac++) {
-            int thisCombatantInd = testPos - facInd;
-            if (thisCombatantInd == -1 || thisCombatantInd == allFactionLists.get(fac).size()) {
-                return -1*(facInd + ((thisCombatantInd == allFactionLists.get(fac).size()) ? 1 : 0)); // This index represents a banner, so make the returned number encode which banner is represented (-1 = Party, -2 = Enemy, etc).
-            } else if (thisCombatantInd < allFactionLists.get(fac).size()) {
-                return position - facInd; // Get this index in allFactionLists, removing a value for each banner needed above each Faction
+        int viewsRemaining = position; // Keep track of how many Views have been traversed
+        int returnPosition = 0; // Keep track of how many CombatantViews have been traversed
+
+        for (int facInd = 0; facInd < allFactionLists.size(); facInd++) {
+            // Go through each Faction list
+            if (!allFactionLists.get(facInd).isEmpty()) {
+                // If there are any Combatants in this List
+
+                if (viewsRemaining == 0) {
+                    // This is a banner, now figure out which one it is by doing a look-ahead to the next non-empty list
+                    for (int lookAheadFacInd = facInd; lookAheadFacInd < allFactionLists.size(); lookAheadFacInd++) {
+                        // Find the next faction that is not empty (it may be this one)
+                        if (!allFactionLists.get(lookAheadFacInd).isEmpty()) {
+                            return -(lookAheadFacInd + 1); // Indicate which faction's banner this is
+                        }
+                    }
+                } else {
+                    viewsRemaining--; // We have traversed one View (the banner)
+                }
+
+                if (viewsRemaining < allFactionLists.get(facInd).size()) {
+                    // The position is in this array,
+                    returnPosition += viewsRemaining;
+                    return returnPosition;
+                } else {
+                    // The position is beyond this array, so traverse all Views in this Faction
+                    viewsRemaining -= allFactionLists.get(facInd).size();
+                    returnPosition += allFactionLists.get(facInd).size();
+                }
             }
-
-            testPos -= allFactionLists.get(fac).size(); // Subtract the size of allFactionLists, to check the next Faction
-            facInd++; // Going to the next Faction means we need to take into account another banner
         }
-
         throw new IndexOutOfBoundsException("Index " + position); // The Combatant index is out of bounds
     }
-
 
 
     public boolean containsName(String name) {
@@ -142,7 +162,7 @@ public class AllFactionCombatantLists implements Serializable {
     public int size() {
         // Get the number of Combatants
         int returnSize = 0;
-        for (int fac = 0;fac < allFactionLists.size();fac++) {
+        for (int fac = 0; fac < allFactionLists.size(); fac++) {
             returnSize += allFactionLists.get(fac).size();
         }
 
@@ -151,8 +171,10 @@ public class AllFactionCombatantLists implements Serializable {
 
     public int sizeWithBanners() {
         int returnSize = 0;
-        for (int fac = 0;fac < allFactionLists.size();fac++) {
-            returnSize += allFactionLists.get(fac).size() + 1;
+        for (int fac = 0; fac < allFactionLists.size(); fac++) {
+            if (!allFactionLists.get(fac).isEmpty()) {
+                returnSize += allFactionLists.get(fac).size() + 1;
+            }
         }
 
         return returnSize;
@@ -201,6 +223,13 @@ public class AllFactionCombatantLists implements Serializable {
 
             // Add all of these Combatants
             getFactionList(thisFactionCombatantsToAdd.faction()).addAll(thisFactionCombatantsToAdd); // If the FactionCombatant list doesn't exist yet, then the getFactionList() method will create it
+        }
+    }
+
+    public void addAll(ArrayList<Combatant> combatantListToAdd) {
+        // Add all combatants in this list
+        for (int i = 0;i < combatantListToAdd.size();i++) {
+            addCombatant(combatantListToAdd.get(i)); // Renaming may occur if there was some kind of management error
         }
     }
 
