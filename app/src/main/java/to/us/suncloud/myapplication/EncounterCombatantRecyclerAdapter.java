@@ -5,9 +5,11 @@ import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -149,105 +151,165 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                 }
             });
 
-            SpeedFactorView.addTextChangedListener(new TextWatcher() {
+            // The speed factor / roll value can be set by the user by either a) pressing done/return, or b) clicking out of the EditText box
+            SpeedFactorView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
                 @Override
-                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (v instanceof EditText) {
+                        if (hasFocus) {
+                            // If we are gaining focus, select all text
+                            // TODO: Focusing isn't working quite right: on modifying text and hitting next, the next EditText gets focus, but does not select all.  The below code does not seem to help...
+                            ((EditText) v).selectAll();
+                        } else {
+                            // If we have lost focus, the user has likely navigated away.  So, confirm the new value
 
-                }
-
-                @Override
-                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-                }
-
-                @Override
-                public void afterTextChanged(Editable editable) {
-                    // If this is being called due to a programmatic change, ignore it
-                    if (modifyingSelf) {
-                        return;
+                            // It damn well better be...
+                            setSpeedFactorValueIfValid(((EditText) v).getText().toString()); // Set the new Speed Factor, if possible
+                        }
                     }
-
-                    // First, make sure the value here is valid
-                    int currentSpeedFactor = combatantList.get(getAdapterPosition()).getSpeedFactor(); // The current roll for this Combatant
-                    int newSpeedFactor = currentSpeedFactor; // Initial value never used, but at least the IDE won't yell at me...
-                    boolean needToRevert;
-                    try {
-                        newSpeedFactor = Integer.parseInt(editable.toString()); // Get the value that was entered into the text box
-
-                        // If the new entered roll value is not in the d20 range, then reject it
-                        needToRevert = newSpeedFactor < 0; // needToRevert becomes false (we accept the input) if newSpeedFactor is 0 or greater
-                    } catch (NumberFormatException e) {
-                        needToRevert = true;
-                    }
-
-                    // Update the value of the EditText, if needed
-                    if (needToRevert) {
-                        // The entered text was not valid, so reset it and finish
-                        modifyingSelf = true;
-                        RollViewEdit.setText(String.valueOf(currentSpeedFactor));
-                        modifyingSelf = false;
-                        return;
-                    } else if (newSpeedFactor == currentSpeedFactor) {
-                        // If the new speed factor value is the same as the current speed factor, then don't do anything
-                        return;
-                    }
-
-                    // If the entered text was valid and different than the current speed factor, then change this Combatant, resort the list, and update the GUI
-                    setSpeedFactor(getAdapterPosition(), newSpeedFactor);
                 }
             });
 
-            RollViewEdit.addTextChangedListener(new TextWatcher() {
-
+            SpeedFactorView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
-                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-                }
-
-                @Override
-                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-                }
-
-                @Override
-                public void afterTextChanged(Editable editable) {
-                    // TODO SOON: if initiative is altered mid-combat, and the Combatant moves before the currently active combatant, then the currently active combatant appears to become a Combatant that already went.  Fix this!!
-
-                    // If this is being called due to a programmatic change, ignore it
-                    if (modifyingSelf) {
-                        return;
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                        if (event == null || !event.isShiftPressed()) {
+                            // The user is done typing, so attempt to set the Speed factor
+                            setSpeedFactorValueIfValid(v.getText().toString());
+                            return true;
+                        }
                     }
-
-                    // First, make sure the value here is valid
-                    int currentRoll = combatantList.get(getAdapterPosition()).getRoll(); // The current roll for this Combatant
-                    int newRollVal = currentRoll; // Initial value never used, but at least the IDE won't yell at me...
-                    boolean needToRevert;
-                    try {
-                        newRollVal = Integer.parseInt(editable.toString()); // Get the value that was entered into the text box
-
-                        // If the new entered roll value is not in the d20 range, then reject it
-                        needToRevert = newRollVal <= 0 || 20 < newRollVal; // needToRevert becomes false (we accept the input) if newRollVal is between [1 20]
-                    } catch (NumberFormatException e) {
-                        needToRevert = true;
-                    }
-
-                    // Update the value of the EditText, if needed
-                    if (needToRevert) {
-                        // The entered text was not valid, so reset it and finish
-                        modifyingSelf = true;
-                        RollViewEdit.setText(String.valueOf(currentRoll));
-                        modifyingSelf = false;
-                        return;
-                    } else if (newRollVal == currentRoll) {
-                        // If the new roll value is the same as the current roll, then don't do anything
-                        return;
-                    }
-
-                    // If the entered text was valid and different than the current roll, then change this Combatant, resort the list, and update the GUI
-                    RollView.setText(String.valueOf(newRollVal)); // Set this value in the TextView
-                    setRollValue(getAdapterPosition(), newRollVal);
+                    return false; // Pass on to other listeners.
                 }
             });
+
+            RollViewEdit.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (!hasFocus) {
+                        // If we have lost focus, the user has likely navigated away.  So, confirm the new value
+                        if (v instanceof EditText) {
+                            // It damn well better be...
+                            setRollValueIfValid(((EditText) v).getText().toString()); // Set the new Speed Factor, if possible
+                        }
+                    }
+                }
+            });
+
+            RollViewEdit.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                        if (event == null || !event.isShiftPressed()) {
+                            // The user is done typing, so attempt to set the Speed factor
+                            setRollValueIfValid(v.getText().toString());
+                            return true;
+                        }
+                    }
+                    return false; // Pass on to other listeners.
+                }
+            });
+
+//            SpeedFactorView.addTextChangedListener(new TextWatcher() {
+//                @Override
+//                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//
+//                }
+//
+//                @Override
+//                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//
+//                }
+//
+//                @Override
+//                public void afterTextChanged(Editable editable) {
+//                    // If this is being called due to a programmatic change, ignore it
+//                    if (modifyingSelf) {
+//                        return;
+//                    }
+//
+//                    // First, make sure the value here is valid
+//                    int currentSpeedFactor = combatantList.get(getAdapterPosition()).getSpeedFactor(); // The current roll for this Combatant
+//                    int newSpeedFactor = currentSpeedFactor; // Initial value never used, but at least the IDE won't yell at me...
+//                    boolean needToRevert;
+//                    try {
+//                        newSpeedFactor = Integer.parseInt(editable.toString()); // Get the value that was entered into the text box
+//
+//                        // If the new entered roll value is not in the d20 range, then reject it
+//                        needToRevert = newSpeedFactor < 0; // needToRevert becomes false (we accept the input) if newSpeedFactor is 0 or greater
+//                    } catch (NumberFormatException e) {
+//                        needToRevert = true;
+//                    }
+//
+//                    // Update the value of the EditText, if needed
+//                    if (needToRevert) {
+//                        // The entered text was not valid, so reset it and finish
+//                        modifyingSelf = true;
+//                        RollViewEdit.setText(String.valueOf(currentSpeedFactor));
+//                        modifyingSelf = false;
+//                        return;
+//                    } else if (newSpeedFactor == currentSpeedFactor) {
+//                        // If the new speed factor value is the same as the current speed factor, then don't do anything
+//                        return;
+//                    }
+//
+//                    // If the entered text was valid and different than the current speed factor, then change this Combatant, resort the list, and update the GUI
+//                    setSpeedFactor(getAdapterPosition(), newSpeedFactor);
+//                }
+//            });
+//            RollViewEdit.addTextChangedListener(new TextWatcher() {
+//
+//                @Override
+//                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//
+//                }
+//
+//                @Override
+//                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//
+//                }
+//
+//                @Override
+//                public void afterTextChanged(Editable editable) {
+//                    // TODO SOON: if initiative is altered mid-combat, and the Combatant moves before the currently active combatant, then the currently active combatant appears to become a Combatant that already went.  Fix this!!
+//
+//                    // If this is being called due to a programmatic change, ignore it
+//                    if (modifyingSelf) {
+//                        return;
+//                    }
+//
+//                    // First, make sure the value here is valid
+//                    int combatantInd = getAdapterPosition();
+//                    int currentRoll = combatantList.get(combatantInd).getRoll(); // The current roll for this Combatant
+//                    int newRollVal = currentRoll; // Initial value never used, but at least the IDE won't yell at me...
+//                    boolean needToRevert;
+//                    try {
+//                        newRollVal = Integer.parseInt(editable.toString()); // Get the value that was entered into the text box
+//
+//                        // If the new entered roll value is not in the d20 range, then reject it
+//                        needToRevert = newRollVal <= 0 || 20 < newRollVal; // needToRevert becomes false (we accept the input) if newRollVal is between [1 20]
+//                    } catch (NumberFormatException e) {
+//                        needToRevert = true;
+//                    }
+//
+//                    // Update the value of the EditText, if needed
+//                    if (needToRevert) {
+//                        // The entered text was not valid, so reset it and finish
+//                        modifyingSelf = true;
+//                        RollViewEdit.setText(String.valueOf(currentRoll));
+//                        modifyingSelf = false;
+//                        return;
+//                    } else if (newRollVal == currentRoll) {
+//                        // If the new roll value is the same as the current roll, then don't do anything
+//                        return;
+//                    }
+//
+//                    // If the entered text was valid and different than the current roll, then change this Combatant, resort the list, and update the GUI
+//                    RollView.setText(String.valueOf(newRollVal)); // Set this value in the TextView
+//
+//                }
+//            });
         }
 
         public void bind(int combatant_ind) {
@@ -279,13 +341,80 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                     colorId = CombatantIcon.getContext().getResources().getColor(R.color.colorNeutral);
             }
 
-            CombatantIcon.setImageTintList(ColorStateList.valueOf(colorId)); // TODO CHECK: Check that this actually changes the tint of the icon...
+            CombatantIcon.setImageTintList(ColorStateList.valueOf(colorId));
             CombatantIconBorder.setBackgroundColor(colorId);
 
             // Update the GUI indicators
             updateState();
             setInitValues();
             setDiceCheatGUI();
+        }
+
+        public void setRollValueIfValid(String newRollValString) {
+            // This method will be used any time the user confirms a text string in the roll view EditText
+            int combatantInd = getAdapterPosition();
+            int currentRoll = combatantList.get(combatantInd).getRoll(); // The current roll for this Combatant
+            int newRollVal = currentRoll; // Initial value never used, but at least the IDE won't yell at me...
+            boolean newValIsValid = false;
+            try {
+                newRollVal = Integer.parseInt(newRollValString); // Get the value that was entered into the text box
+
+                // If the new entered roll value is not in the d20 range, then reject it
+                if (0 < newRollVal && newRollVal <= 20) { // The new roll may be valid if it is within the standard d20 range
+                    // If the roll value is within range, make sure that it is different than the current roll.  If so, then set the new value is valid
+                    newValIsValid = currentRoll != newRollVal;
+                }
+            } catch (NumberFormatException e) {
+//                needToRevert = true;
+            }
+
+            // If the roll is NOT valid, then just revert the EditText and return
+            if (!newValIsValid) {
+                RollViewEdit.setText(String.valueOf(currentRoll)); // Revert to the current roll value
+//                return false;
+                return;
+            }
+
+            // If the roll IS valid, then set the Combatant's roll to the new value
+            combatantList.get(combatantInd).setRoll(newRollVal);
+            reSortInitiative(); // Resort the combatantList
+            updateState(); // Update the this Combatant's GUI
+            notifyCombatantsChanged(); // Let the adapter know that the Combatants may have rearranged
+            // TODO: If roll/speed factor is changed such that Combatant moves before current Combatant, the current Combatant "changes" (stays still in adapter).  Should move along with new list.  Also, if current Combatant is checked off when moving to it, should skip over (note, case of last Combatant being checked off!)  Can fix these both in one go?
+//            return true;
+        }
+
+        public void setSpeedFactorValueIfValid(String newSpeedFactorValString) {
+            // This method will be used any time the user confirms a text string in the roll view EditText
+            int combatantInd = getAdapterPosition();
+            int currentSpeedFac = combatantList.get(combatantInd).getSpeedFactor(); // The current roll for this Combatant
+            int newSpeedFacVal = currentSpeedFac; // Initial value never used, but at least the IDE won't yell at me...
+            boolean newValIsValid = false;
+            try {
+                newSpeedFacVal = Integer.parseInt(newSpeedFactorValString); // Get the value that was entered into the text box
+
+                // If the new entered roll value is not in the d20 range, then reject it
+                if (0 <= newSpeedFacVal) { // The new speed factor may be valid if it is greater than or equal to 0 TODO: Double check that this is the correct limitation for speed factors ACROSS EDITIONS
+                    // If the speed factor value is within range, make sure that it is different than the current speed factor.  If so, then set the new value is valid
+                    newValIsValid = currentSpeedFac != newSpeedFacVal;
+                }
+            } catch (NumberFormatException e) {
+//                needToRevert = true;
+            }
+
+            // If the new speed factor is NOT valid, then just revert the EditText and return
+            if (!newValIsValid) {
+                SpeedFactorView.setText(String.valueOf(currentSpeedFac)); // Revert to the current roll value
+//                return false;
+                return;
+            }
+
+            // If the new speed factor IS valid, then set the Combatant's roll to the new value
+            combatantList.get(combatantInd).setSpeedFactor(newSpeedFacVal);
+            reSortInitiative(); // Resort the combatantList
+            updateState(); // Update the this Combatant's GUI
+            notifyCombatantsChanged(); // Let the adapter know that the Combatants may have rearranged
+//            return true;
         }
 
         public void updateState() {
@@ -344,7 +473,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
         public void setCombatProgression() {
             int position = getAdapterPosition();
-            int positionInInitiative = getInitiativeInd(position); // Get the initiative index
+            int positionInInitiative = getInitiativeInd(position); // Get the initiative index (useful for progression related to initiative, NOT the viewholder's current location in the list)
 //            int positionInInitiative = position;
 
             // Set up variables for everything that may change
@@ -436,17 +565,17 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         return combatantList.getViewIndexOf(position);
     }
 
-    private void setRollValue(int combatantInd, int newRollVal) {
-        // Edit the indicated Combatant, resort the list, and update the GUI
-        combatantList.get(combatantInd).setRoll(newRollVal);
-        reSortInitiative();
-    }
+//    private void setRollValue(int combatantInd, int newRollVal) {
+//        // Edit the indicated Combatant, resort the list, and update the GUI
+//        combatantList.get(combatantInd).setRoll(newRollVal);
+//        reSortInitiative();
+//    }
 
-    private void setSpeedFactor(int combatantInd, int newSpeedFactor) {
-        // Edit the indicated Combatant, resort the list, and update the GUI
-        combatantList.get(combatantInd).setSpeedFactor(newSpeedFactor);
-        reSortInitiative();
-    }
+//    private void setSpeedFactor(int combatantInd, int newSpeedFactor) {
+//        // Edit the indicated Combatant, resort the list, and update the GUI
+//        combatantList.get(combatantInd).setSpeedFactor(newSpeedFactor);
+//        reSortInitiative();
+//    }
 
     private void reSortInitiative() {
         if (combatantList.getCurrentSortMethod() == EncounterCombatantList.SortMethod.INITIATIVE) {
@@ -646,7 +775,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     }
 
     private void setAllViewIsChecked(boolean isChecked) {
-        for (int i = 0;i < combatantList.size();i++) {
+        for (int i = 0; i < combatantList.size(); i++) {
             isCheckedMap.put(combatantList.get(i).getName(), isChecked);
         }
     }

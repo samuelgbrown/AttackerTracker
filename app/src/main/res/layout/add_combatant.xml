@@ -67,16 +67,28 @@
                 app:layout_constraintTop_toTopOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <SearchView
-            android:id="@+id/add_combatant_search"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/search_card"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            app:cardCornerRadius="10dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/add_combatant_title_background" />
+            app:layout_constraintTop_toBottomOf="@+id/add_combatant_title_background">
+
+            <SearchView
+                android:id="@+id/add_combatant_search"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="0dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="0dp"
+                android:layout_marginBottom="0dp" />
+
+        </androidx.cardview.widget.CardView>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/view_saved_combatants_list"
@@ -89,7 +101,7 @@
             app:layout_constraintBottom_toTopOf="@+id/add_new_combatant"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/add_combatant_search" />
+            app:layout_constraintTop_toBottomOf="@id/search_card" />
 
         <TextView
             android:id="@+id/add_combatants_empty"

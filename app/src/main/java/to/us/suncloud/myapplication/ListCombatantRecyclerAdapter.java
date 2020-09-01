@@ -1,14 +1,11 @@
 package to.us.suncloud.myapplication;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
-import android.text.SpannableStringBuilder;
-import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,16 +25,17 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import static android.graphics.Typeface.BOLD;
 
 public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListCombatantRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface {
     private static final int UNSET = -1;
 
     public static final int COMBATANT_VIEW = 0;
     public static final int BANNER_VIEW = 1;
+
+    public static final String SET_MULTI_SELECT = "setMultiSelect";
 
     private static final String TAG = "ListCombatantRecycler";
 
@@ -53,7 +51,11 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     private AllFactionCombatantLists combatantList_Master; // The master version of the list
     private ArrayList<ArrayList<Integer>> combatantFilteredIndices; // The indices in combatantList_Master that contain the given filter string
     private AllFactionCombatantLists combatantList_Memory; // A memory version of the list, to see what changes have occurred
+    private ArrayList<Boolean> isSelectedList; // List to keep track of which Combatants are currently selected in the multiselect
 
+    boolean canMultiSelect = false; // Is the adapter allowed to do multiselect TODO SOON: Figure out how to figure out whether or not the adapter should multi-select (is basically "are we expecting a Combatant from this Adapter, or is it just a display"?  That OOORRRR, I could apply the multi-select input to the copy/remove....
+    boolean isMultiSelecting = false; // Is the adapter currently in multiselect mode TODO: Will need to let the Fragment know, so we can have a "select chosen Combatants" button appear".  That button will then need to be able to talk to the adapter so it can send stuff back (or it can just take the Combatant list, huh...)
+    // TODO: For containing Fragment, onBackPressed should take this out of multiselect mode if it's in it (otherwise, just dismiss)
     ArrayList<Integer> iconResourceIds; // A list of resource ID's of the icons that will be used for each Combatant
 
     private String filteredText = ""; // The string that is currently being used to filter the list
@@ -75,6 +77,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //        this.combatantList_Display = combatantList.clone(); // COPY the main list for these two lists, so that the master is not changed
         this.combatantList_Memory = combatantList.clone();
 
+        clearMultiSelect();
         setupIconResourceIDs(context);
         combatantFilteredIndices = combatantList_Master.getIndicesThatMatch(filteredText);
     }
@@ -86,6 +89,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //        this.combatantList_Display = new FactionCombatantList(combatantList); // COPY the main list for these two lists, so that the master is not changed
         this.combatantList_Memory = new AllFactionCombatantLists(combatantList);
 
+        clearMultiSelect();
         setupIconResourceIDs(context);
         combatantFilteredIndices = combatantList_Master.getIndicesThatMatch(filteredText);
     }
@@ -98,6 +102,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //        this.combatantList_Display = new FactionCombatantList(combatantList); // COPY the main list for these two lists, so that the master is not changed
         this.combatantList_Memory = new AllFactionCombatantLists(combatantList);
 
+        clearMultiSelect();
         setupIconResourceIDs(context);
         combatantFilteredIndices = combatantList_Master.getIndicesThatMatch(filteredText);
     }
@@ -121,6 +126,33 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
             curNum++;
         }
+    }
+
+    public void clearMultiSelect() {
+        // Initialize the multi-select to have no selections
+        // First, re-initialize the isSelected list to be all false
+        this.isSelectedList = new ArrayList<>(Collections.nCopies(combatantList_Master.size(), false)); // Create a full ArrayList of "false" to indicate that none of the Combatants are selected
+
+        // Next, set the multiselect flag
+        isMultiSelecting = false;
+
+        // Finally, notify all ViewHolders to clear the mutliselect pane
+        Bundle args = new Bundle();
+        args.putBoolean(SET_MULTI_SELECT, false);
+        notifyItemRangeChanged(0, combatantList_Master.size(), args);
+    }
+
+    public void updateMultiSelectStatus() {
+        // Update the isMultiSelecting variable based on the current values in isSelectedList
+        for (int i = 0; i < isSelectedList.size(); i++) {
+            if (isSelectedList.get(i)) {
+                isMultiSelecting = true;
+                return;
+            }
+        }
+
+        // If we've gotten here, none of the Combatants are selected
+        isMultiSelecting = false;
     }
 
 //    private void initializeCombatantFilteredIndices() {
@@ -156,7 +188,6 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     class CombatantViewHolder extends bindableVH {
 
         int combatantInd = UNSET;
-        boolean hasCompleted; // Has this combatant completed its turn?
 
         TextView NameView;
         ImageButton CombatantRemove;
@@ -164,6 +195,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         ImageButton CombatantCopy;
         ImageView CombatantIcon;
         ConstraintLayout CombatantIconBorder;
+        ConstraintLayout CombatantMultiSelect;
 
         // Difference between Add and configure:
         //      1. Configure will have gear button to change aspects of combatant
@@ -184,6 +216,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
             CombatantIcon = itemView.findViewById(R.id.combatant_mod_icon);
             CombatantIconBorder = itemView.findViewById(R.id.combatant_mod_icon_border);
             CombatantCopy = itemView.findViewById(R.id.combatant_mod_copy);
+            CombatantMultiSelect = itemView.findViewById(R.id.multi_select_pane);
 
             // Set up click functionality for rest of viewHolder (i.e. name, "itemView" [the background], and the icon)
             View.OnClickListener returnCombatantListener = new View.OnClickListener() {
@@ -329,18 +362,35 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //                NameView.setText(spannable);
 //            }
         }
+
+        public void selectCombatant(boolean isSelected) {
+            // TODO: This will get called by onBindViewHolder via payload in the event that all must be deselected (if the Combatant list gets modified in ANY WAY)
+            // Set the visibility of the multi-select pane based on the input
+            int visibility;
+            if (isSelected) {
+                visibility = View.VISIBLE;
+            } else {
+                visibility = View.GONE;
+            }
+
+            CombatantMultiSelect.setVisibility(visibility);
+
+            // TODO: Finally, let the adapter know that this has become selected
+            updateMultiSelectStatus();
+        }
     }
 
     private static AppCompatActivity scanForActivity(Context cont) {
         if (cont == null)
             return null;
         else if (cont instanceof AppCompatActivity)
-            return (AppCompatActivity)cont;
+            return (AppCompatActivity) cont;
         else if (cont instanceof ContextWrapper)
-            return scanForActivity(((ContextWrapper)cont).getBaseContext());
+            return scanForActivity(((ContextWrapper) cont).getBaseContext());
 
         return null;
     }
+
     class FactionBannerViewHolder extends bindableVH {
         TextView FactionName;
 
@@ -404,6 +454,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         combatantList_Master.addCombatant(newCombatant);
 
         // Let the Adapter know that we have modified the combatant list
+        clearMultiSelect(); // Clear the multi-select list
         notifyCombatantListChanged();
     }
 
@@ -412,6 +463,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         combatantList_Master.remove(combatantList_Master.subList(combatantFilteredIndices).get(position));
 
         // Let the Adapter know that we have modified the combatant list
+        clearMultiSelect(); // Clear the multi-select list
         notifyCombatantListChanged();
     }
 
@@ -427,11 +479,28 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         // Add the new Combatant (should already be unique)
         combatantList_Master.addCombatant(newCombatant);
 
+        clearMultiSelect(); // Clear the multi-select list
         notifyCombatantListChanged();
     }
 
     @Override
     public void onBindViewHolder(@NonNull ListCombatantRecyclerAdapter.bindableVH holder, int position, @NonNull List<Object> payloads) {
+        if (!payloads.isEmpty()) {
+            // If the payload is not empty
+            if (payloads.get(0) instanceof Bundle) {
+                // If the payload is a Bundle
+                Bundle args = (Bundle) payloads.get(0);
+                if (args.containsKey(SET_MULTI_SELECT)) {
+                    // We need to adjust the selection status of this Combatant
+                    if (holder instanceof CombatantViewHolder) {
+                        // For this payload to make sense, the holder must be a CombatantViewHolder
+                        boolean newSelectionState = args.getBoolean(SET_MULTI_SELECT);
+                        ((CombatantViewHolder) holder).selectCombatant(newSelectionState);
+                    }
+                }
+            }
+        }
+
         super.onBindViewHolder(holder, position, payloads);
     }
 
@@ -465,7 +534,6 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
             return new bindableVH(new View(parent.getContext()));
         }
     }
-
 
 
     @Override
@@ -517,6 +585,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
     public void setCombatantList(AllFactionCombatantLists combatantList_Master) {
         this.combatantList_Master = combatantList_Master;
+        clearMultiSelect();
         notifyCombatantListChanged();
     }
 
@@ -524,6 +593,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     interface MasterCombatantKeeper extends Serializable {
         // TODO: May be able to get rid of this method?  Just do changes on the master list and notify that the list was modified?  Maybe?
         void receiveChosenCombatant(Combatant selectedCombatant); // Receive a selected Combatant back from this Adapter
+
         void notifyCombatantListChanged(); // Let the parent know that the Combatant list changed, so it can update any views (such as the "no combatants" view)
 
         // Note: No methods associated with modifying the FactionCombatantList, because any modifications that occur (through the "gear" button) are consistent between this adapter and other locations (because Java passes references...hopefully)
