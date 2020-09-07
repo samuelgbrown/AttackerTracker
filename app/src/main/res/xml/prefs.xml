@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:key="dnd_category"
+        android:title="@string/dnd_header"
+        app:initialExpandedChildrenCount="1">
+
+        <DropDownPreference
+            android:defaultValue="@string/rpg_ver_entry_dnd2"
+            android:entries="@array/rpg_ver"
+            android:entryValues="@array/rpg_ver_entry"
+            android:key="@string/key_preset"
+            android:title="@string/preset_select"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            android:key="@string/key_dice_size"
+            android:defaultValue="10"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/dice_size"
+            app:useSimpleSummaryProvider="true" />
+
+        <DropDownPreference
+            android:defaultValue="@string/sort_low_first"
+            android:entries="@array/sort_entry"
+            android:entryValues="@array/sort_entry_vals"
+            android:key="@string/key_sort_order"
+            android:title="@string/sort_order"
+            app:useSimpleSummaryProvider="true" />
+
+        <DropDownPreference
+            android:defaultValue="@string/mod_speed"
+            android:entries="@array/mod_entry"
+            android:entryValues="@array/mod_entry_vals"
+            android:key="@string/key_mod_used"
+            android:title="@string/modifier_used"
+            app:useSimpleSummaryProvider="true" />
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="@string/key_re_roll"
+            android:title="@string/re_roll_string" />
+
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

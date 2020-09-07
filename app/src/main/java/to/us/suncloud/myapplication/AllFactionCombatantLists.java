@@ -1,5 +1,7 @@
 package to.us.suncloud.myapplication;
 
+import androidx.annotation.Nullable;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,9 +70,9 @@ public class AllFactionCombatantLists implements Serializable {
                 break;
             default:
                 // If the Combatant's base name DOES appear in the list already with an ordinal, and the new Combatant's ordinal is already being used, then simply modify this combatant's ordinal (if needed) to be at least one higher than the current highest ordinal.
-                if (containsName(newCombatant.getName())) {
-                    newCombatant.setNameOrdinal(Math.max(highestExistingOrdinal + 1, newCombatant.getOrdinal())); // If the new Combatant's ordinal is not already being used, then it was probably already a part of the List already (a Combatant being re-added after being modified), so don't mess with it!
-                }
+//                if (containsName(newCombatant.getName())) {
+                newCombatant.setNameOrdinal(Math.max(highestExistingOrdinal + 1, newCombatant.getOrdinal())); // If the new Combatant's ordinal is not already being used, then it was probably already a part of the List (a Combatant being re-added after being modified), so don't mess with it!
+//                }
         }
 
         // Now, the Combatant and the list are *guaranteed* to unique to each other, and ready to have the Combatant added
@@ -228,7 +230,7 @@ public class AllFactionCombatantLists implements Serializable {
 
     public void addAll(ArrayList<Combatant> combatantListToAdd) {
         // Add all combatants in this list
-        for (int i = 0;i < combatantListToAdd.size();i++) {
+        for (int i = 0; i < combatantListToAdd.size(); i++) {
             addCombatant(combatantListToAdd.get(i)); // Renaming may occur if there was some kind of management error
         }
     }
@@ -310,5 +312,27 @@ public class AllFactionCombatantLists implements Serializable {
         // Sort the Faction lists according to the order we would like to see them on screen
         // If the order should be changed, change the order of the constants defined in the enum Combatant.Faction
         Collections.sort(allFactionLists, new CombatantSorter.SortFactionList());
+    }
+
+    public AllFactionCombatantLists getRawCopy() {
+        // Get a copy of this List that contains "Raw" version of all Combatants (only Name, Faction, and Icon can be non-default)
+        AllFactionCombatantLists newList = new AllFactionCombatantLists();
+        for (int i = 0; i < size(); i++) {
+            newList.addCombatant(get(i).getRaw());
+        }
+
+        return newList;
+    }
+
+    public boolean rawEquals(@Nullable Object obj) {
+        // Check if the Combatant lists are the same, for data saving purposes
+        boolean isEqual = false;
+        if (obj instanceof AllFactionCombatantLists) {
+            AllFactionCombatantLists objRaw = ((AllFactionCombatantLists) obj).getRawCopy();
+            AllFactionCombatantLists thisRaw = getRawCopy();
+            return thisRaw.equals(objRaw);
+        }
+
+        return isEqual;
     }
 }

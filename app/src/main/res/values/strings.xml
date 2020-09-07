@@ -25,8 +25,12 @@
     <string name="encounter_next_combatant">Next Combatant!</string>
     <string name="encounter_roll_initiative">Roll Initiative!</string>
     <string name="encounter_prepare_next_round">Next Round!</string>
+    <string name="prepare_message">Modify %1$s!</string>
 
     <string name="encounter_round_number">Round:</string>
+
+    <string name="configure_title">Configure Combatants</string>
+    <string name="encounter_title">Combat</string>
 
     <string name="mod_combatant">Modify Combatant</string>
     <string name="create_combatant">Create New Combatant</string>
@@ -61,5 +65,82 @@
     values-round/strings.xml for round devices.
     -->
     <string name="hello_world">Hello Square World!</string>
+    <string name="title_activity_settings">SettingsActivity</string>
+
+    <!-- Preference Titles -->
+    <string name="dnd_header">Initiative Calculation</string>
+    <string name="sync_header">Sync</string>
+
+    <!-- Messages Preferences -->
+<!--    <string name="signature_title">Your signature</string>-->
+<!--    <string name="reply_title">Default reply action</string>-->
+    <string name="preset_select">Presets</string>
+    <string name="dice_size">Dice Used</string>
+    <string name="sort_order">Initiative Order</string>
+    <string name="modifier_used">Modifier Used</string>
+
+    <string name="key_preset">KeyPreset</string>
+    <string name="key_dice_size">KeyDice</string>
+    <string name="key_sort_order">KeySort</string>
+    <string name="key_mod_used">KeyMod</string>
+    <string name="key_re_roll">KeyReRoll</string>
+
+    <string name="rpg_ver_dnd2">DnD 2 (Advanced DnD)</string>
+    <string name="rpg_ver_dnd3">DnD 3.5</string>
+    <string name="rpg_ver_cust">Custom</string>
+    <string-array name="rpg_ver">
+        <item>@string/rpg_ver_dnd2</item>
+        <item>@string/rpg_ver_dnd3</item>
+        <item>@string/rpg_ver_cust</item>
+    </string-array>
+
+    <string name="rpg_ver_entry_dnd2">d2</string>
+    <string name="rpg_ver_entry_dnd3">d3</string>
+    <string name="rpg_ver_entry_cust">cust</string>
+    <string-array name="rpg_ver_entry">
+        <item>@string/rpg_ver_entry_dnd2</item>
+        <item>@string/rpg_ver_entry_dnd3</item>
+        <item>@string/rpg_ver_entry_cust</item>
+    </string-array>
+
+    <string name="sort_low_first">Lowest Goes First</string>
+    <string name="sort_high_first">Highest Goes First</string>
+    <string-array name="sort_entry">
+        <item>@string/sort_low_first</item>
+        <item>@string/sort_high_first</item>
+    </string-array>
+
+    <string name="sort_entry_low_first">low</string>
+    <string name="sort_entry_high_first">high</string>
+    <string-array name="sort_entry_vals">
+        <item>@string/sort_entry_low_first</item>
+        <item>@string/sort_entry_high_first</item>
+    </string-array>
+
+    <string name="mod_speed">Speed Factor</string>
+    <string name="mod_dex">Dexterity Bonus</string>
+    <string-array name="mod_entry">
+        <item>@string/mod_speed</item>
+        <item>@string/mod_dex</item>
+    </string-array>
+
+    <string name="mod_entry_speed">speed</string>
+    <string name="mod_entry_dex">dex</string>
+    <string-array name="mod_entry_vals">
+        <item>@string/mod_speed</item>
+        <item>@string/mod_dex</item>
+    </string-array>
+
+    <string name="change_dice_title">Lose Combat Data?</string>
+    <string name="change_dice_message">Changing the dice size mid-combat will reset your progress back to round 1.  Are you sure you want to change it?</string>
+
+    <string name="re_roll_string">Re-roll Initiative Each Round</string>
+
+    <!-- Sync Preferences -->
+    <string name="sync_title">Sync email periodically</string>
+    <string name="attachment_title">Download incoming attachments</string>
+    <string name="attachment_summary_on">Automatically download attachments for incoming emails
+    </string>
+    <string name="attachment_summary_off">Only download attachments when manually requested</string>
 
 </resources>

@@ -7,6 +7,12 @@ import to.us.suncloud.myapplication.Combatant;
 public class CombatantSorter {
     // Sorting Comparator to sort the Combatants by increasing Total Initiative
     static public class SortByInitiative implements Comparator<Combatant> {
+        sortOrder sortOrder; // The sort order for initiative (low to high, or high to low)
+
+        SortByInitiative(sortOrder sortOrder) {
+            this.sortOrder = sortOrder;
+        }
+
         @Override
         public int compare(Combatant combatant, Combatant t1) {
             int cTI = combatant.getTotalInitiative();
@@ -14,7 +20,15 @@ public class CombatantSorter {
             // TODO: This comparison method can be changed according to which version we're using by using a method (perhaps set the method in the Constructor of this object?
             if (cTI != t1TI) {
                 // If the total initiatives are different, then it's a simple sort
-                return cTI - t1TI;
+                switch (sortOrder) {
+                    case LowToHigh:
+                        return cTI - t1TI; // Make the low initiative Combatants appear first
+                    case HighToLow:
+                        return t1TI - cTI; // Make the high initiative Combatants appear first
+                    default:
+                        return cTI - t1TI; // Make the low initiative Combatants appear first
+
+                }
             } else {
                 //  If the total initiatives are the same, then sort according to the SortAlphabeticallyByFaction class
                 return new SortAlphabeticallyByFaction().compare(combatant, t1);
@@ -56,5 +70,10 @@ public class CombatantSorter {
         public int compare(FactionCombatantList o1, FactionCombatantList o2) {
             return o1.faction().compareTo(o2.faction()); // Sort according to the factions
         }
+    }
+
+    enum sortOrder {
+        LowToHigh,
+        HighToLow
     }
 }

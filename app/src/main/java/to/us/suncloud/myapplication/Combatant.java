@@ -1,14 +1,11 @@
 package to.us.suncloud.myapplication;
 
-import android.service.autofill.FieldClassification;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
-import androidx.constraintlayout.widget.ConstraintLayout;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,9 +23,8 @@ public class Combatant implements Serializable {
     private int speedFactor = 0;
     private int roll = 0;
     private int totalInitiative = 0;
+    private boolean isSelected = false; // Is the Combatant selected or checked off?
     private UUID id = UUID.randomUUID();
-
-    private static Random rand = new Random(); // A random number generator (static, so that each Combatant uses the same one, and it does not just use the system clock as a first time seed each time
 
     // Create a regex Pattern for finding the base name of a Combatant
     private static Pattern ordinalChecker = Pattern.compile("^(.*?)(?:\\W*(\\d++)|$)"); // A pattern that matches the Combatant name into the first group, and the Combatant's ordinal number (if it exists) into the second group
@@ -53,10 +49,11 @@ public class Combatant implements Serializable {
         faction = c.getFaction();
         name = c.getName();
         iconIndex = c.getIconIndex();
-        speedFactor = c.getSpeedFactor();
+        speedFactor = c.getModifier();
         roll = c.getRoll();
         totalInitiative = c.getTotalInitiative();
         id = c.getId();
+        isSelected = c.isSelected();
     }
 
     //
@@ -74,6 +71,9 @@ public class Combatant implements Serializable {
         return totalInitiative;
     }
 
+    public boolean isSelected() {
+        return isSelected;
+    }
 
     public Faction getFaction() {
         return faction;
@@ -125,13 +125,14 @@ public class Combatant implements Serializable {
     }
 
     public Combatant getRaw() {
-        // Useful for quickly getting a "sanitized" version of the combatant (clears the roll/total initiative, gets rid of the name ordinal, if it exists)
+        // Useful for quickly getting a "sanitized" version of the combatant (clears the roll/total initiative, gets rid of the name ordinal, if it exists, clears isSelected)
         Combatant rawCombatant = clone();
 
         // Set a few values for the new Combatant
         rawCombatant.clearRoll();
         rawCombatant.setName(getBaseName());
         rawCombatant.genUUID();
+        rawCombatant.setSelected(false);
         return rawCombatant;
     }
 
@@ -143,11 +144,11 @@ public class Combatant implements Serializable {
         this.name = name;
     }
 
-    public int getSpeedFactor() {
+    public int getModifier() {
         return speedFactor;
     }
 
-    public void setSpeedFactor(int speedFactor) {
+    public void setModifier(int speedFactor) {
         this.speedFactor = speedFactor;
         calcTotalInitiative();
     }
@@ -162,9 +163,8 @@ public class Combatant implements Serializable {
         calcTotalInitiative();
     }
 
-    public void rollInitiative() {
-        // Find a pseudorandom number between 1 and 20, assign it to the roll member variable, and re-calculate the total initiative
-        setRoll(rand.nextInt(20) + 1); // Calculate a random number between [0 20), and adjust it so it produces a roll between [1 20]
+    public void setSelected(boolean selected) {
+        isSelected = selected;
     }
 
     private void calcTotalInitiative() {
@@ -187,7 +187,7 @@ public class Combatant implements Serializable {
     public void clearVals() {
         // Clear all values
         clearRoll();
-        setSpeedFactor(0);
+        setModifier(0);
     }
 
     //
@@ -200,12 +200,27 @@ public class Combatant implements Serializable {
             boolean nameEqual = getName().equals(((Combatant) obj).getName());
             boolean facEqual = getFaction() == ((Combatant) obj).getFaction();
             boolean iconEqual = getIconIndex() == ((Combatant) obj).getIconIndex();
-            boolean speedEqual = getSpeedFactor() == ((Combatant) obj).getSpeedFactor();
+            boolean speedEqual = getModifier() == ((Combatant) obj).getModifier();
             boolean rollEqual = getRoll() == ((Combatant) obj).getRoll();
             boolean totalEqual = getTotalInitiative() == ((Combatant) obj).getTotalInitiative();
             boolean idEqual = getId() == ((Combatant) obj).getId();
+            boolean selectedEqual = isSelected == ((Combatant) obj).isSelected();
 
-            isEqual = nameEqual && facEqual &&iconEqual && speedEqual && rollEqual && totalEqual && idEqual;
+            isEqual = nameEqual && facEqual &&iconEqual && speedEqual && rollEqual && totalEqual && idEqual && selectedEqual;
+        }
+
+        return isEqual;
+    }
+
+    public boolean rawEquals(@Nullable Object obj) {
+        // Check if the Combatants are the same, for data saving purposes
+        boolean isEqual = false;
+        if (obj instanceof Combatant) {
+            boolean nameEqual = getName().equals(((Combatant) obj).getName());
+            boolean facEqual = getFaction() == ((Combatant) obj).getFaction();
+            boolean iconEqual = getIconIndex() == ((Combatant) obj).getIconIndex();
+
+            isEqual = nameEqual && facEqual && iconEqual;
         }
 
         return isEqual;
@@ -215,11 +230,9 @@ public class Combatant implements Serializable {
         // Check if the Combatants are the same, for RecyclerView viewing purpose
         boolean isEqual = false;
         if (obj instanceof Combatant) {
-            boolean nameEqual = getName().equals(((Combatant) obj).getName());
-            boolean facEqual = getFaction() == ((Combatant) obj).getFaction();
-            boolean iconEqual = getIconIndex() == ((Combatant) obj).getIconIndex();
+            boolean selectedEqual = isSelected == ((Combatant) obj).isSelected();
 
-            isEqual = nameEqual && facEqual &&iconEqual;
+            isEqual = rawEquals(obj) && selectedEqual;
         }
 
         return isEqual;
@@ -296,10 +309,12 @@ public class Combatant implements Serializable {
     }
 
     public Combatant cloneUnique() {
-        // Generate a Combatant with a unique ID and no roll/initiative/speed factor
+        // Generate a Combatant with a unique ID and no roll/initiative/modifier
         Combatant newCombatant = clone();
         newCombatant.genUUID();
-        newCombatant.clearVals();
+//        newCombatant.clearVals();
+        newCombatant.clearRoll();
+        newCombatant.setSelected(false);
         return newCombatant;
     }
 

@@ -1,13 +1,17 @@
 package to.us.suncloud.myapplication;
 
+import android.os.Bundle;
+
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
+
+import java.util.ArrayList;
 
 public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
     AllFactionCombatantLists oldList;
     AllFactionCombatantLists newList;
 
     CombatantFilteredDiffUtil(AllFactionCombatantLists oldList, AllFactionCombatantLists newList) {
-        // TODO CHECK: Does this really need the filter text...?  If not, then can basically use same CombatantFilteredDiffUtil as Encounter Activity...
         this.oldList = oldList;
         this.newList = newList;
     }
@@ -52,7 +56,7 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
         if ((2*oldCombatantInd + 1)*(2*newCombatantInd + 1) > 0 ) {
             if (oldCombatantInd >= 0) {
                 // Both items are Combatants
-                // Make sure both Combatant displays are identical
+                // Make sure both Combatant displays are identical, and that the isSelected status is the same
                 boolean contentsSame = oldList.get(oldCombatantInd).displayEquals(newList.get(newCombatantInd));
                 return contentsSame;
             } else {
@@ -63,5 +67,36 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
             // The items at each position represent different types (one is a banner and the other is a Combatant
             return false;
         }
+    }
+
+    @Nullable
+    @Override
+    public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+        // For this list, we only care about name, faction, icon, and isSelected status
+        int oldCombatantInd = oldList.posToCombatantInd(oldItemPosition);
+        int newCombatantInd = newList.posToCombatantInd(newItemPosition);
+
+        Combatant oldCombatant = oldList.get(oldCombatantInd);
+        Combatant newCombatant = newList.get(newCombatantInd);
+
+        // Go through each field that we care about, and record any differences
+        Bundle diffs = new Bundle();
+        if (!oldCombatant.getName().equals(newCombatant.getName())) {
+            diffs.putString("Name", newCombatant.getName());
+        }
+        if (!oldCombatant.getFaction().equals(newCombatant.getFaction())) {
+            diffs.putSerializable("Faction", newCombatant.getFaction());
+        }
+        if (!(oldCombatant.getIconIndex() == newCombatant.getIconIndex())) {
+            diffs.putInt("Icon", newCombatant.getIconIndex());
+        }
+        if (oldCombatant.isSelected() != newCombatant.isSelected()) {
+            diffs.putBoolean("Selected", newCombatant.isSelected());
+        }
+        if (diffs.size() == 0) {
+            return null;
+        }
+
+        return diffs;
     }
 }

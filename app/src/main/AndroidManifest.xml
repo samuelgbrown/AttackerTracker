@@ -11,8 +11,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".EncounterActivity"></activity>
-
+        <activity android:name=".EncounterActivity" />
+        <activity android:name=".SettingsActivity" />
         <activity android:name=".ConfigureCombatantListActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

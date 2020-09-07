@@ -5,10 +5,10 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -19,14 +19,12 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 
 /**
@@ -53,11 +51,14 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     private AllFactionCombatantLists currentFactionCombatantList = null; // Used to generate a master Combatant list, to send to the CreateOrModCombatant dialogue
 
     private boolean expectingReturnedCombatant = false;
+    private boolean isMultiSelecting = false; // Is the Fragment (or adapter) currently in a multi-selecting state?
 
     private ReceiveAddedCombatant combatantDestination = null; // The Activity/Fragment that will receive the selected Combatant
 
     private ListCombatantRecyclerAdapter adapter;
     private TextView emptyCombatants;
+    private ImageButton multiSelectConfirm;
+    private ImageButton multiSelectCancel;
 
     public ViewSavedCombatantsFragment() {
         // Required empty public constructor
@@ -135,12 +136,14 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View layoutContents = inflater.inflate(R.layout.add_combatant, container, false);
-        SearchView searchView = layoutContents.findViewById(R.id.add_combatant_search);
+        final SearchView searchView = layoutContents.findViewById(R.id.add_combatant_search);
         emptyCombatants = layoutContents.findViewById(R.id.add_combatants_empty);
         RecyclerView combatantListView = layoutContents.findViewById(R.id.view_saved_combatants_list);
         Button addNewCombatant = layoutContents.findViewById(R.id.add_new_combatant);
         ImageButton closeButton = layoutContents.findViewById(R.id.view_list_close);
         TextView title = layoutContents.findViewById(R.id.view_saved_combatants_title);
+        multiSelectConfirm = layoutContents.findViewById(R.id.confirm_multi_select);
+        multiSelectCancel = layoutContents.findViewById(R.id.cancel_multi_select);
 
         if (expectingReturnedCombatant) {
             // We want to add a new Combatant to the encounter
@@ -167,6 +170,12 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
                 return true;
             }
         });
+        searchView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchView.onActionViewExpanded(); // Expand the search view when you click on it (why doesn't it do this normally???)
+            }
+        });
 
         addNewCombatant.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -187,13 +196,44 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
         });
 
         // Create an adapter and give it to the Recycler View
-        adapter = new ListCombatantRecyclerAdapter(this, getContext(), savedCombatantsList.clone(), !expectingReturnedCombatant); // Populate a Recycler view with the saved Combatants
+        ListCombatantRecyclerAdapter.LCRAFlags flags = new ListCombatantRecyclerAdapter.LCRAFlags(); // Create flags
+        flags.adapterCanModify = !expectingReturnedCombatant;
+        flags.mustReturnCombatant = expectingReturnedCombatant;
+        adapter = new ListCombatantRecyclerAdapter(this, savedCombatantsList.clone(), flags); // Populate a Recycler view with the saved Combatants
         combatantListView.setAdapter(adapter);
         combatantListView.addItemDecoration(new BannerDecoration(getContext()));
         combatantListView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Display the correct fragments for each faction
+        // Set up the multi-selection button, so that the user can confirm their selection if choosing multiple combatants
+        multiSelectConfirm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Get the list of Combatants from the adapter, and return the list to whoever called this Fragment
+                if (expectingReturnedCombatant) {
+                    ArrayList<Combatant> returnList = adapter.getAllSelectedCombatants(); // Get a list of all selected Combatants
+
+                    // Go through the entire list, and send each one to the destination, one-by-one
+                    for (int i = 0;i < returnList.size();i++) {
+                        combatantDestination.receiveAddedCombatant(returnList.get(i).cloneUnique()); // Clone the Combatant and send it
+                    }
+
+                    // Next, try to add this Combatant to the Combatant list, and close up
+                    saveAndClose();
+                }
+                // If the calling Activity/Fragment is NOT expecting a returned Combatant, then do nothing
+            }
+        });
+
+        multiSelectCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                adapter.clearMultiSelect();
+            }
+        });
+
+        // Initialize the GUI
         updateNoCombatantMessage();
+        notifyIsMultiSelecting(false);
 
         // TODO TEST
         return layoutContents; // If there is nothing in the file, then no combatants have previously been saved, so display the empty message
@@ -305,8 +345,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
         // TODO CHECK: Here is where we can change the flow.  If we don't like this, just need to add selection ability (relatively easy...) and a confirmation button (should already be there from the modifySavedCombatants version of this Fragment).
 
-        newCombatant.genUUID(); // Give this Combatant a new ID upon being created
-
         // Try to add this combatant to the save file (will only add the base-name)
         addCombatantToSave(newCombatant);
         updateNoCombatantMessage();
@@ -327,6 +365,22 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
         // Save the changes to the list
         saveCombatantList();
+    }
+
+    @Override
+    public void notifyIsMultiSelecting(boolean isMultiSelecting) {
+        // The adapter started multi-selecting
+        this.isMultiSelecting = isMultiSelecting;
+
+        // Set the visibility of multi-selection-related elements in the GUI
+        int visibility = View.GONE;
+        if (isMultiSelecting) {
+            visibility = View.VISIBLE;
+        }
+
+        // Set the visibility of both multi-select GUI elements
+        multiSelectConfirm.setVisibility(visibility);
+        multiSelectCancel.setVisibility(visibility);
     }
 
     private void addCombatantToSave(Combatant newCombatant) {
@@ -354,9 +408,9 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
         // Save the Combatant data that we have now
 //        AllFactionCombatantLists newSavedCombatantsList = eligibleCombatantsList.clone(); // Create a list that contains the eligible Combatants (Combatants from the save file PLUS any Combatants that were just made)...
 //        newSavedCombatantsList.addAll(currentFactionCombatantList); // ... and the Combatants from the current Encounter
-        if (!adapter.getCombatantList().equals(savedCombatantsList)) {
+        if (!adapter.getCombatantList().rawEquals(savedCombatantsList)) {
             // If the test list is not equal to the list of Combatants from the file, that means that some Combatants were added (or possibly removed...?), so we should save the new list
-            LocalPersistence.writeObjectToFile(getContext(), adapter.getCombatantList(), combatantListSaveFile);
+            LocalPersistence.writeObjectToFile(getContext(), adapter.getCombatantList().getRawCopy(), combatantListSaveFile);
         }
 
         // Now keep track of the most recently saved batch of Combatants
@@ -375,10 +429,15 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         return new Dialog(requireActivity(), getTheme()) {
-//            @Override
-//            public void onBackPressed() {
-//                saveAndClose();
-//            }
+            @Override
+            public void onBackPressed() {
+                if (isMultiSelecting) {
+                    // TODO SOON: Not working
+                    adapter.clearMultiSelect(); // This will clear multi-select in the adapter, and eventually let this Fragment know to update the GUI
+                } else {
+                    dismiss();
+                }
+            }
 
             @Override
             public void dismiss() {

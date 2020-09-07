@@ -13,14 +13,14 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
-import android.os.ResultReceiver;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -29,7 +29,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -64,9 +63,11 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
 
     // The views that are part of this fragment
     TextView title;
+    TextView modTypeView;
     ConstraintLayout banner;
     ConstraintLayout iconBorder;
     EditText combatantName;
+    EditText defaultModifier; // Default Speed Factor or Dex
     Spinner combatantFaction;
     ImageView combatantIcon;
     Button buttonOk;
@@ -199,10 +200,15 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         // Inflate the layout for this fragment
         View fragView = inflater.inflate(R.layout.fragment_create_or_mod_combatant, container, false);
 
+        String modString = InitPrefsHelper.getModString(getContext()); // TODO USE
+
+
         title = fragView.findViewById(R.id.mod_create_title);
+        modTypeView = fragView.findViewById(R.id.textViewMod);
         banner = fragView.findViewById(R.id.mod_create_banner);
         iconBorder = fragView.findViewById(R.id.combatant_icon_background);
         combatantName = fragView.findViewById(R.id.combatant_edit_name);
+        defaultModifier = fragView.findViewById(R.id.combatant_edit_mod);
         combatantFaction = fragView.findViewById(R.id.combatant_edit_faction);
         combatantIcon = fragView.findViewById(R.id.combatant_edit_icon);
         buttonOk = fragView.findViewById(R.id.mod_create_ok);
@@ -214,6 +220,40 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         } else {
             title.setText(R.string.mod_combatant);
         }
+
+        // Set the modifier type to the correct String
+        modTypeView.setText(modString);
+
+        defaultModifier.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (v instanceof EditText) {
+                    if (hasFocus) {
+                        // If we are gaining focus, select all text
+                        ((EditText) v).selectAll();
+                    } else {
+                        // If we have lost focus, the user has likely navigated away.  So, confirm the new value
+
+                        // It damn well better be...
+                        setModifierIfValid(((EditText) v).getText().toString()); // Set the new modifier, if possible
+                    }
+                }
+            }
+        });
+
+        defaultModifier.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                    if (event == null || !event.isShiftPressed()) {
+                        // The user is done typing, so attempt to set the modifier
+                        setModifierIfValid(v.getText().toString());
+                        return true;
+                    }
+                }
+                return false; // Pass on to other listeners.
+            }
+        });
 
         combatantName.addTextChangedListener(new TextWatcher() {
             @Override
@@ -290,7 +330,6 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
                 iconSelectFragment.show(fm, "Icon Select");
             }
         });
-
         buttonCancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -306,11 +345,11 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
             }
         });
 
-
         // Now, make the GUI reflect the current Combatant
         setIconImage(currentCombatant.getIconIndex()); // Load the icon
         combatantName.setText(currentCombatant.getName()); // Load the name
         updateFactionGUI(); // Load the Faction
+        defaultModifier.setText(String.valueOf(currentCombatant.getModifier())); // Load the default modifier
 
         if (creatingCombatant) {
             // If we're making a new Combatant, ask for the Combatant's Name field to get focus, and show the keyboard (if we're just modifying a Combatant, we don't KNOW that it's the name that they want to change)
@@ -343,6 +382,27 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
             case Neutral:
                 combatantFaction.setSelection(2);
         }
+    }
+
+    public void setModifierIfValid(String newModifierValString) {
+        int curModVal = currentCombatant.getModifier();
+        int newModVal = curModVal;
+        boolean newValIsValid = false;
+        try {
+            newModVal = Integer.parseInt(newModifierValString); // Get the value that was entered into the text box
+            newValIsValid = curModVal != newModVal; // If the new modifier value is different than the current value, then allow it
+        } catch (NumberFormatException e) {
+//                newValIsValid = false;
+        }
+
+        // If the new speed factor is NOT valid, then just revert the EditText and return
+        if (!newValIsValid) {
+            defaultModifier.setText(String.valueOf(curModVal)); // Revert to the current modifier value
+            return;
+        }
+
+        // If the new speed factor IS valid, then set the Combatant's modifier to the new value
+        currentCombatant.setModifier(newModVal);
     }
 
     @Override
@@ -388,7 +448,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
             iconBorder.setBackgroundColor(mainColor);
             title.setBackgroundColor(mainColor);
             title.setTextColor(backColor);
-            combatantIcon.getForeground().setTint(mainColor); // TODO: Fucking work...fuck.
+            combatantIcon.getForeground().setTint(mainColor);
         }
     }
 

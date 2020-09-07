@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/encounter_main"
     android:clickable="true"
-    android:focusable="true"
+
+
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@color/standardBackground">
@@ -15,7 +16,8 @@
         android:layout_marginTop="4dp"
         android:layout_marginBottom="4dp"
         android:clickable="true"
-        android:focusable="true"
+
+
         app:cardCornerRadius="10dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
@@ -24,7 +26,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clickable="true"
-            android:focusable="true">
+
+            >
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/check_enc_layout"
@@ -33,7 +36,8 @@
                 android:background="@color/softBackground"
                 android:visibility="visible"
                 android:clickable="true"
-                android:focusable="true"
+
+
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
@@ -61,7 +65,8 @@
                     android:layout_marginEnd="2dp"
                     android:layout_marginBottom="8dp"
                     android:clickable="true"
-                    android:focusable="true"
+
+
                     android:text="10"
                     android:textAlignment="center"
                     android:textSize="36sp"
@@ -76,7 +81,8 @@
                 android:layout_height="wrap_content"
                 android:background="@color/standardBackground"
                 android:clickable="true"
-                android:focusable="true"
+
+
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@id/check_enc_layout"
@@ -87,7 +93,8 @@
                     android:layout_height="wrap_content"
                     android:background="@color/standardBackground"
                     android:clickable="true"
-                    android:focusable="true"
+
+
                     android:layout_marginTop="8dp"
                     android:layout_marginEnd="8dp"
                     android:layout_marginStart="-10dp"
@@ -102,7 +109,8 @@
                         android:layout_height="match_parent"
                         android:layout_marginStart="10dp"
                         android:clickable="true"
-                        android:focusable="true"
+
+
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -118,7 +126,8 @@
                             android:scaleType="fitCenter"
                             android:text="="
                             android:clickable="true"
-                            android:focusable="true"
+
+
                             android:textAlignment="center"
                             android:textSize="30sp"
                             app:layout_constraintBottom_toBottomOf="parent"
@@ -134,7 +143,8 @@
                             android:layout_marginTop="4dp"
                             android:layout_marginBottom="4dp"
                             android:clickable="true"
-                            android:focusable="true"
+
+
                             android:scaleType="fitCenter"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintDimensionRatio="1:1"
@@ -148,7 +158,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
                             android:clickable="true"
-                            android:focusable="true"
+
+
                             app:layout_constraintBottom_toBottomOf="@id/imageView"
                             app:layout_constraintDimensionRatio="1:1"
                             app:layout_constraintStart_toEndOf="@+id/imageView"
@@ -160,7 +171,8 @@
                                 android:layout_height="wrap_content"
                                 android:text="7"
                                 android:clickable="true"
-                                android:focusable="true"
+
+
                                 android:textAlignment="center"
                                 android:textSize="30sp"
                                 android:visibility="visible"
@@ -196,7 +208,8 @@
                             android:layout_marginTop="4dp"
                             android:scaleType="fitCenter"
                             android:clickable="true"
-                            android:focusable="true"
+
+
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintDimensionRatio="1:1"
                             app:layout_constraintStart_toEndOf="@+id/combatant_enc_roll_layout"
@@ -212,7 +225,8 @@
                             android:layout_marginBottom="4dp"
                             android:scaleType="fitCenter"
                             android:clickable="true"
-                            android:focusable="true"
+
+
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintDimensionRatio="1:1"
                             app:layout_constraintStart_toEndOf="@+id/image_plus"
@@ -241,7 +255,8 @@
                             android:layout_marginEnd="8dp"
                             android:layout_marginBottom="8dp"
                             android:clickable="true"
-                            android:focusable="true"
+
+
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintDimensionRatio="1:1"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -258,7 +273,8 @@
                                 android:background="@color/standardBackground"
                                 android:tint="@color/colorNeutral"
                                 android:clickable="true"
-                                android:focusable="true"
+
+
                                 app:layout_constraintBottom_toBottomOf="parent"
                                 app:layout_constraintEnd_toEndOf="parent"
                                 app:layout_constraintStart_toStartOf="parent"

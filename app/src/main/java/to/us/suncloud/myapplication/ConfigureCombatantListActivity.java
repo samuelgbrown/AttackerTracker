@@ -7,8 +7,10 @@ import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,7 +20,9 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
     public static final String COMBATANT_LIST = "combatantListList"; // ID for inputs to the activity
     public static final String ROUND_NUMBER = "roundNumber"; // ID for inputs to the activity
-    public static final String COMBAT_BEGIN = "combatBegin"; // Is this activity used for the beginning of combat, or in the middle of combat?
+    //    public static final String ACTIVE_COMBATANT_NUMBER = "activeCombatantNumber"; // ID for inputs to the activity
+    public static final String ENCOUNTER_DATA = "encounterData"; // ID for the encounter list data (dice rolls, etc) sorted as a EncounterCombatantList (really just for savedStateInstance, we transfer the Combatant list data with the Encounter Activity using a single, finalized EncounterCombatantList)
+
     public static final int COMBATANT_LIST_CODE = 0; // The Code to represent requesting a Combatant List back from the Encounter Activity, used in startActivityForResult()
 
     TextView mainButton; // The Main button at the bottom, to transfer over to the Encounter Activity
@@ -26,7 +30,11 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     RecyclerView combatantListView; // RecyclerView that holds the Combatant List
     ListCombatantRecyclerAdapter adapter; // Adapter that holds the combatantList
 
+    // Stored values for the Encounter Activity
+    AllFactionCombatantLists combatantLists = new AllFactionCombatantLists();
     int roundNumber = 1; // The current round number of the Encounter
+    //    int curActiveCombatant = EncounterCombatantRecyclerAdapter.PREP_PHASE; // The currently active Combatant in the Encounter
+    EncounterCombatantList curEncounterListData = null; // Keep track of any historical meta-data related to the encounter (dice rolls, any other things I was silly enough to try and keep consistent even though only like 2% of users will use this feature...)
 
 //    HashMap<Combatant.Faction, FactionFragmentInfo> factionFragmentMap = new HashMap<>();
 
@@ -37,22 +45,21 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Get info from the intent that started this activity
-        Intent thisIntent = getIntent();
-        Bundle thisBundleData = thisIntent.getExtras();
-
         // Get the combatantList and any other initialization parameters
-        AllFactionCombatantLists combatantLists = new AllFactionCombatantLists();
-        if (thisBundleData != null) {
+        if (savedInstanceState != null) {
             // Get the combatant lists
-            if (thisBundleData.containsKey(COMBATANT_LIST)) {
-                // TODO: Set up interaction between this and Encounter Activity (passing combatant list back and forth [unless we never really need the list back from the Encounter Activity...?] )
-                combatantLists = (AllFactionCombatantLists) thisBundleData.getSerializable(COMBATANT_LIST);
+            if (savedInstanceState.containsKey(COMBATANT_LIST)) {
+                combatantLists = (AllFactionCombatantLists) savedInstanceState.getSerializable(COMBATANT_LIST);
             }
 
             // Get the current round number
-            if (thisBundleData.containsKey(ROUND_NUMBER)) {
-                roundNumber = thisBundleData.getInt(ROUND_NUMBER, 0);
+            if (savedInstanceState.containsKey(ROUND_NUMBER)) {
+                roundNumber = savedInstanceState.getInt(ROUND_NUMBER, 0);
+            }
+
+            // Get the meta-data for the current encounter
+            if (savedInstanceState.containsKey(ENCOUNTER_DATA)) {
+                curEncounterListData = (EncounterCombatantList) savedInstanceState.getSerializable(ENCOUNTER_DATA);
             }
         }
 
@@ -71,7 +78,21 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
             public void onClick(View view) {
                 // Start the Encounter!  WOOO!!
                 Intent encounterIntent = new Intent(ConfigureCombatantListActivity.this, EncounterActivity.class);
-                encounterIntent.putExtra(COMBATANT_LIST, adapter.getCombatantList());
+
+                // Create an EncounterCombatantList to send to the Encounter (done here so we can send along the meta-data included in the EncounterCombatantList, so the state stays consistent)
+                EncounterCombatantList combatantListToSend;
+                if (curEncounterListData != null) {
+                    // Update the EncounterCombatantList
+                    combatantListToSend = curEncounterListData; // Set the meta-data (dice rolls, etc) to be the same as before
+
+                    // Add the actual list of Combatants to the EncounterCombatantList
+                    combatantListToSend.updateCombatants(adapter.getCombatantList()); // Do not initialize the Combatants, but add the new ones to the list
+                } else {
+                    // Create a new EncounterCombatantList (and "initialize" the Combatants - setting them all to isSelected so we start in the preparation phase of combat)
+                    combatantListToSend = new EncounterCombatantList(adapter.getCombatantList(), getContext());
+                }
+
+                encounterIntent.putExtra(COMBATANT_LIST, combatantListToSend);
                 encounterIntent.putExtra(ROUND_NUMBER, roundNumber);
                 startActivityForResult(encounterIntent, COMBATANT_LIST_CODE);
             }
@@ -79,13 +100,29 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
         // Toolbar
         setSupportActionBar(toolbar); // TODO: Add toolbar buttons (Settings, like which DnD version is being used?)
+        getSupportActionBar().setTitle(R.string.configure_title);
 
         // Create a ListCombatantRecyclerAdapter, and assign it to the RecyclerView
-        adapter = new ListCombatantRecyclerAdapter(this, getApplicationContext(), combatantLists, true, true);
+        ListCombatantRecyclerAdapter.LCRAFlags flags = new ListCombatantRecyclerAdapter.LCRAFlags(); // Create flags structure (does this look worse?  It may look worse...I just wanted it to be clean!!!)
+        flags.adapterCanCopy = true;
+        flags.adapterCanModify = true;
+        adapter = new ListCombatantRecyclerAdapter(this, combatantLists, flags);
         combatantListView.setAdapter(adapter);
         combatantListView.addItemDecoration(new BannerDecoration(getApplicationContext()));
         combatantListView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
     }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        // Save a few useful things (don't let Google see this, they'll get pissed off at how much data I'm saving in outState...whoops...)
+        outState.putInt(ROUND_NUMBER, roundNumber);
+        outState.putSerializable(COMBATANT_LIST, combatantLists);
+        outState.putSerializable(ENCOUNTER_DATA, curEncounterListData);
+
+        // Save the instance data
+        super.onSaveInstanceState(outState);
+    }
+
 
     public void updateMainButton() {
         if (roundNumber > 1) {
@@ -102,13 +139,15 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
             if (resultCode == RESULT_OK) {
                 if (data != null) {
                     // Get the Combatant list
-                    AllFactionCombatantLists newCombatantList = (AllFactionCombatantLists) data.getSerializableExtra(COMBATANT_LIST);
-                    if (newCombatantList != null) {
-                        adapter.setCombatantList(newCombatantList); // Get a Combatant list back from the Encounter (useful just to preserve speed factors and rolls and such
+                    EncounterCombatantList newCombatantList = (EncounterCombatantList) data.getSerializableExtra(COMBATANT_LIST);
+                    if (newCombatantList != null && !newCombatantList.isEmpty()) {
+                        curEncounterListData = newCombatantList; // Save the Encounter meta-data
+                        adapter.setCombatantList(new AllFactionCombatantLists(newCombatantList)); // Get a Combatant list back from the Encounter
                     }
 
                     // Get the current round number
                     roundNumber = data.getIntExtra(ROUND_NUMBER, 0);
+//                    curActiveCombatant = data.getIntExtra(ACTIVE_COMBATANT_NUMBER, EncounterCombatantRecyclerAdapter.PREP_PHASE);
                     updateMainButton();
                 }
             }
@@ -121,6 +160,12 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         super.onResume();
 
         updateNoCombatantMessage();
+    }
+
+    @Override
+    protected void onStop() {
+
+        super.onStop();
     }
 
     void updateNoCombatantMessage() {
@@ -234,9 +279,20 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     }
 
     @Override
+    public Context getContext() {
+        return getApplicationContext();
+    }
+
+    @Override
     public void notifyCombatantListChanged() {
         // The Combatant List has (maybe) been changed, so we should update the "No Combatants" view information
         updateNoCombatantMessage();
+    }
+
+    @Override
+    public void notifyIsMultiSelecting(boolean isMultiSelecting) {
+        // Do nothing, because we shouldn't be multi-selecting with this adapter anyway...
+        Log.e("ConfigCombatant", "Notified of multi-selecting even though it shouldn't be activated for the child adapter.");
     }
 
     //    @Override
@@ -280,7 +336,12 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
         switch (id) {
             case R.id.settings:
-                // TODO: Open the settings menu
+                // Open the settings menu
+                Intent settingsIntent = new Intent(this, SettingsActivity.class);
+                if (curEncounterListData != null) {
+                    settingsIntent.putExtra(SettingsFragment.IS_MID_COMBAT, curEncounterListData.isMidCombat()); // Let the Settings Activity know if we are mid-combat
+                }
+                startActivity(settingsIntent);
                 return true;
             case R.id.open_bookmarks:
                 // Open the bookmarked Combatants menu
