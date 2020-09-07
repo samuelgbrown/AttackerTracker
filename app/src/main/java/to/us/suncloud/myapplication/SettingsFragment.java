@@ -97,7 +97,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 setPresetToCustom();
-                // TODO SOON: Set icon based on chosen entry?  May be useful visual feedback
+                // TODO LATER: Set icon based on chosen entry?  May be useful visual feedback
 
                 return true;
             }

@@ -187,6 +187,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="4dp"
                                 android:inputType="number"
+                                android:imeOptions="actionNext"
                                 android:text="7"
                                 android:selectAllOnFocus="true"
                                 android:textAlignment="center"
@@ -234,11 +235,12 @@
                             app:srcCompat="@drawable/ic_run" />
 
                         <EditText
-                            android:id="@+id/combatant_enc_speed_factor"
+                            android:id="@+id/combatant_enc_modifier"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
                             android:inputType="numberSigned"
+                            android:imeOptions="actionNext"
                             android:text="3"
                             android:selectAllOnFocus="true"
                             android:textAlignment="center"
@@ -309,22 +311,22 @@
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
 
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/combatant_enc_grayout"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:alpha="0"
+                            android:background="#000000"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
                 </androidx.cardview.widget.CardView>
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/combatant_enc_grayout"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:alpha="0"
-                android:background="#000000"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/check_enc_layout"
-                app:layout_constraintTop_toTopOf="parent">
-
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>

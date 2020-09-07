@@ -54,10 +54,10 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
     Bundle returnBundle; // Bundle to be returned to calling Fragment/Activity, so that they may sort the returned Combatant properly
 
     // Combatant that we are creating or modifying
-    Combatant currentCombatant; // The version of the combatant that will be modified using this window
-    Combatant originalCombatant; // A version of the combatant before any modifications took place; used to check if anything has been changed
-    ArrayList<String> allCombatantNameList; // The list of combatant that the new/modified combatant will be added to once this is complete (used to check naming)
-    boolean creatingCombatant = true; // Are we creating a combatant (true), or modifying one (false)?
+    Combatant currentCombatant; // The version of the Combatant that will be modified using this window
+    Combatant originalCombatant; // A version of the Combatant before any modifications took place; used to check if anything has been changed
+    ArrayList<String> allCombatantNameList; // The list of Combatant that the new/modified Combatant will be added to once this is complete (used to check naming)
+    boolean creatingCombatant = true; // Are we creating a Combatant (true), or modifying one (false)?
 
     ArrayList<Integer> iconResourceIds;
 
@@ -84,8 +84,8 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
      * @return A new instance of fragment CreateOrModCombatant.
      */
     public static CreateOrModCombatant newInstance(receiveNewOrModCombatantInterface receiver, Combatant originalCombatant, AllFactionCombatantLists factionCombatantListToBeAddedTo, Bundle returnBundle) {
-        // To modify an existing combatant
-        // Pre-process the faction list to get a list of all combatant names
+        // To modify an existing Combatant
+        // Pre-process the faction list to get a list of all Combatant names
 
         CreateOrModCombatant fragment = new CreateOrModCombatant();
         Bundle args = new Bundle();
@@ -98,7 +98,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
     }
 
     public static CreateOrModCombatant newInstance(receiveNewOrModCombatantInterface receiver, AllFactionCombatantLists factionCombatantListToBeAddedTo, Bundle returnBundle) {
-        // To create a new combatant
+        // To create a new Combatant
         CreateOrModCombatant fragment = new CreateOrModCombatant();
         Bundle args = new Bundle();
         args.putSerializable(RECEIVER, receiver);
@@ -122,18 +122,18 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         super.onCreate(savedInstanceState);
         Bundle args = getArguments();
         if (args != null) {
-            // First, extract the combatant names list that must be there
+            // First, extract the Combatant names list that must be there
             if (args.getSerializable(COMBATANT_LIST_TO_BE_ADDED_TO) != null) {
-                // Pull in the list that this combatant will be added to, so that we can handle any name-uniqueness checks (each Combatant must have a unique name, which we can enforce at Combatant creation)
+                // Pull in the list that this Combatant will be added to, so that we can handle any name-uniqueness checks (each Combatant must have a unique name, which we can enforce at Combatant creation)
                 allCombatantNameList = (ArrayList<String>) args.getSerializable(COMBATANT_LIST_TO_BE_ADDED_TO);
             } else {
                 // Something has gone HORRIBLY wrong...
-                Log.e(TAG, "Did not receive combatant list to be added to");
+                Log.e(TAG, "Did not receive Combatant list to be added to");
             }
 
             // Next, extract the receiver interface that must be there
             if (args.getSerializable(RECEIVER) != null) {
-                // Pull in the list that this combatant will be added to, so that we can handle any name-uniqueness checks (each Combatant must have a unique name, which we can enforce at Combatant creation)
+                // Pull in the list that this Combatant will be added to, so that we can handle any name-uniqueness checks (each Combatant must have a unique name, which we can enforce at Combatant creation)
                 receiver = (receiveNewOrModCombatantInterface) args.getSerializable(RECEIVER);
             } else {
                 // Something has gone HORRIBLY wrong...
@@ -148,22 +148,22 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
                 Log.e(TAG, "Did not receive return Bundle");
             }
 
-            // Finally, extract the combatant that may or may not be there
+            // Finally, extract the Combatant that may or may not be there
             if (args.getSerializable(ORIGINAL_COMBATANT) != null) {
-                // If a combatant was passed to this Fragment (to be modified), load in the data
+                // If a Combatant was passed to this Fragment (to be modified), load in the data
                 currentCombatant = (Combatant) args.getSerializable(ORIGINAL_COMBATANT);
 
-                // Remove the current combatant from this list, so that we don't error if the user does not change the name
+                // Remove the current Combatant from this list, so that we don't error if the user does not change the name
                 allCombatantNameList.remove(currentCombatant.getName());
 
-                // We are modifying a combatant
+                // We are modifying a Combatant
                 creatingCombatant = false;
 
             } else {
-                // If no combatant was passed along, then create a new Combatant to modify
+                // If no Combatant was passed along, then create a new Combatant to modify
                 currentCombatant = new Combatant(allCombatantNameList);
 
-                // We are creating a combatant
+                // We are creating a Combatant
                 creatingCombatant = true;
             }
 
@@ -200,7 +200,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         // Inflate the layout for this fragment
         View fragView = inflater.inflate(R.layout.fragment_create_or_mod_combatant, container, false);
 
-        String modString = InitPrefsHelper.getModString(getContext()); // TODO USE
+        String modString = InitPrefsHelper.getModString(getContext());
 
 
         title = fragView.findViewById(R.id.mod_create_title);
@@ -281,7 +281,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
 //                    editable.append(currentCombatant.getName()); // Needs to happen here, because currentCombatant is the same object as in the master list, so any changes made are immediate
 //
 //                    // Let the user know
-//                    Toast.makeText(getActivity().getApplicationContext(), "The name " + newName + " is already being used by another combatant, so it will be numbered automatically", Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(getActivity().getApplicationContext(), "The name " + newName + " is already being used by another Combatant, so it will be numbered automatically", Toast.LENGTH_SHORT).show();
 //
 //                } else {
 //                    // The name is NOT unique, so we should change the Combatant's name to this
@@ -312,7 +312,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
                 }
 
                 // Once we know the faction that was selected...
-                currentCombatant.setFaction(thisFaction); // Update the combatant
+                currentCombatant.setFaction(thisFaction); // Update the Combatant
                 setTitleFactionColor(); // Update the title color(s)
             }
 
@@ -407,7 +407,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
 
     @Override
     public void setIconIndex(int iconIndex) {
-        // If we receive an icon index back from the dialog, then update the combatant with it
+        // If we receive an icon index back from the dialog, then update the Combatant with it
         currentCombatant.setIconIndex(iconIndex);
 
         // Also, update the View
@@ -465,7 +465,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
 
     private void attemptToClose() {
         if (!currentCombatant.equals(originalCombatant)) {
-            // If the current combatant has been modified, check with the user to see if they want to close the dialog without saving
+            // If the current Combatant has been modified, check with the user to see if they want to close the dialog without saving
             AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
             builder.setMessage(R.string.mod_create_close_message)
                     .setTitle(R.string.mod_create_close_title)

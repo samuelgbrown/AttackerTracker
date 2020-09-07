@@ -6,7 +6,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
@@ -23,6 +25,10 @@ import androidx.appcompat.widget.Toolbar;
 public class EncounterActivity extends AppCompatActivity implements EncounterCombatantRecyclerAdapter.combatProgressInterface {
     EncounterCombatantList masterCombatantList;
     EncounterCombatantRecyclerAdapter adapter; // The adapter for the main Combatant list
+
+    // The sort options in the menu, to change their visibility based on state
+    MenuItem sortInit;
+    MenuItem sortAlpha;
 
     int roundNumber = 1;
     int maxRoundRolled = 0;
@@ -49,9 +55,13 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 
         if (savedInstanceState != null) {
             // If there is a saved state, then there was probably just a configuration change, so savedInstanceState is the most up-to-date information we have
-            // Get the current round number
+            // Get the current and max round numbers
             if (savedInstanceState.containsKey(ConfigureCombatantListActivity.ROUND_NUMBER)) {
-                roundNumber = savedInstanceState.getInt(ConfigureCombatantListActivity.ROUND_NUMBER, 0);
+                roundNumber = savedInstanceState.getInt(ConfigureCombatantListActivity.ROUND_NUMBER, 1);
+            }
+
+            if (savedInstanceState.containsKey(ConfigureCombatantListActivity.MAX_ROUND_ROLLED)) {
+                maxRoundRolled = savedInstanceState.getInt(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, 0);
             }
 
             // Get the master Combatant list
@@ -103,7 +113,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         // Initialize the adapter as needed
         adapter.setRoundNumber(roundNumber);
         adapter.updateCombatProgress();
-        adapter.notifyCombatantsChanged(); // Let the adapter know that this is the initial state (update all "memory" parameters for the combatant list and the currently active Combatant)
+        adapter.notifyCombatantsChanged(); // Let the adapter know that this is the initial state (update all "memory" parameters for the Combatant list and the currently active Combatant)
 
         // Set up the banner message
         prepMessage.setText(getString(R.string.prepare_message, InitPrefsHelper.getModString(getApplicationContext())));
@@ -115,14 +125,20 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
                 // If an EditText is focused, confirm the choice by stealing the focus away
                 encounterToolbar.requestFocus();
 
-                // TODO START HERE: Big visual bug: If modifying a Combatant's modifier and hit roll initiative while edit text is still focused, that Combatant's view is not properly updated
-                //  Possible solution, get rid of any onfocuschange logic?  Rely on user to hit "Done" to update values?
-
                 // Hide the keyboard
                 InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(nextButton.getWindowToken(), 0);
 
-                adapter.incrementCombatStep();
+                // Increment the combat step
+                nextButton.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Done in Runnable because when this is called outside runnable while an EditText is focused, the adapter's notifyCombatantsChanged() gets called twice in a row, and the RecyclerView doesn't get laid out properly
+                        adapter.incrementCombatStep();
+                    }
+                });
+
+//                adapter.incrementCombatStep();
             }
         });
 
@@ -136,12 +152,21 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
                 InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(nextButton.getWindowToken(), 0);
 
-                adapter.decrementCombatStep();
+                // Decrement the combat step
+                previousButton.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Done in Runnable because when this is called outside runnable while an EditText is focused, the adapter's notifyCombatantsChanged() gets called twice in a row, and the RecyclerView doesn't get laid out properly
+                        adapter.decrementCombatStep();
+                    }
+                });
+
+//                adapter.decrementCombatStep();
             }
         });
 
         // Setup various GUI elements
-        updateNoCombatantView(); // The no combatant message
+        updateNoCombatantView(); // The no Combatant message
         updateGUIState(); // The next/previous buttons
 
         // Setup the toolbar
@@ -154,7 +179,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         super.onResume();
 
         // Make sure the EncounterCombatantList has the most up-to-date preference information
-        // TODO START HERE: Reset the Combat round if the new preferences have a different dice value.  Set all to be selected? Set the round number of Activity?  Do stuff!
+        setSortIconVis();
         adapter.updatePrefs(getApplicationContext());
     }
 
@@ -176,7 +201,12 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         boolean doAnim = false; // Should we do the fun Roll Initiative animation?
         int prepBannerVisibility = View.GONE; // Should the Prepare Battle message be visible?
 
-        // Next, get the current active combatant and current round
+        // Check if combat happened to get restarted
+        if (!masterCombatantList.isMidCombat()) {
+            maxRoundRolled = 0;
+        }
+
+        // Next, get the current active Combatant and current round
 //        int currentlyActiveCombatant = adapter.getCurActiveCombatant();
         int currentlyActiveCombatant = masterCombatantList.calcActiveCombatant();
         roundNumber = adapter.getCurRoundNumber();
@@ -188,23 +218,21 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         }
 
         if (currentlyActiveCombatant == EncounterCombatantRecyclerAdapter.PREP_PHASE) {
-            // If the currently active combatant is unset, then we are currently between rounds, waiting to roll initiative
+            // If the currently active Combatant is unset, then we are currently between rounds, waiting to roll initiative
             nextButtonText = R.string.encounter_roll_initiative;
-            prepBannerVisibility = View.VISIBLE;
+            prepBannerVisibility = masterCombatantList.isEmpty() ? View.GONE : View.VISIBLE; // Don't display the banner if the Combatant list is empty, that'd be just a little sad...
             if (roundNumber == 1) {
                 // If this is the 1st round prepare phase, then don't display the previous button
                 previousButtonVisibility = View.GONE;
             }
         } else {
             // Check if we just moved into Combat
-            // TODO: Take care of this!  Put all of the changing stuff in a postDelayed thread IF there is an animation (use doAnim above)
             if (currentlyActiveCombatant == 0 && roundNumber > maxRoundRolled && nextButton.getText().equals(getResources().getString(R.string.encounter_roll_initiative))) {
                 // If we just started the round, then emphasize the Roll Initiative button (for fun)!
                 doAnim = true;
-                maxRoundRolled = roundNumber; // Remember that we already did the fun animation for this round
+                maxRoundRolled = roundNumber; // Remember that we already did the fun animation for this round TODO: Make sure the maxRoundRolled gets counted immediately when returning from Configure (i.e. when curActiveCombatant == 1)
                 nextButton.setEnabled(false); // Disable the button momentarily while the animation plays out
                 nextButton.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.emphize_wobble));
-                // TODO LATER: Will probably need to make sure that text change (below) only happens AFTER the animation finishes, otherwise it won't make much sense!
             }
 
             // The next button's test depends on what happens if the currently selected Combatant gets checked off
@@ -214,7 +242,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 
             // Based on what the next step of the combat cycle is, set up the next button text
             if (nextActiveCombatant == EncounterCombatantRecyclerAdapter.PREP_PHASE) {
-                // If the currently active combatant is the final Combatant before the prep phase, then the next action will be to prepare for the next round of combat
+                // If the currently active Combatant is the final Combatant before the prep phase, then the next action will be to prepare for the next round of combat
                 nextButtonText = R.string.encounter_prepare_next_round;
             } else {
                 nextButtonText = R.string.encounter_next_combatant;
@@ -265,7 +293,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     }
 
     private void updateNoCombatantView() {
-        // Update the visibility of the no combatant view message
+        // Update the visibility of the no Combatant view message
         if (masterCombatantList.isEmpty()) {
             // If the Combatant list is empty, then make the message visible
             noCombatantTextView.setVisibility(View.VISIBLE);
@@ -278,21 +306,47 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_encounter, menu);
+
+        // Get the two sort icons, for later
+        sortAlpha = menu.findItem(R.id.sort_alpha);
+        sortInit = menu.findItem(R.id.sort_initiative);
+
+        // Set up the icon visibility
+        setSortIconVis();
+
         return true;
     }
 
+    private void setSortIconVis() {
+        // Based on the current preferred sorting method, change the visibility of each sorting menu item
+        if (sortAlpha != null && sortInit != null) {
+            switch (adapter.getSortMethod()) {
+                case INITIATIVE:
+                    sortInit.setVisible(false);
+                    sortAlpha.setVisible(true);
+                    break;
+                case ALPHABETICALLY_BY_FACTION:
+                    sortInit.setVisible(true);
+                    sortAlpha.setVisible(false);
+            }
+        }
+    }
+
+
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // TODO: Fill in option menu items!!!
         int id = item.getItemId();
         switch (id) {
             case R.id.sort_alpha:
                 // Sort the Combatants alphabetically by faction
                 adapter.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION);
+                setSortIconVis();
                 return true;
             case R.id.sort_initiative:
                 // (Attempt to) sort the Combatants by initiative
                 adapter.sort(EncounterCombatantList.SortMethod.INITIATIVE);
+                setSortIconVis();
                 return true;
             case R.id.dice_cheat:
                 // Toggle the dice cheat mode on and off
@@ -303,6 +357,25 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
                 Intent settingsIntent = new Intent(this, SettingsActivity.class);
                 settingsIntent.putExtra(SettingsFragment.IS_MID_COMBAT, masterCombatantList.isMidCombat()); // Let the Settings Activity know if we are mid-combat
                 startActivity(settingsIntent);
+                return true;
+            case R.id.restart:
+                // Restart Combat, if the user (really) wants it
+                new AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.restart_combat_title))
+                        .setMessage(getString(R.string.restart_combat_message))
+                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                adapter.restartCombat(); // This will update all relevant GUI's
+                            }
+                        })
+                        .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                // Do nothing
+                            }
+                        })
+                        .show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -321,10 +394,10 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 
     @Override
     public void onBackPressed() {
-        // TODO SOON: Preserve value of curActiveCombatant!  Allow user to add Combatants mid-round.  Will need to roll initiative on new Combatant if they come in mid-round (if curActiveCombatant != 0...or just do it every time...?)
         Intent returnIntent = new Intent();
         returnIntent.putExtra(ConfigureCombatantListActivity.COMBATANT_LIST, adapter.getCombatantList()); // Create an Intent that has the current Combatant List (complete with rolls, modifiers, etc)
         returnIntent.putExtra(ConfigureCombatantListActivity.ROUND_NUMBER, roundNumber); // Add the round number to the intent
+        returnIntent.putExtra(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, maxRoundRolled); // Add the maximum round rolled to the intent
 //        returnIntent.putExtra(ConfigureCombatantListActivity.ACTIVE_COMBATANT_NUMBER, adapter.getCurActiveCombatant()); // Add the currently active Combatant to the intent
         setResult(RESULT_OK, returnIntent);
         super.onBackPressed();

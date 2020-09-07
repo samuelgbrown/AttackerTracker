@@ -166,7 +166,7 @@ public class FactionCombatantList implements Serializable {
     public ArrayList<String> getCombatantNamesList() {
         ArrayList<String> allCombatantNames = new ArrayList<>();
         for (int cIndex = 0; cIndex < combatantArrayList.size(); cIndex++) {
-            // For each combatant, add the combatant's name to allCombatantNames
+            // For each Combatant, add the Combatant's name to allCombatantNames
             allCombatantNames.add(combatantArrayList.get(cIndex).getName());
         }
 

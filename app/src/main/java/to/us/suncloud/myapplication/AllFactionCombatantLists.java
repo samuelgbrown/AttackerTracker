@@ -38,19 +38,18 @@ public class AllFactionCombatantLists implements Serializable {
 
     }
 
-    public void addFactionCombatantList(FactionCombatantList listToAdd) {
-        // Add a new faction combatant list, if the faction isn't already in this list
-        if (!containsFaction(listToAdd.faction())) {
-            allFactionLists.add(listToAdd);
-        }
-
-        // Sort the List
-        sort();
-        // TODO LATER: Do a check for name uniqueness...?  Not sure how to deal with it if something goes wrong, though...perhaps just log error and deal with the code error later?
-    }
+//    public void addFactionCombatantList(FactionCombatantList listToAdd) {
+//        // Add a new faction Combatant list, if the faction isn't already in this list
+//        if (!containsFaction(listToAdd.faction())) {
+//            allFactionLists.add(listToAdd);
+//        }
+//
+//        // Sort the List
+//        sort();
+//    }
 
     public void addCombatant(Combatant newCombatant) {
-        // If the Faction Lists contain a Combatant with this Combatant's name, then we must make the new combatant's name unique.
+        // If the Faction Lists contain a Combatant with this Combatant's name, then we must make the new Combatant's name unique.
         // First, check what the largest existing ordinal is for this Combatant's base name
 
         // TODO LATER: Doing these checks could be a setting? Something like "Smart naming"?  Perhaps another setting could be if we even care about name uniqueness at all!
@@ -69,7 +68,7 @@ public class AllFactionCombatantLists implements Serializable {
                 }
                 break;
             default:
-                // If the Combatant's base name DOES appear in the list already with an ordinal, and the new Combatant's ordinal is already being used, then simply modify this combatant's ordinal (if needed) to be at least one higher than the current highest ordinal.
+                // If the Combatant's base name DOES appear in the list already with an ordinal, and the new Combatant's ordinal is already being used, then simply modify this Combatant's ordinal (if needed) to be at least one higher than the current highest ordinal.
 //                if (containsName(newCombatant.getName())) {
                 newCombatant.setNameOrdinal(Math.max(highestExistingOrdinal + 1, newCombatant.getOrdinal())); // If the new Combatant's ordinal is not already being used, then it was probably already a part of the List (a Combatant being re-added after being modified), so don't mess with it!
 //                }
@@ -281,7 +280,7 @@ public class AllFactionCombatantLists implements Serializable {
     public ArrayList<String> getCombatantNamesList() {
         ArrayList<String> allCombatantNames = new ArrayList<>();
         for (int cIndex = 0; cIndex < allFactionLists.size(); cIndex++) {
-            // For each faction combatant list, add all combatant names to allCombatantNames
+            // For each faction Combatant list, add all Combatant names to allCombatantNames
             allCombatantNames.addAll(allFactionLists.get(cIndex).getCombatantNamesList());
         }
 

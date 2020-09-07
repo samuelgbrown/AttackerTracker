@@ -140,7 +140,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
         emptyCombatants = layoutContents.findViewById(R.id.add_combatants_empty);
         RecyclerView combatantListView = layoutContents.findViewById(R.id.view_saved_combatants_list);
         Button addNewCombatant = layoutContents.findViewById(R.id.add_new_combatant);
-        ImageButton closeButton = layoutContents.findViewById(R.id.view_list_close);
+//        ImageButton closeButton = layoutContents.findViewById(R.id.view_list_close);
         TextView title = layoutContents.findViewById(R.id.view_saved_combatants_title);
         multiSelectConfirm = layoutContents.findViewById(R.id.confirm_multi_select);
         multiSelectCancel = layoutContents.findViewById(R.id.cancel_multi_select);
@@ -149,12 +149,12 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
             // We want to add a new Combatant to the encounter
             title.setText(R.string.add_combatant_title);
 
-            closeButton.setVisibility(View.GONE);
+//            closeButton.setVisibility(View.GONE);
         } else {
             // We are just looking at/modifying the bookmarked Combatants
             title.setText(R.string.mod_saved_combatant);
 
-            closeButton.setVisibility(View.VISIBLE);
+//            closeButton.setVisibility(View.VISIBLE);
         }
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -186,14 +186,14 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
             }
         });
 
-        closeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Close the view
-                // If changing flow, here we will want to a) return the selected combatant to the combatantDestination, and b) probably change the location of the button to which this listener is ascribed
-                saveAndClose();
-            }
-        });
+//        closeButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                // Close the view
+//                // If changing flow, here we will want to a) return the selected combatant to the combatantDestination, and b) probably change the location of the button to which this listener is ascribed
+//                saveAndClose();
+//            }
+//        });
 
         // Create an adapter and give it to the Recycler View
         ListCombatantRecyclerAdapter.LCRAFlags flags = new ListCombatantRecyclerAdapter.LCRAFlags(); // Create flags
@@ -235,8 +235,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
         updateNoCombatantMessage();
         notifyIsMultiSelecting(false);
 
-        // TODO TEST
-        return layoutContents; // If there is nothing in the file, then no combatants have previously been saved, so display the empty message
+        return layoutContents;
     }
 
     private void updateNoCombatantMessage() {
@@ -326,8 +325,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     public void receiveChosenCombatant(Combatant selectedCombatant) {
         // Just received a Combatant from the ListCombatantRecyclerAdapter because the user selected one
 
-        // TODO CHECK: For AddCombatant: Try out the flow here.  Do I want the user to be able to add/remove an indefinite number of Combatants before choosing one?  Should the Combatant be returned immediately upon exiting the CreateOrModCombatant dialog if a Combatant is created?  Should there be a confirmation dialog/other method to confirm a Combatant selection aside from a single tap?
-
         if (expectingReturnedCombatant) {
 
             // First, send the Combatant back to the calling Activity/Fragment
@@ -342,8 +339,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     @Override
     public void receiveCombatant(Combatant newCombatant, Bundle returnBundle) {
         // A new Combatant was just created (must be a new Combatant, because if it was a modified combatant, then it would have been sent to the adapter)
-
-        // TODO CHECK: Here is where we can change the flow.  If we don't like this, just need to add selection ability (relatively easy...) and a confirmation button (should already be there from the modifySavedCombatants version of this Fragment).
 
         // Try to add this combatant to the save file (will only add the base-name)
         addCombatantToSave(newCombatant);
@@ -432,7 +427,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
             @Override
             public void onBackPressed() {
                 if (isMultiSelecting) {
-                    // TODO SOON: Not working
                     adapter.clearMultiSelect(); // This will clear multi-select in the adapter, and eventually let this Fragment know to update the GUI
                 } else {
                     dismiss();
@@ -441,7 +435,9 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
             @Override
             public void dismiss() {
-                saveAndClose();
+                saveCombatantList();
+
+                super.dismiss();
             }
         };
 

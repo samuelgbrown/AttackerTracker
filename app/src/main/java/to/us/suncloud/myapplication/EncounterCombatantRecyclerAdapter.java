@@ -17,7 +17,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
@@ -51,14 +50,14 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
     boolean diceCheatModeOn = false; // Are we currently in the dice cheat mode?
 
-    //    private int curActiveCombatant = PREP_PHASE; // The currently active combatant, as an index in combatantList (if -1, there is no active combatant)
-//    private int prevActiveCombatant = PREP_PHASE; // The currently active combatant, as an index in combatantList (if -1, there is no active combatant)
-    private int curRoundNumber = 1; // The current round number (iterated each time the active combatant loops around)
+    //    private int curActiveCombatant = PREP_PHASE; // The currently active Combatant, as an index in combatantList (if -1, there is no active Combatant)
+//    private int prevActiveCombatant = PREP_PHASE; // The currently active Combatant, as an index in combatantList (if -1, there is no active Combatant)
+    private int curRoundNumber = 1; // The current round number (iterated each time the active Combatant loops around)
     private EncounterCombatantList.SortMethod curSortMethod; // The current method by which the Combatants should be sorted (when possible, i.e. not in Prep-phase)
 
     EncounterCombatantRecyclerAdapter(combatProgressInterface parent, EncounterCombatantList combatantList) {
         // Turn the AllFactionCombatantList into an EncounterCombatantList
-        this.combatantList = combatantList; // Hold onto the combatant list (copy reference)
+        this.combatantList = combatantList; // Hold onto the Combatant list (copy reference)
         this.parent = parent;
         Context context = parent.getContext();
 //        isCheckedList = new ArrayList<>(Collections.nCopies(this.combatantList.size(), false));
@@ -90,8 +89,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         }
 
         // Set the current round for the combatantList (initializes rolls for any new Combatants that haven't been initialized yet)
-        curSortMethod = combatantList.getCurrentSortMethod(); // Retrieve the sort method last used
-
+        curSortMethod = EncounterCombatantList.SortMethod.INITIATIVE; // Always initialize to initiative sorting
 
         this.combatantList.setRoundNumber(curRoundNumber);
         this.combatantList_Memory = this.combatantList.clone(); // Keep a second copy, for memory (a clone)
@@ -105,15 +103,15 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         combatantRecyclerView = recyclerView;
     }
 
-    // TODO Checkboxes:
+    // Checkboxes:
     // Checkboxes initialize unchecked
-    // Hitting next button checks and grays out the currently selected combatant, then selects the next combatant
-    // Un-checking a previously checked combatant will highlight them a different color to remind you to revisit them
+    // Hitting next button checks and grays out the currently selected Combatant, then selects the next Combatant
+    // Un-checking a previously checked Combatant will highlight them a different color to remind you to revisit them
     // Should be an "un-next" button (small) to scroll back up the list and undo this stuff
 
-    // TODO Features:
+    // Features:
     // Must be able to edit modifiers after rolling (at any time)
-    // Upon changing modifier, isChecked should NOT CHANGE (only coloring and such according to current position of selected combatant)
+    // Upon changing modifier, isChecked should NOT CHANGE (only coloring and such according to current position of selected Combatant)
 
     class CombatantViewHolder extends RecyclerView.ViewHolder {
         boolean modifyingSelf = false;
@@ -122,7 +120,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         private TextView TotalInitiativeView;
         private TextView RollView;
         private EditText RollViewEdit;
-        private EditText SpeedFactorView;
+        private EditText ModifierView;
         private ImageView CombatantIcon;
 
         private ConstraintLayout CombatantStatusBorder;
@@ -140,7 +138,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             TotalInitiativeView = itemView.findViewById(R.id.combatant_enc_total_initiative);
             RollView = itemView.findViewById(R.id.combatant_enc_roll);
             RollViewEdit = itemView.findViewById(R.id.combatant_enc_roll_edit); // For CHEATERS
-            SpeedFactorView = itemView.findViewById(R.id.combatant_enc_speed_factor);
+            ModifierView = itemView.findViewById(R.id.combatant_enc_modifier);
             CombatantStatusBorder = itemView.findViewById(R.id.encounter_combatant_border);
             CombatantCompletedCheck = itemView.findViewById(R.id.combatant_enc_completed_check);
             CombatantGrayout = itemView.findViewById(R.id.combatant_enc_grayout);
@@ -196,6 +194,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                             curRoundNumber++;
                         }
 
+                        // Update the combatantList based on the new active Combatant
                         updateCombatProgress(curActiveCombatant);
 
                         // Let the adapter know to update
@@ -213,16 +212,20 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             });
 
             // The modifier / roll value can be set by the user by either a) pressing done/return, or b) clicking out of the EditText box
-            SpeedFactorView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            ModifierView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
                 @Override
                 public void onFocusChange(View v, boolean hasFocus) {
                     if (v instanceof EditText) {
                         if (hasFocus) {
-                            focusView = SpeedFactorView;
+                            focusView = ModifierView;
 
                             // If we are gaining focus, select all text
-                            // TODO: Focusing isn't working quite right: on modifying text and hitting next, the next EditText gets focus, but does not select all.  The below code does not seem to help...
                             ((EditText) v).selectAll();
+
+                            if (getAdapterPosition() == (combatantList.size() - 1)) {
+                                // If this is the last Combatant, then its IME action should be "Done" instead of the default "Next" (as set in the xml)
+                                ((EditText) v).setImeOptions(EditorInfo.IME_ACTION_DONE);
+                            }
 
 //                            // Show the keyboard
 //                            InputMethodManager imm = (InputMethodManager) parent.getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
@@ -231,7 +234,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                             // If we have lost focus, the user has likely navigated away.  So, confirm the new value
 
                             // It damn well better be...
-                            setSpeedFactorValueIfValid(((EditText) v).getText().toString()); // Set the new modifier, if possible
+                            setModifierValueIfValid(((EditText) v).getText().toString()); // Set the new modifier, if possible
 
 //                            // Hide the keyboard
 //                            InputMethodManager imm = (InputMethodManager) parent.getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
@@ -241,13 +244,21 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                 }
             });
 
-            SpeedFactorView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            ModifierView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                    if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                    if (actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+//                    if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                         if (event == null || !event.isShiftPressed()) {
                             // The user is done typing, so attempt to set the modifier
-                            setSpeedFactorValueIfValid(v.getText().toString());
+//                            setModifierValueIfValid(v.getText().toString());
+
+                            // If the user hit Done, then hide the keyboard
+                            InputMethodManager imm = (InputMethodManager) parent.getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                            imm.hideSoftInputFromWindow(ModifierView.getWindowToken(), 0);
+
+                            // Finally, clear the focus when the Done button is pressed
+                            ModifierView.clearFocus();
                             return true;
                         }
                     }
@@ -261,10 +272,6 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                     if (!hasFocus) {
                         // If we have lost focus, the user has likely navigated away.  So, confirm the new value
                         if (v instanceof EditText) {
-                            // TODO SOON: If this is changed such that the Combatant is checked shoots up to the end, the round immediately ends! Bit of a...wrinkle....oh no, do I need have a separate Prep-Phase boolean?
-                            // TODO: Or, perhaps I should allow curActiveCombatant values of combatantList.size under certain circumstances...that could work...would need to be SUPER careful, though...
-                            // TODO: OOORRRR: Change the curActiveCombatant algorithm?  Change it to find the last unchecked Combatant, if it exists?  ...Kind of?  Ugh...like this: XXXXOOOOOXX
-                            //                                                                                                                                                               ^ <- currently active Combatant
                             // It damn well better be...
                             setRollValueIfValid(((EditText) v).getText().toString()); // Set the new modifier, if possible
                         }
@@ -433,7 +440,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                 newRollVal = Integer.parseInt(newRollValString); // Get the value that was entered into the text box
 
                 // If the new entered roll value is not in the d20 range, then reject it
-                if (0 < newRollVal && newRollVal <= 20) { // The new roll may be valid if it is within the standard d20 range
+                if (0 < newRollVal && newRollVal <= InitPrefsHelper.getDiceSize(RollView.getContext())) { // The new roll may be valid if it is within the range of the defined dice size
                     // If the roll value is within range, make sure that it is different than the current roll.  If so, then set the new value is valid
                     newValIsValid = currentRoll != newRollVal;
                 }
@@ -444,44 +451,38 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             // If the roll is NOT valid, then just revert the EditText and return
             if (!newValIsValid) {
                 RollViewEdit.setText(String.valueOf(currentRoll)); // Revert to the current roll value
-//                return false;
                 return;
             }
 
             // If the roll IS valid, then set the Combatant's roll to the new value
             combatantList.get(combatantInd).setRoll(newRollVal);
             reSortInitiative(); // Resort the combatantList (also update the duplicate indices List), and update the Adapter  display
-            // TODO: If roll/modifier is changed such that Combatant moves before current Combatant, the current Combatant "changes" (stays still in adapter).  Should move along with new list.  Also, if current Combatant is checked off when moving to it, should skip over (note, case of last Combatant being checked off!)  Can fix these both in one go?
-//            return true;
         }
 
-        public void setSpeedFactorValueIfValid(String newSpeedFactorValString) {
+        public void setModifierValueIfValid(String newModifierValString) {
             // This method will be used any time the user confirms a text string in the roll view EditText
             int combatantInd = getAdapterPosition();
-            int currentSpeedFac = combatantList.get(combatantInd).getModifier(); // The current roll for this Combatant
-            int newSpeedFacVal = currentSpeedFac; // Initial value never used, but at least the IDE won't yell at me...
+            int currentModifier = combatantList.get(combatantInd).getModifier(); // The current roll for this Combatant
+            int newModifierVal = currentModifier; // Initial value never used, but at least the IDE won't yell at me...
             boolean newValIsValid = false;
             try {
-                newSpeedFacVal = Integer.parseInt(newSpeedFactorValString); // Get the value that was entered into the text box
+                newModifierVal = Integer.parseInt(newModifierValString); // Get the value that was entered into the text box
 
-                // If the new entered roll value is not in the d20 range, then reject it
-                if (0 <= newSpeedFacVal) { // The new modifier may be valid if it is greater than or equal to 0 TODO: Double check that this is the correct limitation for modifiers ACROSS EDITIONS
-                    // If the modifier value is within range, make sure that it is different than the current modifier.  If so, then set the new value is valid
-                    newValIsValid = currentSpeedFac != newSpeedFacVal;
-                }
+                // If the modifier value is valid, make sure that it is different than the current modifier.  If so, then set the new value is valid
+                newValIsValid = currentModifier != newModifierVal;
             } catch (NumberFormatException e) {
 //                newValIsValid = false;
             }
 
             // If the new modifier is NOT valid, then just revert the EditText and return
             if (!newValIsValid) {
-                SpeedFactorView.setText(String.valueOf(currentSpeedFac)); // Revert to the current modifier
+                ModifierView.setText(String.valueOf(currentModifier)); // Revert to the current modifier
 //                return false;
                 return;
             }
 
             // If the new modifier IS valid, then set the Combatant's modifier to the new value
-            combatantList.get(combatantInd).setModifier(newSpeedFacVal);
+            combatantList.get(combatantInd).setModifier(newModifierVal);
             reSortInitiative(); // Resort the combatantList (also update the duplicate indices List), and update the adapter display
 //            return true;
         }
@@ -506,7 +507,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             RollView.setText(String.valueOf(thisCombatant.getRoll()));
 
             modifyingSelf = true;
-            SpeedFactorView.setText(String.valueOf(thisCombatant.getModifier()));
+            ModifierView.setText(String.valueOf(thisCombatant.getModifier()));
             RollViewEdit.setText(String.valueOf(thisCombatant.getRoll()));
             modifyingSelf = false;
         }
@@ -616,7 +617,6 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 //
 //            // See if the Combatant should be grayed out or not
 //            if (!isChecked || curActiveCombatant == UNSET) {
-//                // TODO CHECK: If Combatant is currently active but checked, what should happen...?  Nothing?  Should they be skipped?  Settings option? "Autoskip checked Combatants"?
 //                // If the Combatant is unchecked, or we are between combat rounds, then their ViewHolder should be visible
 //                targetAlpha = CLEAR;
 //            } else {
@@ -625,8 +625,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 //            }
 //
 //            if (curActiveCombatant == positionInInitiative) {
-//                // If this is the currently active combatant
-//                borderColor = R.color.activeCombatant; // The border should always reflect the fact that they are the currently selected combatant
+//                // If this is the currently active Combatant
+//                borderColor = R.color.activeCombatant; // The border should always reflect the fact that they are the currently selected Combatant
 //            } else if (curActiveCombatant > positionInInitiative && !isChecked) {
 //                // If this Combatant has already had their turn, but they are unchecked
 //                borderColor = R.color.returnToCombatant; // Let the user know to return back to this Combatant later
@@ -716,7 +716,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
 //            if (args.containsKey(PAYLOAD_CHECK)) {
 //                // If the payload is a boolean, then it represents whether the Combatant should or should not be checked off
-//                // Case 1: The holder represents the combatant whose turn just finished, and it will become checked
+//                // Case 1: The holder represents the Combatant whose turn just finished, and it will become checked
 //                // Case 2: The round just ended, so all Combatants become unchecked
 //                holder.setChecked(args.getBoolean(PAYLOAD_CHECK));
 //            }
@@ -763,20 +763,15 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     }
 
     public void notifyCombatantsChanged() {
-        // TODO SOON: Ensure that the correct Combatant is currently selected (i.e. the current Combatant should never be checked off)
-
         // If anything about the combatants has changed, see if we need to rearrange the list
-//        while (!combatantRecyclerView.isComputingLayout()) {
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantDiffUtil(combatantList_Memory, combatantList));
         diffResult.dispatchUpdatesTo(this); // If anything has changed, move the list items around
-//        }
 
         // Update the combatantList
         combatantList_Memory = combatantList.clone();
 
         // Let the parent know that the display may have been updated
         parent.updateGUIState();
-//        prevActiveCombatant = curActiveCombatant;
 
 
     }
@@ -789,11 +784,6 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             notifyCombatantsChanged(); // Update the display
         }
     }
-
-//    public int getCurActiveCombatant() {
-//        // TODO SOON: Check who needs this?
-//        return activeCombatant();
-//    }
 
     public int getCurRoundNumber() {
         return curRoundNumber;
@@ -819,7 +809,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         if (curActiveCombatant == 0) {
             // Either the first Combatant is now active, or we are at the last Combatant (this case needed in case the cuActiveCombatant value was decremented and we are coming from the prep phase)
 
-            // ROLL INITIATIVE!!!!! (if needed...) TODO: If re-rolling initiative is going to be optional, then I need to make sure that setRoundNumber() only gets called during the incrementCombatStep() and NOT during decementCombatStep()
+            // ROLL INITIATIVE!!!!! (if needed...)
             combatantList.setRoundNumber(curRoundNumber);
         }
 
@@ -830,7 +820,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             combatantList.sort(curSortMethod); // Go back to sorting however the user wants to
         }
 
-        // Scroll to the currently active Combatant (TODO May need to be an option...?)
+        // Scroll to the currently active Combatant (TODO: May need to be an option to turn this off...?)
         scrollTo(curActiveCombatant != PREP_PHASE ? getViewInd(curActiveCombatant) : 0);
     }
 
@@ -845,13 +835,6 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     }
 
     public void incrementCombatStep() {
-        // TODO START HERE: Idea for ensuring that currently active Combatant stays consistent
-        // X CurActive Combatant will be calculated each time as needed, as the the first Combatant in the initiative order that appears after the last checked off Combatant (in case of all Combatants being checked off, move to Prep_Phase)
-        // Increment/decrement will simply check/uncheck certain Combatants.  The currently active will then be calculated only to update the state of the GUI, then it won't be saved.
-        // X CurActiveCombatant can be calculated within DiffUtil (only needs old and new list on Constructor)
-        // State will be calculated upon Combatant being manually checked/unchecked
-        // Manually checking off the last Combatant when it is not currently selected will cause an Alert to ask the user if they want to go to the next round
-
         // Calculate the currently active Combatant before increment
         int curActiveCombatant = activeCombatant();
 
@@ -887,7 +870,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 //        // Depending on where we are in the combat cycle, iterate the curActiveCombatant value differently
 //        if (curActiveCombatant == UNSET) {
 //            // Going from the prepare phase to combat
-//            curActiveCombatant = 0; // Initialize the currently active combatant to the first Combatant
+//            curActiveCombatant = 0; // Initialize the currently active Combatant to the first Combatant
 //
 //            // Also, ROLL INITIATIVE!!!!!
 //            combatantList.setRoundNumber(curRoundNumber);
@@ -902,7 +885,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 //            combatantList.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION); // Go back to sorting by alphabet/faction, for pre-round prep
 //        } else {
 //            // Staying in combat
-//            curActiveCombatant++; // Otherwise, just increment the combatant number
+//            curActiveCombatant++; // Otherwise, just increment the Combatant number
 //        }
 
 //        // Finally, update all GUI states
@@ -913,7 +896,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 //        // Move backwards along the active Combatant in the list
 //        if (curActiveCombatant == PREP_PHASE) {
 //            // Going from the prepare phase back to the last Combatant of the last round
-//            curActiveCombatant = combatantList.size() - 1; // If the currently active combatant is unset, go back to the end of the list
+//            curActiveCombatant = combatantList.size() - 1; // If the currently active Combatant is unset, go back to the end of the list
 //
 //            // Let the adapter know to change the Views
 //            combatantList.sort(EncounterCombatantList.SortMethod.INITIATIVE); // Sort by initiative, now that we are back in the previous round
@@ -938,8 +921,6 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         // Now selected is last Combatant - everyone except final becomes checked
         // Now selected is not UNSET and not last Combatant - the current Combatant becomes unchecked
 
-        // TODO SOON: Check that Combatants can be added mid-combat round
-        // TODO SOON: Combatants get renamed when sent back to Configure!!! (Try all copies of just one Base Name)
         // Decrement the currently active Combatant (if we are in the prep phase, go back to the last Combatant)
 
         // Get the currently active Combatant
@@ -947,7 +928,6 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
         // Uncheck the new current Combatant (if it exists), if we are not between rounds
         if (curActiveCombatant == PREP_PHASE) {
-            // TODO: Check that this new logic actually works!!!
             // In the special case that we are in the prep phase, we just went back into the previous round of Combat
             // Decrement the round number, and retreive the previous rolls
             curRoundNumber--;
@@ -1032,11 +1012,23 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
         // If the Combatant List got reset because of the new preferences, update the round number, and let the Activity know what happened
         if (!combatantList.isMidCombat()) {
+            // combatantList will already be reset back to the first round prep-phase
             curRoundNumber = 1; // Move back to the first round
-            setAllIsChecked(true); // Move to the prepare phase
-            notifyCombatantsChanged();
-            parent.updateGUIState();
         }
+
+        notifyCombatantsChanged();
+        parent.updateGUIState();
+    }
+
+    public void restartCombat() {
+        combatantList.restartCombat();
+        curRoundNumber = 1;
+        notifyCombatantsChanged();
+        parent.updateGUIState();
+    }
+
+    public EncounterCombatantList.SortMethod getSortMethod() {
+        return curSortMethod;
     }
 
     public enum initStatus {

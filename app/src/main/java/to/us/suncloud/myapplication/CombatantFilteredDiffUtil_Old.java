@@ -11,7 +11,6 @@ public class CombatantFilteredDiffUtil_Old extends DiffUtil.Callback {
     String newString;
 
     CombatantFilteredDiffUtil_Old(FactionCombatantList oldList, String oldString, FactionCombatantList newList, String newString) {
-        // TODO CHECK: Does this really need the filter text...?  If not, then can basically use same CombatantFilteredDiffUtil as Encounter Activity...
         this.oldList = oldList;
         this.newList = newList;
         this.oldString = oldString;

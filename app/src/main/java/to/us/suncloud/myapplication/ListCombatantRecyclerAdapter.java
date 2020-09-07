@@ -40,7 +40,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
     private static final String TAG = "ListCombatantRecycler";
 
-    MasterCombatantKeeper parent = null; // If this is set, then the selected combatant will be sent to the parent
+    MasterCombatantKeeper parent = null; // If this is set, then the selected Combatant will be sent to the parent
     boolean adapterCanModify = false; // Can the adapter modify the Combatant (used so that we can use this adapter for both Combatant display and modify+display purposes, because they are VERY similar)
     boolean adapterCanCopy = false; // Can the adapter copy the Combatant (used in the Configure Activity, but not for viewing the saved Combatants
 
@@ -54,8 +54,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     private ArrayList<ArrayList<Integer>> combatantFilteredIndices; // The indices in combatantList_Master that contain the given filter string
 
     boolean expectingReturnCombatant; // Is the adapter expected to return a Combatant (therefore, is it allowed to do multiselect)?
-    boolean isMultiSelecting = false; // Is the adapter currently in multiselect mode TODO: Will need to let the Fragment know, so we can have a "select chosen Combatants" button appear".  That button will then need to be able to talk to the adapter so it can send stuff back (or it can just take the Combatant list, huh...)
-    // TODO: For containing Fragment, onBackPressed should take this out of multiselect mode if it's in it (otherwise, just dismiss)
+    boolean isMultiSelecting = false; // Is the adapter currently in multiselect mode
     ArrayList<Integer> iconResourceIds; // A list of resource ID's of the icons that will be used for each Combatant
 
     private String filteredText = ""; // The string that is currently being used to filter the list
@@ -194,7 +193,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //        combatantFilteredIndices = new ArrayList<>();
 //        for (int combatantInd = 0; combatantInd < combatantList_Master.size(); combatantInd++) {
 //            if (filteredText.isEmpty() || combatantList_Master.get(combatantInd).getName().toLowerCase().contains(filteredText)) {
-//                // If this combatant's name contains the string (or the string is empty), then include it in the display results
+//                // If this Combatant's name contains the string (or the string is empty), then include it in the display results
 ////                        combatantList_Display.add(combatantList_Master.get(combatantInd).cloneUnique());
 //                combatantFilteredIndices.add(combatantInd);
 //            }
@@ -228,12 +227,12 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         ConstraintLayout CombatantMultiSelect;
 
         // Difference between Add and configure:
-        //      1. Configure will have gear button to change aspects of combatant
+        //      1. Configure will have gear button to change aspects of Combatant
         //      2. Remove will be different - Configure will be to remove from the list, add will be to remove from the file
         //          Note that this difference in removal behavior may be accomplished just through the RecyclerAdapter (i.e. where the list gets sent after the fragment this recycler is in closes)
         // Current game-plan:
-        //  Use the SAME viewholder for both add and configure.  Fragment will do different things with the final list that this recycler is viewing/modifying (configure: return it to the main activity, add: save the list to file and return a single combatant)
-        //  For Add, perhaps double-check with user if they want to save the modified list to file?  Either at combatant modification or when fragment is returning combatant (in this case, this adapter doesn't need to differentiate add from configure)
+        //  Use the SAME viewholder for both add and configure.  Fragment will do different things with the final list that this recycler is viewing/modifying (configure: return it to the main activity, add: save the list to file and return a single Combatant)
+        //  For Add, perhaps double-check with user if they want to save the modified list to file?  Either at Combatant modification or when fragment is returning Combatant (in this case, this adapter doesn't need to differentiate add from configure)
         //
         // On second thought, figure out way to not have gear show up for Add Combatant version?
 
@@ -323,13 +322,13 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                 CombatantRemove.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        // Ask the user if they definitely want to remove the combatant
+                        // Ask the user if they definitely want to remove the Combatant
                         new AlertDialog.Builder(itemView.getContext())
                                 .setTitle(R.string.confirm_delete)
                                 .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialogInterface, int i) {
-                                        // Remove this from the combatant list
+                                        // Remove this from the Combatant list
                                         removeCombatant(posToCombatantInd(getAdapterPosition()));
                                     }
                                 })
@@ -343,7 +342,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                     }
                 });
             } else {
-                // If we cannot modify the combatants/the combatant list, then remove the options
+                // If we cannot modify the combatants/the Combatant list, then remove the options
                 CombatantChangeCombatant.setVisibility(View.GONE);
                 CombatantRemove.setVisibility(View.GONE);
             }
@@ -353,13 +352,13 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                 CombatantCopy.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        // Ask the user if they definitely want to copy the combatant
+                        // Ask the user if they definitely want to copy the Combatant
                         new AlertDialog.Builder(itemView.getContext())
                                 .setTitle(R.string.confirm_copy)
                                 .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialogInterface, int i) {
-                                        // Copy this in the combatant list
+                                        // Copy this in the Combatant list
                                         copyCombatant(posToCombatantInd(getAdapterPosition()));
                                     }
                                 })
@@ -516,7 +515,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     @Override
     public void notifyCombatantChanged(Bundle returnBundle) {
         // Receiving notification from the CreateOrModCombatant Fragment that the Combatant we sent to be modified has finished being changed
-//        // If we got a returnBundle with a list position, then that combatant needs to be replaced with the new one
+//        // If we got a returnBundle with a list position, then that Combatant needs to be replaced with the new one
 //        if (returnBundle != null) {
 //            // The return bundle states the
 //            replaceCombatant(returnBundle.getInt(COMBATANT_LIST_POSITION), newCombatant);
@@ -525,23 +524,23 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //            Log.e(TAG, "Did not get returnBundle from CreateOrModCombatant Fragment");
 //        }
 
-        // Let the Adapter know that the combatant list has been changed
+        // Let the Adapter know that the Combatant list has been changed
         notifyCombatantListChanged();
     }
 
     @Override
     public void receiveCombatant(Combatant newCombatant, Bundle returnBundle) {
-        // If a combatant was MODIFIED
+        // If a Combatant was MODIFIED
         if (returnBundle.containsKey(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION)) {
             int modCombatantLocation = returnBundle.getInt(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION); // Get the location of the Combatant being modified
             // NOTE: This location is relative to combatantList_Master(combatantFilteredIndices).
             combatantList_Master.remove(displayList().get(modCombatantLocation)); // Get the Combatant referred to by the modCombatantLocation and remove it (easiest to just remove the Combatant and add it again (the add function will take care of any "smart naming" needs))
         }
 
-        // Add a new combatant to master list
+        // Add a new Combatant to master list
         combatantList_Master.addCombatant(newCombatant);
 
-        // Let the Adapter know that we have modified the combatant list
+        // Let the Adapter know that we have modified the Combatant list
         clearMultiSelect(); // Clear the multi-select list
         notifyCombatantListChanged();
     }
@@ -550,7 +549,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         // Tell the parent to remove a Combatant in the list, based on the current position in the displayed List
         combatantList_Master.remove(displayList().get(position));
 
-        // Let the Adapter know that we have modified the combatant list
+        // Let the Adapter know that we have modified the Combatant list
         clearMultiSelect(); // Clear the multi-select list
         notifyCombatantListChanged();
     }
@@ -646,7 +645,6 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     public ArrayList<Combatant> getAllSelectedCombatants() {
         // Return an ArrayList of all of the currently selected Combatants
         ArrayList<Combatant> returnList = new ArrayList<>();
-        // TODO: Implement iterator in AllFactionsCombatantList
         for (int i = 0; i < combatantList_Master.size(); i++) {
             if (combatantList_Master.get(i).isSelected()) {
                 // If this Combatant is selected, then return it
@@ -717,7 +715,6 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
     // The interface calling this adapter MUST have control of a master list of combatants such that it can judge a Combatant's name to be mutually exclusive
     interface MasterCombatantKeeper extends Serializable {
-        // TODO: May be able to get rid of this method?  Just do changes on the master list and notify that the list was modified?  Maybe?
         void receiveChosenCombatant(Combatant selectedCombatant); // Receive selected Combatant back from this Adapter
 
         Context getContext(); // Get Context from the calling Activity/Fragment

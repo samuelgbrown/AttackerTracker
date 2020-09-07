@@ -68,16 +68,28 @@ public class EncounterCombatantList implements Serializable {
     public void setPrefs(Context context) {
         // Create new preferences based on the current context
         InitPrefs newPrefs = new InitPrefs(context);
-
-        // If the dice size is different now than it was before, then clear the dice roll list
+        int oldDiceSize;
         if (prefs != null) {
-            if (prefs.getDiceSize() != newPrefs.getDiceSize()) {
-                diceRollList = new ArrayList<>();
-            }
+            oldDiceSize = prefs.getDiceSize();
+        } else {
+            oldDiceSize = newPrefs.getDiceSize();
         }
 
         // Save the new Preferences
         prefs = newPrefs;
+
+        // If the dice size is different now than it was before, then restart combat
+        if (oldDiceSize != newPrefs.getDiceSize()) {
+            restartCombat();
+        }
+    }
+
+    public void restartCombat() {
+        // Completely reset all meta-data related to Combat, and start from the beginning (just don't touch the actual Combatants themselves, aside from moving us into the prep-phase [checking them all off]...)
+        diceRollList = new ArrayList<>();
+        modifierList = new ArrayList<>();
+        lastRecordedRoundNumber = 1;
+        initializeCombatants();
     }
 
     public ArrayList<Combatant> getCombatantArrayList() {
@@ -271,12 +283,12 @@ public class EncounterCombatantList implements Serializable {
             }
         }
 
-        // TODO Cases:
-        //  1: final combatant to prep phase (go forwards)
+        // Modifier cases:
+        //  1: final Combatant to prep phase (go forwards)
         //      cur = last + 1
         //      Store current mods under last (special: if last = 0, no save)
         //      Retrieve cur, if it exists
-        //  2: prep phase to final combatant (go backwards)
+        //  2: prep phase to final Combatant (go backwards)
         //      cur = last - 1
         //      Store current mods under last
         //      Retrieve cur
@@ -292,7 +304,6 @@ public class EncounterCombatantList implements Serializable {
             modifierMap.put(c.getId(), c.getModifier());
         }
 
-        // TODO START HERE: Test this!
         // Save the modifierMap if we are changing rounds
         if (lastRecordedRoundNumber != roundNumber) {
             while (modifierList.size() < lastRecordedRoundNumber) {
@@ -354,7 +365,6 @@ public class EncounterCombatantList implements Serializable {
     }
 
     public int getInitiativeRoll() {
-        // TODO: Adjust according to Settings
         // Find a pseudorandom number between 1 and 10, assign it to the roll member variable, and re-calculate the total initiative
         return rand.nextInt(prefs.getDiceSize()) + 1; // Calculate a random number between [0 10), and adjust it so it produces a roll between [1 10]
     }

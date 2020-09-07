@@ -35,7 +35,6 @@ public class CombatantGroupFragment extends Fragment {
         TextView GroupTextView = fragView.findViewById(R.id.group_text_view);
 
         // Set the adapter and layout manager for the recycler view
-        // TODO SOON: Set RecyclerView so that it just creates ViewHolders for every member of the list or something?  Ug...
         combatantRecyclerView.setAdapter(combatantRecyclerAdapter);
         LinearLayoutManager manager = new LinearLayoutManager(getContext()); // {
 //            @Override

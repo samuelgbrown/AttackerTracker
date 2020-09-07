@@ -11,6 +11,7 @@
     <string name="sort_init">Sort: Initiative</string>
     <string name="sort_alpha">Sort: Alphabetically </string>
     <string name="cheat_mode">Dice Cheat Mode</string>
+    <string name="restart_combat">Restart Combat</string>
     <string name="mod_saved_combatant">Modify Bookmarked Combatants</string>
     <string name="new_combatant">+ New Combatant</string>
     <string name="empty_add_combatants">There don\'t seem to be any saved combatants here.  Make some using the button below (give them a name, faction, and optional icon), and they will appear here for quick referencing later!</string>
@@ -29,8 +30,8 @@
 
     <string name="encounter_round_number">Round:</string>
 
-    <string name="configure_title">Configure Combatants</string>
-    <string name="encounter_title">Combat</string>
+    <string name="configure_title">""</string>
+    <string name="encounter_title">""</string>
 
     <string name="mod_combatant">Modify Combatant</string>
     <string name="create_combatant">Create New Combatant</string>
@@ -39,8 +40,14 @@
     <string name="combatant_icon">Icon:</string>
     <string name="combatant_faction">Faction:</string>
 
+    <string name="leave_app_title">Close Attacker Tracker?</string>
+    <string name="leave_app_message">Are you sure you want to leave and lose this encounter\'s data?</string>
+
     <string name="mod_create_close_title">Lose changes</string>
     <string name="mod_create_close_message">Are you sure you want to delete any changes you have made?</string>
+
+    <string name="restart_combat_title">Restart combat?</string>
+    <string name="restart_combat_message">Are you sure you want to restart combat?</string>
 
     <string name="party_header">Party Combatants</string>
     <string name="enemy_header">Enemy Combatants</string>

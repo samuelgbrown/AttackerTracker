@@ -17,7 +17,6 @@ public class CombatantSorter {
         public int compare(Combatant combatant, Combatant t1) {
             int cTI = combatant.getTotalInitiative();
             int t1TI = t1.getTotalInitiative();
-            // TODO: This comparison method can be changed according to which version we're using by using a method (perhaps set the method in the Constructor of this object?
             if (cTI != t1TI) {
                 // If the total initiatives are different, then it's a simple sort
                 switch (sortOrder) {

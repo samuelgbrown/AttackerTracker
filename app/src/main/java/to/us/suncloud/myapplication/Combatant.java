@@ -10,7 +10,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// A simple class to keep track of a combatant
+// A simple class to keep track of a Combatant
 public class Combatant implements Serializable {
     // Enforce uniqueness by name (for enemies, should ALWAYS be different, e.g. "Zombie 1", "Zombie 2"...), although the UUID is used for actual unique identification
     private static final String INIT_NAME = "New Combatant";
@@ -125,7 +125,7 @@ public class Combatant implements Serializable {
     }
 
     public Combatant getRaw() {
-        // Useful for quickly getting a "sanitized" version of the combatant (clears the roll/total initiative, gets rid of the name ordinal, if it exists, clears isSelected)
+        // Useful for quickly getting a "sanitized" version of the Combatant (clears the roll/total initiative, gets rid of the name ordinal, if it exists, clears isSelected)
         Combatant rawCombatant = clone();
 
         // Set a few values for the new Combatant
@@ -170,8 +170,6 @@ public class Combatant implements Serializable {
     private void calcTotalInitiative() {
         // Recalculate the total initiative
         this.totalInitiative = speedFactor + this.roll;
-
-        // TODO: This calculation can be changed according to a setting?
     }
 
     public void setNameOrdinal(int ordinal) {
@@ -260,7 +258,7 @@ public class Combatant implements Serializable {
         // First, generate an ArrayList of Strings of all combatants
         ArrayList<String> allCombatantNames = new ArrayList<>();
         for (int fclIndex = 0; fclIndex < listOfAllCombatants.size(); fclIndex++) {
-            // For each faction, add the combatant names list to allCombatantNames
+            // For each faction, add the Combatant names list to allCombatantNames
             allCombatantNames.addAll(listOfAllCombatants.get(fclIndex).getCombatantNamesList());
         }
 
@@ -292,7 +290,7 @@ public class Combatant implements Serializable {
         String currentNameSelection = String.valueOf(INIT_NAME);
 
         while (!isUnique) {
-            isUnique = !listOfAllCombatantNames.contains(currentNameSelection); // See if the combatant name list contains this name
+            isUnique = !listOfAllCombatantNames.contains(currentNameSelection); // See if the Combatant name list contains this name
 
             if (!isUnique) {
                 // Try to make the name unique

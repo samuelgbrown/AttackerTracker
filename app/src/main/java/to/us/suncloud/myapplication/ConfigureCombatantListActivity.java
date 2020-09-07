@@ -1,6 +1,7 @@
 package to.us.suncloud.myapplication;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentManager;
@@ -8,6 +9,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -20,19 +22,21 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
     public static final String COMBATANT_LIST = "combatantListList"; // ID for inputs to the activity
     public static final String ROUND_NUMBER = "roundNumber"; // ID for inputs to the activity
+    public static final String MAX_ROUND_ROLLED = "maxRoundRolled"; // ID for inputs to the activity
     //    public static final String ACTIVE_COMBATANT_NUMBER = "activeCombatantNumber"; // ID for inputs to the activity
     public static final String ENCOUNTER_DATA = "encounterData"; // ID for the encounter list data (dice rolls, etc) sorted as a EncounterCombatantList (really just for savedStateInstance, we transfer the Combatant list data with the Encounter Activity using a single, finalized EncounterCombatantList)
 
     public static final int COMBATANT_LIST_CODE = 0; // The Code to represent requesting a Combatant List back from the Encounter Activity, used in startActivityForResult()
 
     TextView mainButton; // The Main button at the bottom, to transfer over to the Encounter Activity
-    TextView noCombatantMessage; // Text message to show the use when there are no combatants
+    TextView noCombatantMessage; // Text message to show the use when there are no Combatants
     RecyclerView combatantListView; // RecyclerView that holds the Combatant List
     ListCombatantRecyclerAdapter adapter; // Adapter that holds the combatantList
 
     // Stored values for the Encounter Activity
     AllFactionCombatantLists combatantLists = new AllFactionCombatantLists();
     int roundNumber = 1; // The current round number of the Encounter
+    int maxRoundNumber = 1; // The max round number that has been rolled of the Encounter
     //    int curActiveCombatant = EncounterCombatantRecyclerAdapter.PREP_PHASE; // The currently active Combatant in the Encounter
     EncounterCombatantList curEncounterListData = null; // Keep track of any historical meta-data related to the encounter (dice rolls, any other things I was silly enough to try and keep consistent even though only like 2% of users will use this feature...)
 
@@ -47,14 +51,19 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
         // Get the combatantList and any other initialization parameters
         if (savedInstanceState != null) {
-            // Get the combatant lists
+            // Get the Combatant lists
             if (savedInstanceState.containsKey(COMBATANT_LIST)) {
                 combatantLists = (AllFactionCombatantLists) savedInstanceState.getSerializable(COMBATANT_LIST);
             }
 
-            // Get the current round number
+            // Get the current and max round numbers
             if (savedInstanceState.containsKey(ROUND_NUMBER)) {
-                roundNumber = savedInstanceState.getInt(ROUND_NUMBER, 0);
+                roundNumber = savedInstanceState.getInt(ROUND_NUMBER, 1);
+            }
+
+            // Get the current round number
+            if (savedInstanceState.containsKey(MAX_ROUND_ROLLED)) {
+                maxRoundNumber = savedInstanceState.getInt(MAX_ROUND_ROLLED, 0);
             }
 
             // Get the meta-data for the current encounter
@@ -94,12 +103,13 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
                 encounterIntent.putExtra(COMBATANT_LIST, combatantListToSend);
                 encounterIntent.putExtra(ROUND_NUMBER, roundNumber);
+                encounterIntent.putExtra(MAX_ROUND_ROLLED, maxRoundNumber);
                 startActivityForResult(encounterIntent, COMBATANT_LIST_CODE);
             }
         });
 
         // Toolbar
-        setSupportActionBar(toolbar); // TODO: Add toolbar buttons (Settings, like which DnD version is being used?)
+        setSupportActionBar(toolbar);
         getSupportActionBar().setTitle(R.string.configure_title);
 
         // Create a ListCombatantRecyclerAdapter, and assign it to the RecyclerView
@@ -116,6 +126,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     protected void onSaveInstanceState(Bundle outState) {
         // Save a few useful things (don't let Google see this, they'll get pissed off at how much data I'm saving in outState...whoops...)
         outState.putInt(ROUND_NUMBER, roundNumber);
+        outState.putInt(MAX_ROUND_ROLLED, maxRoundNumber);
         outState.putSerializable(COMBATANT_LIST, combatantLists);
         outState.putSerializable(ENCOUNTER_DATA, curEncounterListData);
 
@@ -145,8 +156,9 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                         adapter.setCombatantList(new AllFactionCombatantLists(newCombatantList)); // Get a Combatant list back from the Encounter
                     }
 
-                    // Get the current round number
-                    roundNumber = data.getIntExtra(ROUND_NUMBER, 0);
+                    // Get the current and max round numbers
+                    roundNumber = data.getIntExtra(ROUND_NUMBER, 1);
+                    maxRoundNumber = data.getIntExtra(MAX_ROUND_ROLLED, 0);
 //                    curActiveCombatant = data.getIntExtra(ACTIVE_COMBATANT_NUMBER, EncounterCombatantRecyclerAdapter.PREP_PHASE);
                     updateMainButton();
                 }
@@ -171,7 +183,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     void updateNoCombatantMessage() {
         boolean haveCombatants = false;
         if (adapter.getCombatantList() != null) {
-            // If there are factions, check if any of them have combatants.  Otherwise, display the no combatant message
+            // If there are factions, check if any of them have combatants.  Otherwise, display the no Combatant message
             haveCombatants = !adapter.getCombatantList().isEmpty();
         }
 
@@ -274,8 +286,8 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
     @Override
     public void receiveChosenCombatant(Combatant selectedCombatant) {
-        // Receive a combatant from a ListCombatantRecyclerAdapter
-        // Do nothing, because this is "receiving" a combatant from the configure list, which shouldn't do anything on being touched
+        // Receive a Combatant from a ListCombatantRecyclerAdapter
+        // Do nothing, because this is "receiving" a Combatant from the configure list, which shouldn't do anything on being touched
     }
 
     @Override
@@ -322,6 +334,28 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         updateNoCombatantMessage();
     }
 
+    @Override
+    public void onBackPressed() {
+        // Make sure the user really wants to exit, before their data is lost
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.leave_app_title)
+                .setMessage(R.string.leave_app_message)
+                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // Leave the app
+                        ConfigureCombatantListActivity.super.onBackPressed();
+                    }
+                })
+                .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // Do nothing
+                    }
+                })
+                .show();
+    }
+
     // Related to the toolbar
 
     @Override
@@ -350,7 +384,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                 viewBookmarksFrag.show(fm_ob, "Open Bookmarks");
                 return true;
             case R.id.add_combatant:
-                // Open the add combatant menu
+                // Open the add Combatant menu
                 FragmentManager fm_ac = getSupportFragmentManager();
                 ViewSavedCombatantsFragment addCombatantFrag = ViewSavedCombatantsFragment.newAddCombatantToListInstance(this, adapter.getCombatantList());
                 addCombatantFrag.show(fm_ac, "AddCombatantToList");
