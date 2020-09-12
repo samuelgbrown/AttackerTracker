@@ -13,6 +13,7 @@ import java.util.UUID;
 // This Combatant list is used for the encounter.  It keeps a list of Combatants that are not organized/separated (unlike the AllFactionsCombatantList) that can be reorganized easily.
 // It will also perform all functions relevant to calculating initiative
 public class EncounterCombatantList implements Serializable {
+    private static final int ALL_COMBATANTS_CHECKED = -3; // A state where all Combatants are checked off
     private ArrayList<Combatant> combatantArrayList = new ArrayList<>();
     private ArrayList<Integer> duplicateInitiatives; // Keep track of any initiative values that are duplicated across multiple Combatants
     private ArrayList<HashMap<UUID, Integer>> diceRollList = new ArrayList<>(); // Keep track of all dice rolls from previous rounds
@@ -20,6 +21,7 @@ public class EncounterCombatantList implements Serializable {
     private int lastRecordedRoundNumber = 1; // The last round number that was set using setRoundNumber - used to store the values of all modifiers for each round
     private SortMethod currentSortMethod = SortMethod.INITIATIVE;
     private InitPrefs prefs; // The preferences Object that dictates how the combat cycle should flow
+    private boolean haveHadPrepPhase; // Has the preparation phase been completed yet?  Used to determine if all Combatants are checked because we are preparing now, or because we are in the end-of-round actions phase
 
     private static Random rand = new Random(); // A random number generator (static, so that each Combatant uses the same one, and it does not just use the system clock as a first time seed each time
 
@@ -53,7 +55,10 @@ public class EncounterCombatantList implements Serializable {
         currentSortMethod = c.getCurrentSortMethod(); // List should already be in a sorted state
         duplicateInitiatives = c.getDuplicateInitiatives(); // List should already be in a prepared state
         diceRollList = c.getDiceRollList();
+        modifierList = c.getModifierList();
+        lastRecordedRoundNumber = c.getLastRecordedRoundNumber();
         prefs = c.getPrefs();
+        haveHadPrepPhase = c.haveHadPrepPhase();
     }
 
     public InitPrefs getPrefs() {
@@ -116,11 +121,19 @@ public class EncounterCombatantList implements Serializable {
         updateDuplicateInitiatives();
     }
 
+    public boolean haveHadPrepPhase() {
+        return haveHadPrepPhase;
+    }
+
+    public void setHaveHadPrepPhase(boolean haveHadPrepPhase) {
+        this.haveHadPrepPhase = haveHadPrepPhase;
+    }
+
     public void updateCombatants(AllFactionCombatantLists factionList) {
         // Add any new Combatants
         // First, figure out what we should initialize the new Combatants to (I really hate this, there HAS to be a better way...I think isSelected may just need to become an enum
         int curPhase = calcActiveCombatant();
-        final boolean initSelect = (curPhase == EncounterCombatantRecyclerAdapter.PREP_PHASE); // If we are in the preparation phase, then initialize selected to true (to stay in this phase).  If we are not in the preparatory phase (we are in the middle of a combat round), initialize selected to false, because the Combatant has not gone yet (god, I hate this so much...)
+        final boolean initSelect = (curPhase == EncounterCombatantRecyclerAdapter.PREP_PHASE || curPhase == EncounterCombatantRecyclerAdapter.END_OF_ROUND_ACTIONS); // If we are in the preparation phase, then initialize selected to true (to stay in this phase).  If we are not in the preparatory phase (we are in the middle of a combat round), initialize selected to false, because the Combatant has not gone yet (god, I hate this so much...)
 
         // Assumed to be unique by ID, because the names may have changed (i.e. adding a new second copy of a given Combatant, changing the first's ordinal to 1)
         AllFactionCombatantLists clonedList = factionList.clone(); // First, make a cloned version of the list, so we don't affect any of the "real" copies of the Combatants
@@ -167,7 +180,7 @@ public class EncounterCombatantList implements Serializable {
     }
 
     public int calcActiveCombatant() {
-        // Calculate the currently active Combatant in the list
+        // Calculate the currently active Combatant in the list *in initiative order*
         //      The first Combatant in the final group of unchecked Combatants
         //          XOOXXOOOOOXX
         //               ^ <- currently active Combatant
@@ -213,15 +226,18 @@ public class EncounterCombatantList implements Serializable {
         // If we got here, then all of the Combatants are selected, and therefore we are in the preparation phase
         if (foundUnSelected) {
             // If all of the Combatants are unselected, then the first Combatant is currently active
+            haveHadPrepPhase = true; // Record the fact that we have finished the prep phase
             return 0;
         } else {
-            // If all of the Combatants are selected, then we are in the prep-phase
-            return EncounterCombatantRecyclerAdapter.PREP_PHASE;
+            // If all of the Combatants are selected, then we are either in the end-of-round phase or the prep-phase
+            if (prefs.doingEndOfRound() &&  haveHadPrepPhase) {
+                // If we already had a prep-phase this round, then all the Combatants must be checked because we have an end-of-round actions phase
+                return EncounterCombatantRecyclerAdapter.END_OF_ROUND_ACTIONS;
+            } else {
+                // All Combatants are checked because we are preparing for this round of combat
+                return EncounterCombatantRecyclerAdapter.PREP_PHASE;
+            }
         }
-
-        // OLD
-//        // If we got here, then none of the Combatants have been selected yet, so the first is our currently active Combatant
-//        return 0;
     }
 
     public ArrayList<Integer> getDuplicateInitiatives() {
@@ -230,6 +246,14 @@ public class EncounterCombatantList implements Serializable {
 
     public ArrayList<HashMap<UUID, Integer>> getDiceRollList() {
         return diceRollList;
+    }
+
+    public ArrayList<HashMap<UUID, Integer>> getModifierList() {
+        return modifierList;
+    }
+
+    public int getLastRecordedRoundNumber() {
+        return lastRecordedRoundNumber;
     }
 
     public void sort(SortMethod sortMethod) {
@@ -321,7 +345,6 @@ public class EncounterCombatantList implements Serializable {
             lastRecordedRoundNumber = roundNumber;
         }
 
-
         // Now that we have the dice rolls/modifiers that we are going to use, assign them to each Combatant
         for (Combatant combatant : combatantArrayList) {
             // For each Combatant, retrieve the roll, and set it to the Combatant
@@ -342,6 +365,9 @@ public class EncounterCombatantList implements Serializable {
                 modifierMap.put(combatant.getId(), combatant.getModifier()); // Will be saved in modifierList
             }
         }
+
+        // Finally, since we are in a new round, note that the end-of-round actions are not completed (if the user wants to use this feature)
+        haveHadPrepPhase = false;
 
         // Update the duplicateInitiatives list
         doSorting(); // Sort the list now that the rolls/modifiers have likely changed
@@ -466,12 +492,14 @@ public class EncounterCombatantList implements Serializable {
         private CombatantSorter.sortOrder sortOrder;
         private boolean reRollInit;
         private int diceSize;
+        private boolean endOfRound;
 
         InitPrefs(Context context) {
             // Using the InitPrefsHelper, populate this object
             sortOrder = InitPrefsHelper.getSortOrder(context);
             reRollInit = InitPrefsHelper.getReRollInit(context);
             diceSize = InitPrefsHelper.getDiceSize(context);
+            endOfRound = InitPrefsHelper.doingEndOfRound(context);
         }
 
         public CombatantSorter.sortOrder getSortOrder() {
@@ -484,6 +512,10 @@ public class EncounterCombatantList implements Serializable {
 
         public int getDiceSize() {
             return diceSize;
+        }
+
+        public boolean doingEndOfRound() {
+            return endOfRound;
         }
     }
 }

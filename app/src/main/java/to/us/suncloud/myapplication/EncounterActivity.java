@@ -33,8 +33,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     int roundNumber = 1;
     int maxRoundRolled = 0;
 
-    ConstraintLayout prepBanner;
-    TextView prepMessage;
+    ConstraintLayout endOfRoundBanner;
+    TextView prepBanner;
     RecyclerView encounterRecyclerView;
     Toolbar encounterToolbar;
     TextView noCombatantTextView;
@@ -51,6 +51,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         Intent intent = getIntent();
         Bundle thisBundleData = intent.getExtras();
 
+        // Initialize some parameters, if needed
         masterCombatantList = new EncounterCombatantList(getApplicationContext());
 
         if (savedInstanceState != null) {
@@ -98,8 +99,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         // Retrieve all Views
         encounterToolbar = findViewById(R.id.encounter_toolbar);
         encounterRecyclerView = findViewById(R.id.encounter_recycler_view);
-        prepBanner = findViewById(R.id.encounter_prepare_banner);
-        prepMessage = findViewById(R.id.encounter_prepare_message);
+        prepBanner = findViewById(R.id.encounter_prepare_message);
+        endOfRoundBanner = findViewById(R.id.encounter_end_of_round_container);
         noCombatantTextView = findViewById(R.id.encounter_combatant_empty);
         nextButton = findViewById(R.id.encounter_continue);
         previousButton = findViewById(R.id.encounter_previous_combatant);
@@ -116,7 +117,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         adapter.notifyCombatantsChanged(); // Let the adapter know that this is the initial state (update all "memory" parameters for the Combatant list and the currently active Combatant)
 
         // Set up the banner message
-        prepMessage.setText(getString(R.string.prepare_message, InitPrefsHelper.getModString(getApplicationContext())));
+        prepBanner.setText(getString(R.string.prepare_message, InitPrefsHelper.getModString(getApplicationContext())));
 
         // Set up the buttons
         nextButton.setOnClickListener(new View.OnClickListener() {
@@ -130,13 +131,13 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
                 imm.hideSoftInputFromWindow(nextButton.getWindowToken(), 0);
 
                 // Increment the combat step
-                nextButton.post(new Runnable() {
+                nextButton.postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         // Done in Runnable because when this is called outside runnable while an EditText is focused, the adapter's notifyCombatantsChanged() gets called twice in a row, and the RecyclerView doesn't get laid out properly
                         adapter.incrementCombatStep();
                     }
-                });
+                }, 50); // Why delay?  Because Android is stupid, that's why.  The adapter wouldn't update right because two notifyCombatantsChanged would fire one after another, and apparently that makes Android sad
 
 //                adapter.incrementCombatStep();
             }
@@ -153,13 +154,13 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
                 imm.hideSoftInputFromWindow(nextButton.getWindowToken(), 0);
 
                 // Decrement the combat step
-                previousButton.post(new Runnable() {
+                previousButton.postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         // Done in Runnable because when this is called outside runnable while an EditText is focused, the adapter's notifyCombatantsChanged() gets called twice in a row, and the RecyclerView doesn't get laid out properly
                         adapter.decrementCombatStep();
                     }
-                });
+                }, 50); // Why delay?  Because Android is stupid, that's why.  The adapter wouldn't update right because two notifyCombatantsChanged would fire one after another, and apparently that makes Android sad
 
 //                adapter.decrementCombatStep();
             }
@@ -200,6 +201,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         int previousButtonVisibility = View.VISIBLE; // The only time this would become invisible is if we are at the Roll Initiative stage of Round 1
         boolean doAnim = false; // Should we do the fun Roll Initiative animation?
         int prepBannerVisibility = View.GONE; // Should the Prepare Battle message be visible?
+        int endOfRoundVisibility = View.GONE; // Should the End Of Round message be visible?
 
         // Check if combat happened to get restarted
         if (!masterCombatantList.isMidCombat()) {
@@ -225,6 +227,10 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
                 // If this is the 1st round prepare phase, then don't display the previous button
                 previousButtonVisibility = View.GONE;
             }
+        } else if (currentlyActiveCombatant == EncounterCombatantRecyclerAdapter.END_OF_ROUND_ACTIONS) {
+            // If we just moved into the end-of-round actions phase, then set the next button and banner accordingly
+            nextButtonText = R.string.encounter_prepare_next_round;
+            endOfRoundVisibility = View.VISIBLE;
         } else {
             // Check if we just moved into Combat
             if (currentlyActiveCombatant == 0 && roundNumber > maxRoundRolled && nextButton.getText().equals(getResources().getString(R.string.encounter_roll_initiative))) {
@@ -237,21 +243,28 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 
             // The next button's test depends on what happens if the currently selected Combatant gets checked off
             EncounterCombatantList testList = masterCombatantList.clone();
-            testList.get(currentlyActiveCombatant).setSelected(true); // Simulate the user checking off the current Combatant
+            testList.get(testList.getViewIndexOf(currentlyActiveCombatant)).setSelected(true); // Simulate the user checking off the current Combatant
             int nextActiveCombatant = testList.calcActiveCombatant();
 
             // Based on what the next step of the combat cycle is, set up the next button text
-            if (nextActiveCombatant == EncounterCombatantRecyclerAdapter.PREP_PHASE) {
-                // If the currently active Combatant is the final Combatant before the prep phase, then the next action will be to prepare for the next round of combat
-                nextButtonText = R.string.encounter_prepare_next_round;
-            } else {
-                nextButtonText = R.string.encounter_next_combatant;
+            switch (nextActiveCombatant) {
+                case EncounterCombatantRecyclerAdapter.PREP_PHASE:
+                    // If the currently active Combatant is the final Combatant before the prep phase, then the next action will be to prepare for the next round of combat
+                    nextButtonText = R.string.encounter_prepare_next_round;
+                    break;
+                case EncounterCombatantRecyclerAdapter.END_OF_ROUND_ACTIONS:
+                    // If the currently active Combatant is the final Combatant before the end-of-round phase, then the next action will be to perform any end-of-round actions
+                    nextButtonText = R.string.encounter_end_of_round;
+                    break;
+                default:
+                    nextButtonText = R.string.encounter_next_combatant;
             }
         }
 
 
         int delay = doAnim ? 500 : 0;
         prepBanner.setVisibility(prepBannerVisibility);
+        endOfRoundBanner.setVisibility(endOfRoundVisibility);
 
         // God forgive me.
         nextButton.postDelayed(new GUIAlterThread(nextButton, previousButton, roundCounter, nextButtonText, nextButtonVisibility, previousButtonVisibility, roundNumber), delay);
@@ -331,7 +344,6 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
             }
         }
     }
-
 
 
     @Override

@@ -28,6 +28,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     DropDownPreference modPref; // The sort order preference
     EditTextPreference dicePref; // The dice size preference
     CheckBoxPreference reRollPref; // The re-roll preference
+    CheckBoxPreference endOfRoundPref; // The end-of-round actions preference
 
     boolean isMidCombat = false; // Is the user currently mid-combat?
 
@@ -35,6 +36,8 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.prefs, rootKey);
         PreferenceManager manager = getPreferenceManager();
+
+        // TODO SOON: Add colorblind mode! Blue and yellow?  Orange?  Google it!
 
         Bundle args = getArguments();
 
@@ -50,6 +53,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         dicePref = manager.findPreference(getString(R.string.key_dice_size));
         modPref = manager.findPreference(getString(R.string.key_mod_used));
         reRollPref = manager.findPreference(getString(R.string.key_re_roll));
+        endOfRoundPref = manager.findPreference(getString(R.string.key_end_of_round)); // This will be set by the preset dropdown list, but will not set it to "Custom" upon being modified
 
         // Set up the preset functionality
         presetPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
@@ -124,6 +128,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         int modValue = 0;
         int diceValue = 10;
         boolean reRollVal = false;
+        boolean endOfRoundVal = false;
 
         // Get the current dice value, for comparison.  If this is changed mid-combat, then data will be lost
         int curDiceValue = Integer.parseInt(dicePref.getText());
@@ -136,6 +141,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             modValue = 0;
             diceValue = 10;
             reRollVal = true;
+            endOfRoundVal = true;
         }
 
         if (newPresetValue.equals(getString(R.string.rpg_ver_entry_dnd3))) {
@@ -146,6 +152,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             modValue = 1;
             diceValue = 20;
             reRollVal = false;
+            endOfRoundVal = false;
         }
 
         if (!newVals) {
@@ -162,6 +169,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             // Go through this method again, but force
+                            isMidCombat = false;
                             updateFromPreset(newPresetValue, true);
                         }
                     })
@@ -183,6 +191,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         modPref.setValueIndex(modValue);
         dicePref.setText(String.valueOf(diceValue));
         reRollPref.setChecked(reRollVal);
+        endOfRoundPref.setChecked(endOfRoundVal);
 
         if (forceUpdate) {
             // If this is a force update (the user just confirmed that they wanted to overwrite combat data), then set the value of the preset dropdown menu, because it wasn't set

@@ -224,6 +224,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         // Set the modifier type to the correct String
         modTypeView.setText(modString);
 
+        // TODO: Cassie's device: When defaultModifier is focused and the view is scrolled down
         defaultModifier.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
@@ -234,8 +235,14 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
                     } else {
                         // If we have lost focus, the user has likely navigated away.  So, confirm the new value
 
+                        // TODO: Make sure this fires when EditText is selected when the Combatant is accepted WITHOUT having to hit DONE
                         // It damn well better be...
-                        setModifierIfValid(((EditText) v).getText().toString()); // Set the new modifier, if possible
+                        defaultModifier.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                setModifierIfValid(defaultModifier.getText().toString()); // Set the new modifier, if possible
+                            }
+                        });
                     }
                 }
             }
@@ -244,10 +251,20 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         defaultModifier.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                if (actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+//                if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                     if (event == null || !event.isShiftPressed()) {
                         // The user is done typing, so attempt to set the modifier
-                        setModifierIfValid(v.getText().toString());
+                        defaultModifier.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                setModifierIfValid(defaultModifier.getText().toString()); // Set the new modifier, if possible
+                            }
+                        });
+
+                        // If the user hit Done, then hide the keyboard
+                        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                        imm.hideSoftInputFromWindow(defaultModifier.getWindowToken(), 0);
                         return true;
                     }
                 }

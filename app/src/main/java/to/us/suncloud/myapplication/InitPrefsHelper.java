@@ -74,4 +74,11 @@ public class InitPrefsHelper {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         return prefs.getBoolean(context.getString(R.string.key_re_roll), true);
     }
+
+    public static boolean doingEndOfRound(Context context) {
+        // Determine whether or not we do a pause after the end of each round
+        // Get the preferences, and find the value that corresponds to the boolean we want
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        return prefs.getBoolean(context.getString(R.string.key_end_of_round), false);
+    }
 }

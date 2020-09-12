@@ -112,6 +112,7 @@ public class AllFactionCombatantLists implements Serializable {
     }
 
     int posToCombatantInd(int position) {
+        // TODO SOON: Fix this!  If only party member(s) and neutral are added, neutral label is called enemy
         // Convert an adapter position to an index in combatantList_Master (adapter position will include banners)
         int viewsRemaining = position; // Keep track of how many Views have been traversed
         int returnPosition = 0; // Keep track of how many CombatantViews have been traversed

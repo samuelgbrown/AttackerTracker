@@ -28,6 +28,7 @@ import java.util.Locale;
 // To display combatants in a list for the encounter.  Supports reordering and tracking who has gone already.
 public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<EncounterCombatantRecyclerAdapter.CombatantViewHolder> {
     public static final int PREP_PHASE = -1;
+    public static final int END_OF_ROUND_ACTIONS = -2;
     private static final float GRAYED_OUT = 0.5f;
     private static final float CLEAR = 0f;
 
@@ -49,6 +50,9 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     ArrayList<Integer> iconResourceIds; // A list of resource ID's of the icons that will be used for each Combatant
 
     boolean diceCheatModeOn = false; // Are we currently in the dice cheat mode?
+
+    boolean doingEndOfRoundActions; // Should we be doing the end-of-round actions?
+
 
     //    private int curActiveCombatant = PREP_PHASE; // The currently active Combatant, as an index in combatantList (if -1, there is no active Combatant)
 //    private int prevActiveCombatant = PREP_PHASE; // The currently active Combatant, as an index in combatantList (if -1, there is no active Combatant)
@@ -87,6 +91,10 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
             curNum++;
         }
+
+        // Set up the endOfRound pause system
+        doingEndOfRoundActions = InitPrefsHelper.doingEndOfRound(parent.getContext());
+//        endOfRoundCompleted = !doEndOfRoundActions;
 
         // Set the current round for the combatantList (initializes rolls for any new Combatants that haven't been initialized yet)
         curSortMethod = EncounterCombatantList.SortMethod.INITIATIVE; // Always initialize to initiative sorting
@@ -234,7 +242,13 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                             // If we have lost focus, the user has likely navigated away.  So, confirm the new value
 
                             // It damn well better be...
-                            setModifierValueIfValid(((EditText) v).getText().toString()); // Set the new modifier, if possible
+                            // Perform this in a new Runnable, so we don't get an error from the RecyclerView if scrolling
+                            ModifierView.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    setModifierValueIfValid(ModifierView.getText().toString()); // Set the new modifier, if possible
+                                }
+                            });
 
 //                            // Hide the keyboard
 //                            InputMethodManager imm = (InputMethodManager) parent.getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
@@ -251,7 +265,12 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 //                    if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                         if (event == null || !event.isShiftPressed()) {
                             // The user is done typing, so attempt to set the modifier
-//                            setModifierValueIfValid(v.getText().toString());
+                            ModifierView.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    setModifierValueIfValid(ModifierView.getText().toString()); // Set the new modifier, if possible
+                                }
+                            });
 
                             // If the user hit Done, then hide the keyboard
                             InputMethodManager imm = (InputMethodManager) parent.getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -272,8 +291,18 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                     if (!hasFocus) {
                         // If we have lost focus, the user has likely navigated away.  So, confirm the new value
                         if (v instanceof EditText) {
+                            if (getAdapterPosition() == (combatantList.size() - 1)) {
+                                // If this is the last Combatant, then its IME action should be "Done" instead of the default "Next" (as set in the xml)
+                                ((EditText) v).setImeOptions(EditorInfo.IME_ACTION_DONE);
+                            }
+
                             // It damn well better be...
-                            setRollValueIfValid(((EditText) v).getText().toString()); // Set the new modifier, if possible
+                            RollViewEdit.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    setRollValueIfValid(RollViewEdit.getText().toString()); // Set the new modifier, if possible
+                                }
+                            });
                         }
                     }
                 }
@@ -282,9 +311,17 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             RollViewEdit.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                    if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                    if (actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+//                    if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                         if (event == null || !event.isShiftPressed()) {
                             // The user is done typing, so attempt to set the modifier
+                            RollViewEdit.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    setRollValueIfValid(RollViewEdit.getText().toString()); // Set the new modifier, if possible
+                                }
+                            });
+
                             setRollValueIfValid(v.getText().toString());
                             return true;
                         }
@@ -559,13 +596,14 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
         public void setChecked(int isCheckedState) {
             // Should the Combatant's checkbox be checked or not?
-            boolean isChecked = (isCheckedState == 1); // If the value is 1, then the checkbox can be checked.  If it is 0, it should be unchecked, and if it is PREP_PHASE, the checkbox should not appear (the ViewHolder must be updated, though)
+            boolean isChecked = (isCheckedState == 1 || isCheckedState == END_OF_ROUND_ACTIONS); // If the value is 1, then the checkbox can be checked.  If it is 0, it should be unchecked, and if it is PREP_PHASE, the checkbox should not appear (the ViewHolder must be updated, though)
+            boolean isGrayed = isCheckedState == 1; // The view should only be grayed out if we are in combat and the Combatant has completed their action
             modifyingSelf = true;
             CombatantCompletedCheck.setChecked(isChecked); // The function setCombatantProgression will be automatically called due to the listener on the CheckBox, so the GUI will be updated
             modifyingSelf = false;
 
             // Also set the visibility of the gray-out
-            float targetAlpha = isChecked ? GRAYED_OUT : CLEAR; // If the Combatant is checked, then gray it out; otherwise, keep it clear
+            float targetAlpha = isGrayed ? GRAYED_OUT : CLEAR; // If the Combatant is checked, then gray it out; otherwise, keep it clear
             float currentAlpha = CombatantGrayout.getAlpha();
 
             // Set the Combatant to be grayed out, if needed
@@ -691,6 +729,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         combatantList.updateDuplicateInitiatives();
 
         // Let the adapter know that at least one Combatant has changed its Initiative values, so all of the orders may now be different
+
         notifyCombatantsChanged();
     }
 
@@ -779,7 +818,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     public void sort(EncounterCombatantList.SortMethod sortMethod) {
         curSortMethod = sortMethod;
         if (activeCombatant() != PREP_PHASE) {
-            // Only sort if we are in the prep-phase.  Otherwise, just store the desired sort method to be used during the combat round
+            // Only sort if we are not in the prep-phase.  Otherwise, just store the desired sort method to be used during the combat round
             combatantList.sort(curSortMethod); // Perform the sorting
             notifyCombatantsChanged(); // Update the display
         }
@@ -821,7 +860,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         }
 
         // Scroll to the currently active Combatant (TODO: May need to be an option to turn this off...?)
-        scrollTo(curActiveCombatant != PREP_PHASE ? getViewInd(curActiveCombatant) : 0);
+        scrollTo((curActiveCombatant == PREP_PHASE || curActiveCombatant == END_OF_ROUND_ACTIONS) ? 0 : getViewInd(curActiveCombatant));
     }
 
     private void scrollTo(int position) {
@@ -839,11 +878,17 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         int curActiveCombatant = activeCombatant();
 
         // Check off the current Combatant (if it exists)
-        if (curActiveCombatant != PREP_PHASE) {
-            setIsChecked(getViewInd(curActiveCombatant), true);
-        } else {
-            // In the special case that we are in the prep phase, uncheck all Combatants to start combat again
+        if (curActiveCombatant == PREP_PHASE) {
+            // In the special case that we are in the prep phase, moving to start combat, uncheck all Combatants to start combat again
             setAllIsChecked(false);
+        } else {
+            if (curActiveCombatant == END_OF_ROUND_ACTIONS) {
+                // In the special case that we are in the end-of-round action phase, let the list know that we can move on
+                combatantList.setHaveHadPrepPhase(false); // A useful but incredibly strange...hack?
+            } else {
+                // Otherwise, just check off the currently active Combatant
+                setIsChecked(getViewInd(curActiveCombatant), true);
+            }
         }
 
         // Now, recalculate the currently active Combatant based on the new checked off Combatant(s)
@@ -927,20 +972,36 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         int curActiveCombatant = activeCombatant();
 
         // Uncheck the new current Combatant (if it exists), if we are not between rounds
-        if (curActiveCombatant == PREP_PHASE) {
-            // In the special case that we are in the prep phase, we just went back into the previous round of Combat
-            // Decrement the round number, and retreive the previous rolls
-            curRoundNumber--;
-            combatantList.setRoundNumber(curRoundNumber);
+        switch (curActiveCombatant) {
+            case PREP_PHASE:
+                // In the special case that we are in the prep phase, we just went back into the previous round of Combat
+                // Decrement the round number, and retrieve the previous rolls
+                curRoundNumber--;
+                combatantList.setRoundNumber(curRoundNumber);
 
-            // In the new combatantList order (the initiative order from last round), uncheck the last Combatant
-            setIsChecked(getViewInd(combatantList.size() - 1), false);
-        } else if (curActiveCombatant == 0) {
-            // In the special case that the first Combatant is active, check off all Combatants (bring us to the prep phase
-            setAllIsChecked(true);
-        } else {
-            // Otherwise, just uncheck the Combatant before the currently active Combatant
-            setIsChecked(getViewInd(curActiveCombatant - 1), false);
+                if (doingEndOfRoundActions) {
+                    combatantList.setHaveHadPrepPhase(true); // If we are going back to the end of round actions phase, make sure the Combatant list knows that we have already completed the prep-phase for the round
+                } else {
+                    // If we are not doing end-of-round actions, then uncheck the last Combatant (if we ARE doing end-of-round actions, don't do anything else)
+
+                    // In the new combatantList order (the initiative order from last round), uncheck the last Combatant
+                    setIsChecked(getViewInd(combatantList.size() - 1), false);
+                }
+                break;
+            case END_OF_ROUND_ACTIONS:
+                // In the special case that we are in the end-of-round actions phase, uncheck the last Combatant
+
+                // In the new combatantList order (the initiative order from last round), uncheck the last Combatant
+                setIsChecked(getViewInd(combatantList.size() - 1), false);
+                break;
+            case 0:
+                // In the special case that the first Combatant is active, check off all Combatants (bring us to the prep phase
+                setAllIsChecked(true);
+                combatantList.setHaveHadPrepPhase(false); // If we are going back to the prep phase, make sure the Combatant list thinks that we have not yet had one for this round
+                break;
+            default:
+                // Otherwise, just uncheck the Combatant before the currently active Combatant
+                setIsChecked(getViewInd(curActiveCombatant - 1), false);
         }
 
         // Now, recalculate the currently active Combatant based on the new checked off Combatant(s)
@@ -1016,6 +1077,9 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             curRoundNumber = 1; // Move back to the first round
         }
 
+        // Update the settings that this adapter needs to know about
+        doingEndOfRoundActions = InitPrefsHelper.doingEndOfRound(context);
+
         notifyCombatantsChanged();
         parent.updateGUIState();
     }
@@ -1034,38 +1098,45 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     public enum initStatus {
         Active, // The currently selected Combatant
         Normal, // Not checked, not had turn yet; or checked and had turn
+        EOR_Action, // Not checked, all turns completed
         Alert, // Not checked off, turn completed
         Prep // Between rounds, do not show Roll and modifier elements
     }
 
     public static EncounterCombatantRecyclerAdapter.initStatus getStatus(EncounterCombatantList list, int curPosition, int activeCombatant) {
         // Determine the Combatant's status (and therefore border color) based on its current position in the order and the position of the currently active Combatant
-        if (activeCombatant == EncounterCombatantRecyclerAdapter.PREP_PHASE) {
-            // If we are in the preparatory combat phase
-            return EncounterCombatantRecyclerAdapter.initStatus.Prep;
+        switch (activeCombatant) {
+            case PREP_PHASE:
+                // If we are in the preparatory combat phase
+                return initStatus.Prep;
+            case END_OF_ROUND_ACTIONS:
+                // IF we are in the end-of-round actions phase
+                return initStatus.EOR_Action;
         }
 
         if (getInitiativeInd(list, curPosition) == activeCombatant) {
             // If this is the currently selected Combatant, they are active regardless
-            return EncounterCombatantRecyclerAdapter.initStatus.Active;
+            return initStatus.Active;
         }
 
         if (!list.get(curPosition).isSelected() && (getInitiativeInd(list, curPosition) < activeCombatant)) {
             // If the Combatant is not checked, but its turn has already occurred
-            return EncounterCombatantRecyclerAdapter.initStatus.Alert;
+            return initStatus.Alert;
         } else {
-            return EncounterCombatantRecyclerAdapter.initStatus.Normal;
+            return initStatus.Normal;
         }
     }
 
     public static int getDuplicateColor(EncounterCombatantList list, int curPosition, int activeCombatant) {
-        return activeCombatant == EncounterCombatantRecyclerAdapter.PREP_PHASE ? -1 : list.getDuplicateColor(curPosition);
+        return (activeCombatant == PREP_PHASE) ? -1 : list.getDuplicateColor(curPosition);
     }
 
     public static int isCheckedState(EncounterCombatantList list, int curPosition, int activeCombatant) {
         // There are 3 states of being checked.  Checked, unchecked, or PREP_PHASE (indicating that the list is the preparation phase, and while the value of isSelected is true, the selection cannot appear on screen and is fundamentally different than the checked state)
-        if (activeCombatant == EncounterCombatantRecyclerAdapter.PREP_PHASE) {
+        if (activeCombatant == PREP_PHASE) {
             return PREP_PHASE;
+        } else if (activeCombatant == END_OF_ROUND_ACTIONS) {
+            return END_OF_ROUND_ACTIONS;
         } else {
             return list.get(curPosition).isSelected() ? 1 : 0;
         }

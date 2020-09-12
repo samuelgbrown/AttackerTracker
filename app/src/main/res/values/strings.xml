@@ -26,7 +26,10 @@
     <string name="encounter_next_combatant">Next Combatant!</string>
     <string name="encounter_roll_initiative">Roll Initiative!</string>
     <string name="encounter_prepare_next_round">Next Round!</string>
+    <string name="encounter_end_of_round">End Of Round!</string>
     <string name="prepare_message">Modify %1$s!</string>
+    <string name="end_of_round_message">Perform End of Round Actions!</string>
+    <string name="end_of_round_disable_message">(This can be disabled in settings)</string>
 
     <string name="encounter_round_number">Round:</string>
 
@@ -91,6 +94,7 @@
     <string name="key_sort_order">KeySort</string>
     <string name="key_mod_used">KeyMod</string>
     <string name="key_re_roll">KeyReRoll</string>
+    <string name="key_end_of_round">KeyEndOfRound</string>
 
     <string name="rpg_ver_dnd2">DnD 2 (Advanced DnD)</string>
     <string name="rpg_ver_dnd3">DnD 3.5</string>
@@ -142,6 +146,8 @@
     <string name="change_dice_message">Changing the dice size mid-combat will reset your progress back to round 1.  Are you sure you want to change it?</string>
 
     <string name="re_roll_string">Re-roll Initiative Each Round</string>
+
+    <string name="end_of_round_action_string">Pause at End Of Round</string>
 
     <!-- Sync Preferences -->
     <string name="sync_title">Sync email periodically</string>

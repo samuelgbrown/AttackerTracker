@@ -44,6 +44,11 @@
             android:key="@string/key_re_roll"
             android:title="@string/re_roll_string" />
 
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/key_end_of_round"
+            android:title="@string/end_of_round_action_string" />
+
 
     </PreferenceCategory>
 
