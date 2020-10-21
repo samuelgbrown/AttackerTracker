@@ -28,6 +28,8 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
     public static final int COMBATANT_LIST_CODE = 0; // The Code to represent requesting a Combatant List back from the Encounter Activity, used in startActivityForResult()
 
+    int curTheme; // The current theme of this Activity
+
     TextView mainButton; // The Main button at the bottom, to transfer over to the Encounter Activity
     TextView noCombatantMessage; // Text message to show the use when there are no Combatants
     RecyclerView combatantListView; // RecyclerView that holds the Combatant List
@@ -47,6 +49,10 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Set the theme
+        curTheme = PrefsHelper.getTheme(getApplicationContext());
+        setTheme(curTheme);
         setContentView(R.layout.activity_main);
 
         // Get the combatantList and any other initialization parameters
@@ -171,6 +177,12 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     protected void onResume() {
         super.onResume();
 
+        // Update the theme if needed
+        if (curTheme != PrefsHelper.getTheme(getApplicationContext())) {
+            // If the theme has been changed, then recreate the Activity
+            recreate();
+        }
+
         updateNoCombatantMessage();
     }
 
@@ -184,7 +196,8 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         boolean haveCombatants = false;
         if (adapter.getCombatantList() != null) {
             // If there are factions, check if any of them have combatants.  Otherwise, display the no Combatant message
-            haveCombatants = !adapter.getCombatantList().isEmpty();
+//            haveCombatants = !adapter.getCombatantList().isEmpty();
+            haveCombatants = !adapter.getCombatantList().isVisibleEmpty();
         }
 
         if (haveCombatants) {
@@ -292,7 +305,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
     @Override
     public Context getContext() {
-        return getApplicationContext();
+        return ConfigureCombatantListActivity.this;
     }
 
     @Override
@@ -305,6 +318,15 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     public void notifyIsMultiSelecting(boolean isMultiSelecting) {
         // Do nothing, because we shouldn't be multi-selecting with this adapter anyway...
         Log.e("ConfigCombatant", "Notified of multi-selecting even though it shouldn't be activated for the child adapter.");
+    }
+
+    @Override
+    public boolean safeToDelete(Combatant combatant) {
+        if (curEncounterListData == null) {
+            return true; // If there is no encounter list, then this Combatant is safe to delete
+        } else {
+            return !curEncounterListData.contains(combatant); // A Combatant is safe to delete if the encounter Combatant list does not contain it
+        }
     }
 
     //    @Override

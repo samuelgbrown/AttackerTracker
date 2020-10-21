@@ -20,7 +20,7 @@
             android:id="@+id/faction_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/colorAccent"
+            android:background="?attr/factionPanel"
             android:text=""
             android:textAlignment="center"
             android:textSize="20sp"

@@ -19,6 +19,13 @@
     <string name="confirm_copy">Copy this combatant?</string>
     <string name="yes">yes</string>
     <string name="no">no</string>
+    <string name="icon_title">Choose an Icon</string>
+
+    <string name="add_combatant_copy_check_title">Add New Copy?</string>
+    <string name="add_combatant_copy_check_message">A combatant with this name has already appeared in this encounter.  Resurrect the previous version, or create a new copy?</string>
+    <string name="copy_combatant">New Copy</string>
+    <string name="resurrect_combatant">Resurrect Combatant</string>
+    <string name="copy_combatant_warning">Any future versions of the combatant will also be added as copies. You can resurrect by renaming one of these new copies.</string>
 
     <string name="empty_configure_list">There are no combatants here!  Add some, and assign them to factions, using the + button!</string>
     <string name="empty_encounter_list">There are no combatants here!  Go back to the previous screen, add some, and then start the encounter to get back here!</string>
@@ -27,7 +34,7 @@
     <string name="encounter_roll_initiative">Roll Initiative!</string>
     <string name="encounter_prepare_next_round">Next Round!</string>
     <string name="encounter_end_of_round">End Of Round!</string>
-    <string name="prepare_message">Modify %1$s!</string>
+    <string name="prepare_message">Adjust %1$s!</string>
     <string name="end_of_round_message">Perform End of Round Actions!</string>
     <string name="end_of_round_disable_message">(This can be disabled in settings)</string>
 
@@ -79,38 +86,61 @@
 
     <!-- Preference Titles -->
     <string name="dnd_header">Initiative Calculation</string>
-    <string name="sync_header">Sync</string>
+    <string name="display_header">Displays</string>
 
     <!-- Messages Preferences -->
 <!--    <string name="signature_title">Your signature</string>-->
 <!--    <string name="reply_title">Default reply action</string>-->
     <string name="preset_select">Presets</string>
-    <string name="dice_size">Dice Used</string>
+    <string name="dice_size">Dice Size Used</string>
     <string name="sort_order">Initiative Order</string>
+    <string name="tie_breaker">Initiative Tie-Breaker</string>
     <string name="modifier_used">Modifier Used</string>
 
     <string name="key_preset">KeyPreset</string>
     <string name="key_dice_size">KeyDice</string>
     <string name="key_sort_order">KeySort</string>
+    <string name="key_tie_breaker">KeySort</string>
     <string name="key_mod_used">KeyMod</string>
     <string name="key_re_roll">KeyReRoll</string>
     <string name="key_end_of_round">KeyEndOfRound</string>
+    <string name="key_individual_initiative">KeyGroupInitiative</string>
 
-    <string name="rpg_ver_dnd2">DnD 2 (Advanced DnD)</string>
-    <string name="rpg_ver_dnd3">DnD 3.5</string>
+    <string name="rpg_ver_dnd1">Original Dungeons and Dragons</string>
+    <string name="rpg_ver_adnd1">Advanced Dungeons and Dragons</string>
+    <string name="rpg_ver_adnd2">Advanced Dungeons and Dragons 2e</string>
+    <string name="rpg_ver_dnd3">Dungeons and Dragons 3e/3.5e</string>
+    <string name="rpg_ver_dnd4">Dungeons and Dragons 4e</string>
+    <string name="rpg_ver_dnd5">Dungeons and Dragons 5e</string>
+    <string name="rpg_ver_pf">Pathfinder</string>
     <string name="rpg_ver_cust">Custom</string>
     <string-array name="rpg_ver">
-        <item>@string/rpg_ver_dnd2</item>
+        <item>@string/rpg_ver_dnd1</item>
+        <item>@string/rpg_ver_adnd1</item>
+        <item>@string/rpg_ver_adnd2</item>
         <item>@string/rpg_ver_dnd3</item>
+        <item>@string/rpg_ver_dnd4</item>
+        <item>@string/rpg_ver_dnd5</item>
+        <item>@string/rpg_ver_pf</item>
         <item>@string/rpg_ver_cust</item>
     </string-array>
 
-    <string name="rpg_ver_entry_dnd2">d2</string>
+    <string name="rpg_ver_entry_dnd1">d1</string>
+    <string name="rpg_ver_entry_adnd1">ad1</string>
+    <string name="rpg_ver_entry_adnd2">ad2</string>
     <string name="rpg_ver_entry_dnd3">d3</string>
+    <string name="rpg_ver_entry_dnd4">d4</string>
+    <string name="rpg_ver_entry_dnd5">d5</string>
+    <string name="rpg_ver_entry_pf">pf</string>
     <string name="rpg_ver_entry_cust">cust</string>
     <string-array name="rpg_ver_entry">
-        <item>@string/rpg_ver_entry_dnd2</item>
+        <item>@string/rpg_ver_entry_dnd1</item>
+        <item>@string/rpg_ver_entry_adnd1</item>
+        <item>@string/rpg_ver_entry_adnd2</item>
         <item>@string/rpg_ver_entry_dnd3</item>
+        <item>@string/rpg_ver_entry_dnd4</item>
+        <item>@string/rpg_ver_entry_dnd5</item>
+        <item>@string/rpg_ver_entry_pf</item>
         <item>@string/rpg_ver_entry_cust</item>
     </string-array>
 
@@ -128,18 +158,36 @@
         <item>@string/sort_entry_high_first</item>
     </string-array>
 
+    <string name="tie_modifier">Best Modifier</string>
+    <string name="tie_alpha">Party First</string>
+    <string name="tie_random">Random</string>
+    <string-array name="tie_entry">
+        <item>@string/tie_modifier</item>
+        <item>@string/tie_alpha</item>
+        <item>@string/tie_random</item>
+    </string-array>
+
+    <string name="tie_entry_modifier">mod</string>
+    <string name="tie_entry_alpha">alpha</string>
+    <string name="tie_entry_random">rand</string>
+    <string-array name="tie_entry_vals">
+        <item>@string/tie_entry_modifier</item>
+        <item>@string/tie_entry_alpha</item>
+        <item>@string/tie_entry_random</item>
+    </string-array>
+
     <string name="mod_speed">Speed Factor</string>
-    <string name="mod_dex">Dexterity Bonus</string>
+    <string name="mod_init_mod">Initiative Mod</string>
     <string-array name="mod_entry">
         <item>@string/mod_speed</item>
-        <item>@string/mod_dex</item>
+        <item>@string/mod_init_mod</item>
     </string-array>
 
     <string name="mod_entry_speed">speed</string>
-    <string name="mod_entry_dex">dex</string>
+    <string name="mod_entry_init_mod">mod</string>
     <string-array name="mod_entry_vals">
         <item>@string/mod_speed</item>
-        <item>@string/mod_dex</item>
+        <item>@string/mod_init_mod</item>
     </string-array>
 
     <string name="change_dice_title">Lose Combat Data?</string>
@@ -149,11 +197,11 @@
 
     <string name="end_of_round_action_string">Pause at End Of Round</string>
 
-    <!-- Sync Preferences -->
-    <string name="sync_title">Sync email periodically</string>
-    <string name="attachment_title">Download incoming attachments</string>
-    <string name="attachment_summary_on">Automatically download attachments for incoming emails
-    </string>
-    <string name="attachment_summary_off">Only download attachments when manually requested</string>
+    <string name="individual_initiative_string">Initiative Per Combatant</string>
+    <string name="individual_initiative_summary">Roll initiative for each combatant, or for each faction</string>
+
+    <!-- Display Preferences -->
+    <string name="key_dark_mode">KeyDarkMode</string>
+    <string name="dark_mode_string">Dark Mode</string>
 
 </resources>

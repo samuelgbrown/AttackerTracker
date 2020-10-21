@@ -1,9 +1,11 @@
 package to.us.suncloud.myapplication;
 
 import android.content.Context;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.GridLayout;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
@@ -58,8 +60,8 @@ public class IconGridRecyclerAdapter extends RecyclerView.Adapter<IconGridRecycl
     }
 
     public class iconViewHolder extends RecyclerView.ViewHolder {
-        private ConstraintLayout border;
-        private ImageView icon;
+        private final ConstraintLayout border;
+        private final ImageView icon;
 
         private int position;
 
@@ -101,7 +103,10 @@ public class IconGridRecyclerAdapter extends RecyclerView.Adapter<IconGridRecycl
             if (position == selectedPortrait) {
                 border.setBackgroundColor(context.getResources().getColor(R.color.colorPrimaryDark));
             } else {
-                border.setBackgroundColor(context.getResources().getColor(R.color.standardBackground));
+//                border.setBackgroundColor(context.getResources().getColor(R.color.standardBackground));
+                TypedValue val = new TypedValue();
+                context.getTheme().resolveAttribute(android.R.attr.colorBackground, val, true);
+                border.setBackgroundColor(val.data);
             }
 
         }
@@ -146,6 +151,7 @@ public class IconGridRecyclerAdapter extends RecyclerView.Adapter<IconGridRecycl
     public int getItemCount() {
         return iconResourceIds.size() + 1; // There should always be a blank icon that appears first
     }
+
     // An interface for sending the icon selected by this adapter to the fragment
     interface SendIconSelectionInterface extends Serializable {
         void setIconIndex(int iconIndex);

@@ -8,7 +8,7 @@
         app:initialExpandedChildrenCount="1">
 
         <DropDownPreference
-            android:defaultValue="@string/rpg_ver_entry_dnd2"
+            android:defaultValue="@string/rpg_ver_entry_adnd2"
             android:entries="@array/rpg_ver"
             android:entryValues="@array/rpg_ver_entry"
             android:key="@string/key_preset"
@@ -32,12 +32,26 @@
             app:useSimpleSummaryProvider="true" />
 
         <DropDownPreference
+            android:defaultValue="@string/tie_modifier"
+            android:entries="@array/tie_entry"
+            android:entryValues="@array/tie_entry_vals"
+            android:key="@string/key_tie_breaker"
+            android:title="@string/tie_breaker"
+            app:useSimpleSummaryProvider="true" />
+
+        <DropDownPreference
             android:defaultValue="@string/mod_speed"
             android:entries="@array/mod_entry"
             android:entryValues="@array/mod_entry_vals"
             android:key="@string/key_mod_used"
             android:title="@string/modifier_used"
             app:useSimpleSummaryProvider="true" />
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="@string/key_individual_initiative"
+            android:title="@string/individual_initiative_string"
+            android:summary="@string/individual_initiative_summary"/>
 
         <CheckBoxPreference
             android:defaultValue="true"
@@ -48,8 +62,16 @@
             android:defaultValue="false"
             android:key="@string/key_end_of_round"
             android:title="@string/end_of_round_action_string" />
+    </PreferenceCategory>
 
+    <PreferenceCategory
+        android:key="display_category"
+        android:title="@string/display_header">
 
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_dark_mode"
+            android:title="@string/dark_mode_string" />
     </PreferenceCategory>
 
 </PreferenceScreen>

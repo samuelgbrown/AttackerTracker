@@ -8,7 +8,7 @@
 
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/standardBackground">
+    android:background="?android:attr/colorBackground">
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
@@ -33,7 +33,7 @@
                 android:id="@+id/check_enc_layout"
                 android:layout_width="50dp"
                 android:layout_height="0dp"
-                android:background="@color/softBackground"
+                android:background="?attr/combatantTab"
                 android:visibility="visible"
                 android:clickable="true"
 
@@ -79,7 +79,7 @@
                 android:id="@+id/encounter_combatant_border"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:background="@color/standardBackground"
+                android:background="?android:attr/colorBackground"
                 android:clickable="true"
 
 
@@ -91,7 +91,7 @@
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/standardBackground"
+                    android:background="?android:attr/colorBackground"
                     android:clickable="true"
 
 
@@ -142,6 +142,7 @@
                             android:layout_marginStart="8dp"
                             android:layout_marginTop="4dp"
                             android:layout_marginBottom="4dp"
+                            android:tint="?attr/iconColor"
                             android:clickable="true"
 
 
@@ -225,6 +226,7 @@
                             android:layout_marginTop="4dp"
                             android:layout_marginBottom="4dp"
                             android:scaleType="fitCenter"
+                            android:tint="?attr/iconColor"
                             android:clickable="true"
 
 
@@ -272,7 +274,7 @@
                                 android:layout_marginTop="4dp"
                                 android:layout_marginEnd="4dp"
                                 android:layout_marginBottom="4dp"
-                                android:background="@color/standardBackground"
+                                android:background="?attr/combatantBackground"
                                 android:tint="@color/colorNeutral"
                                 android:clickable="true"
 

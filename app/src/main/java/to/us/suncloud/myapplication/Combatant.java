@@ -24,10 +24,11 @@ public class Combatant implements Serializable {
     private int roll = 0;
     private int totalInitiative = 0;
     private boolean isSelected = false; // Is the Combatant selected or checked off?
+    private boolean isVisible = true; // Is this Combatant visible in the initiative order?
     private UUID id = UUID.randomUUID();
 
     // Create a regex Pattern for finding the base name of a Combatant
-    private static Pattern ordinalChecker = Pattern.compile("^(.*?)(?:\\W*(\\d++)|$)"); // A pattern that matches the Combatant name into the first group, and the Combatant's ordinal number (if it exists) into the second group
+    private static final Pattern ordinalChecker = Pattern.compile("^(.*?)(?:\\W*(\\d++)|$)"); // A pattern that matches the Combatant name into the first group, and the Combatant's ordinal number (if it exists) into the second group
 
     // Constructors
     public Combatant(AllFactionCombatantLists listOfAllCombatants) {
@@ -45,7 +46,7 @@ public class Combatant implements Serializable {
     }
 
     public Combatant(Combatant c) {
-        // Copy constructor (used for cloning)
+        // Copy constructor (used for cloning) - make an EXACT clone of this Combatant (careful about Combatant uniqueness!)
         faction = c.getFaction();
         name = c.getName();
         iconIndex = c.getIconIndex();
@@ -54,6 +55,7 @@ public class Combatant implements Serializable {
         totalInitiative = c.getTotalInitiative();
         id = c.getId();
         isSelected = c.isSelected();
+        isVisible = c.isVisible();
     }
 
     //
@@ -73,6 +75,14 @@ public class Combatant implements Serializable {
 
     public boolean isSelected() {
         return isSelected;
+    }
+
+    public boolean isVisible() {
+        return isVisible;
+    }
+
+    public void setVisible(boolean visible) {
+        isVisible = visible;
     }
 
     public Faction getFaction() {
@@ -174,7 +184,7 @@ public class Combatant implements Serializable {
 
     public void setNameOrdinal(int ordinal) {
         // Set the ordinal number of the name
-        setName(getBaseName() + " " + String.valueOf(ordinal));
+        setName(getBaseName() + " " + ordinal);
     }
 
     public void clearRoll() {
@@ -236,6 +246,14 @@ public class Combatant implements Serializable {
         return isEqual;
     }
 
+    public void displayCopy(Combatant c) {
+        // Copy the display values from the incoming Combatant (NOT selection)
+        setName(c.getName());
+        setFaction(c.getFaction());
+        setIconIndex(c.getIconIndex());
+        setModifier(c.getModifier());
+    }
+
     public static String factionToString(Faction faction) {
         switch (faction) {
             case Party:
@@ -279,7 +297,7 @@ public class Combatant implements Serializable {
                 return INIT_NAME + "  2";
             default:
                 // There is a Combatant with this name already, so add one to the highest ordinal number
-                return INIT_NAME + "" + String.valueOf(highestOrdinalInstance + 1);
+                return INIT_NAME + "" + (highestOrdinalInstance + 1);
         }
     }
 
@@ -287,7 +305,7 @@ public class Combatant implements Serializable {
         // Try making a name unique to this list
         boolean isUnique = false;
         int curSuffix = 2;
-        String currentNameSelection = String.valueOf(INIT_NAME);
+        String currentNameSelection = INIT_NAME;
 
         while (!isUnique) {
             isUnique = !listOfAllCombatantNames.contains(currentNameSelection); // See if the Combatant name list contains this name

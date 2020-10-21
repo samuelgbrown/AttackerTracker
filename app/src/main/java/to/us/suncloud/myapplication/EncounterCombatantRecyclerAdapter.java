@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -42,7 +43,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     RecyclerView combatantRecyclerView;
     combatProgressInterface parent;
 
-    private EncounterCombatantList combatantList;
+    private final EncounterCombatantList combatantList;
     private EncounterCombatantList combatantList_Memory; // A memory version of the list, to see what changes have occurred
     //    private ArrayList<Boolean> isCheckedList;
 //    private HashMap<String, Boolean> isCheckedMap; // A Map to keep track of which Combatants have been checked off
@@ -59,10 +60,11 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     private int curRoundNumber = 1; // The current round number (iterated each time the active Combatant loops around)
     private EncounterCombatantList.SortMethod curSortMethod; // The current method by which the Combatants should be sorted (when possible, i.e. not in Prep-phase)
 
-    EncounterCombatantRecyclerAdapter(combatProgressInterface parent, EncounterCombatantList combatantList) {
+    EncounterCombatantRecyclerAdapter(combatProgressInterface parent, EncounterCombatantList combatantList, int curRoundNumber) {
         // Turn the AllFactionCombatantList into an EncounterCombatantList
         this.combatantList = combatantList; // Hold onto the Combatant list (copy reference)
         this.parent = parent;
+        this.curRoundNumber = curRoundNumber;
         Context context = parent.getContext();
 //        isCheckedList = new ArrayList<>(Collections.nCopies(this.combatantList.size(), false));
 
@@ -93,7 +95,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         }
 
         // Set up the endOfRound pause system
-        doingEndOfRoundActions = InitPrefsHelper.doingEndOfRound(parent.getContext());
+        doingEndOfRoundActions = PrefsHelper.doingEndOfRound(parent.getContext());
 //        endOfRoundCompleted = !doEndOfRoundActions;
 
         // Set the current round for the combatantList (initializes rolls for any new Combatants that haven't been initialized yet)
@@ -124,20 +126,20 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     class CombatantViewHolder extends RecyclerView.ViewHolder {
         boolean modifyingSelf = false;
 
-        private TextView NameView;
-        private TextView TotalInitiativeView;
-        private TextView RollView;
-        private EditText RollViewEdit;
-        private EditText ModifierView;
-        private ImageView CombatantIcon;
+        private final TextView NameView;
+        private final TextView TotalInitiativeView;
+        private final TextView RollView;
+        private final EditText RollViewEdit;
+        private final EditText ModifierView;
+        private final ImageView CombatantIcon;
 
-        private ConstraintLayout CombatantStatusBorder;
-        private ConstraintLayout CombatantIconBorder;
-        private ConstraintLayout RollLayout;
-        private ConstraintLayout DuplicateIndicator;
+        private final ConstraintLayout CombatantStatusBorder;
+        private final ConstraintLayout CombatantIconBorder;
+        private final ConstraintLayout RollLayout;
+        private final ConstraintLayout DuplicateIndicator;
 
-        private CheckBox CombatantCompletedCheck;
-        private ConstraintLayout CombatantGrayout;
+        private final CheckBox CombatantCompletedCheck;
+        private final ConstraintLayout CombatantGrayout;
 
         public CombatantViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -197,7 +199,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                         // Update progression
                         int curActiveCombatant = activeCombatant();
 
-                        // Update the round number, if needed (done here, so it can be used in updateCombatProgress) TODO: Make this more...generic?  Same code in incrementCombatStep()  Maybe in the setIsChecked() routine?
+                        // Update the round number, if needed (done here, so it can be used in updateCombatProgress)
                         if (curActiveCombatant == PREP_PHASE) {
                             curRoundNumber++;
                         }
@@ -230,7 +232,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                             // If we are gaining focus, select all text
                             ((EditText) v).selectAll();
 
-                            if (getAdapterPosition() == (combatantList.size() - 1)) {
+                            if (combatantList.isLastVisibleCombatant(getAdapterPosition())) {
+//                            if (getAdapterPosition() == (combatantList.size() - 1)) {
                                 // If this is the last Combatant, then its IME action should be "Done" instead of the default "Next" (as set in the xml)
                                 ((EditText) v).setImeOptions(EditorInfo.IME_ACTION_DONE);
                             }
@@ -291,7 +294,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                     if (!hasFocus) {
                         // If we have lost focus, the user has likely navigated away.  So, confirm the new value
                         if (v instanceof EditText) {
-                            if (getAdapterPosition() == (combatantList.size() - 1)) {
+                            if (combatantList.isLastVisibleCombatant(getAdapterPosition())) {
+//                            if (getAdapterPosition() == (combatantList.size() - 1)) {
                                 // If this is the last Combatant, then its IME action should be "Done" instead of the default "Next" (as set in the xml)
                                 ((EditText) v).setImeOptions(EditorInfo.IME_ACTION_DONE);
                             }
@@ -477,7 +481,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                 newRollVal = Integer.parseInt(newRollValString); // Get the value that was entered into the text box
 
                 // If the new entered roll value is not in the d20 range, then reject it
-                if (0 < newRollVal && newRollVal <= InitPrefsHelper.getDiceSize(RollView.getContext())) { // The new roll may be valid if it is within the range of the defined dice size
+                if (0 < newRollVal && newRollVal <= PrefsHelper.getDiceSize(RollView.getContext())) { // The new roll may be valid if it is within the range of the defined dice size
                     // If the roll value is within range, make sure that it is different than the current roll.  If so, then set the new value is valid
                     newValIsValid = currentRoll != newRollVal;
                 }
@@ -498,7 +502,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
         public void setModifierValueIfValid(String newModifierValString) {
             // This method will be used any time the user confirms a text string in the roll view EditText
-            int combatantInd = getAdapterPosition();
+            int combatantInd = getAdapterPosition(); // TODO SOON: This can sometimes return -1...?  Try testing with very large numbers of Combatants
             int currentModifier = combatantList.get(combatantInd).getModifier(); // The current roll for this Combatant
             int newModifierVal = currentModifier; // Initial value never used, but at least the IDE won't yell at me...
             boolean newValIsValid = false;
@@ -551,7 +555,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
         public void setDuplicateColor(int duplicateColor) {
             // Update the background of the Checkbox to reflect whether or not this Combatant's total initiative is shared across multiple Combatant's
-            int resourceID; // If this Combatant is not a duplicate, then set the background to the standard background
+            int resourceID = 0; // If this Combatant is not a duplicate, then set the background to the standard background
             switch (duplicateColor) {
                 case 0:
                     resourceID = R.color.duplicateInitiative1;
@@ -560,16 +564,22 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                     resourceID = R.color.duplicateInitiative2;
                     break;
                 default:
-                    resourceID = R.color.softBackground;
+
             }
 
             // Set the background color for the duplicate indicator
-            DuplicateIndicator.setBackgroundResource(resourceID);
+            if (resourceID == 0) {
+                TypedValue val = new TypedValue();
+                DuplicateIndicator.getContext().getTheme().resolveAttribute(R.attr.combatantTab, val, true);
+                DuplicateIndicator.setBackgroundColor(val.data);
+            } else {
+                DuplicateIndicator.setBackgroundResource(resourceID);
+            }
         }
 
         public void setStatus(EncounterCombatantRecyclerAdapter.initStatus status) {
             // Set up variables for everything that may change (initialize to the "normal" case)
-            int borderColor = R.color.standardBackground; // Initialize to a "blank" border
+            int borderColor = 0; // Initialize to a "blank" border
             int initiativeRollVisibility = View.VISIBLE;
             int checkLayoutVisibility = View.VISIBLE;
 
@@ -586,7 +596,15 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             }
 
             // Set the Combatant's ViewHolder border color
-            CombatantStatusBorder.setBackgroundColor(CombatantStatusBorder.getContext().getResources().getColor(borderColor));
+            int borderColorVal; // The int value of the new color itself (not the resource ID)
+            if (borderColor == 0) {
+                TypedValue val = new TypedValue();
+                CombatantStatusBorder.getContext().getTheme().resolveAttribute(android.R.attr.colorBackground, val, true);
+                borderColorVal = val.data;
+            } else {
+                borderColorVal = CombatantStatusBorder.getContext().getResources().getColor(borderColor);
+            }
+            CombatantStatusBorder.setBackgroundColor(borderColorVal);
 
             // Set the visibility of the roll, total initiative, and checkbox views
             RollLayout.setVisibility(initiativeRollVisibility);
@@ -794,7 +812,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
     @Override
     public int getItemCount() {
-        return combatantList.size();
+        return combatantList.visibleSize();
     }
 
     public EncounterCombatantList getCombatantList() {
@@ -859,7 +877,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             combatantList.sort(curSortMethod); // Go back to sorting however the user wants to
         }
 
-        // Scroll to the currently active Combatant (TODO: May need to be an option to turn this off...?)
+        // Scroll to the currently active Combatant (TO_DO LATER: May need to be an option to turn this off...?)
         scrollTo((curActiveCombatant == PREP_PHASE || curActiveCombatant == END_OF_ROUND_ACTIONS) ? 0 : getViewInd(curActiveCombatant));
     }
 
@@ -897,6 +915,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         // Update the round number, if needed (done here so that the new round number can be used in updateCombatProgress)
         if (curActiveCombatant == PREP_PHASE) {
             curRoundNumber++;
+            combatantList.initializeCombatants(); // Ensure that all Combatants are selected (done here to ensure that even invisible Combatants are selected, so the full list can be in the Prep-phase state)
             combatantList.setRoundNumber(curRoundNumber);
         }
 
@@ -985,14 +1004,14 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                     // If we are not doing end-of-round actions, then uncheck the last Combatant (if we ARE doing end-of-round actions, don't do anything else)
 
                     // In the new combatantList order (the initiative order from last round), uncheck the last Combatant
-                    setIsChecked(getViewInd(combatantList.size() - 1), false);
+                    setIsChecked(getViewInd(combatantList.visibleSize() - 1), false);
                 }
                 break;
             case END_OF_ROUND_ACTIONS:
                 // In the special case that we are in the end-of-round actions phase, uncheck the last Combatant
 
                 // In the new combatantList order (the initiative order from last round), uncheck the last Combatant
-                setIsChecked(getViewInd(combatantList.size() - 1), false);
+                setIsChecked(getViewInd(combatantList.visibleSize() - 1), false);
                 break;
             case 0:
                 // In the special case that the first Combatant is active, check off all Combatants (bring us to the prep phase
@@ -1030,6 +1049,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 //    }
 
     private void setAllIsChecked(boolean isChecked) {
+        // Note: Checks all Combatants, regardless of visibility
         for (int i = 0; i < combatantList.size(); i++) {
 //            isCheckedMap.put(combatantList.get(i).getName(), isChecked);
             combatantList.get(i).setSelected(isChecked);
@@ -1064,7 +1084,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         Bundle payload = new Bundle();
         payload.putBoolean(PAYLOAD_DICE_CHEAT, diceCheatModeOn);
 
-        notifyItemRangeChanged(0, combatantList.size(), payload); // Send the payload to every Combatant
+        notifyItemRangeChanged(0, getItemCount(), payload); // Send the payload to every Combatant
     }
 
     public void updatePrefs(Context context) {
@@ -1078,7 +1098,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         }
 
         // Update the settings that this adapter needs to know about
-        doingEndOfRoundActions = InitPrefsHelper.doingEndOfRound(context);
+        doingEndOfRoundActions = PrefsHelper.doingEndOfRound(context);
 
         notifyCombatantsChanged();
         parent.updateGUIState();

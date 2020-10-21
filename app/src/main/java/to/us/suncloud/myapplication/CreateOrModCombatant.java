@@ -16,6 +16,7 @@ import androidx.fragment.app.FragmentManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -200,8 +201,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         // Inflate the layout for this fragment
         View fragView = inflater.inflate(R.layout.fragment_create_or_mod_combatant, container, false);
 
-        String modString = InitPrefsHelper.getModString(getContext());
-
+        String modString = PrefsHelper.getModString(getContext());
 
         title = fragView.findViewById(R.id.mod_create_title);
         modTypeView = fragView.findViewById(R.id.textViewMod);
@@ -221,6 +221,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
             title.setText(R.string.mod_combatant);
         }
 
+
         // Set the modifier type to the correct String
         modTypeView.setText(modString);
 
@@ -235,7 +236,6 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
                     } else {
                         // If we have lost focus, the user has likely navigated away.  So, confirm the new value
 
-                        // TODO: Make sure this fires when EditText is selected when the Combatant is accepted WITHOUT having to hit DONE
                         // It damn well better be...
                         defaultModifier.post(new Runnable() {
                             @Override
@@ -443,28 +443,29 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
     }
 
     private void setTitleFactionColor() {
+        TypedValue val = new TypedValue();
+        getContext().getTheme().resolveAttribute(R.attr.bannerTextColor, val, true);
+        int themeBannerTextColor = val.data;
         Combatant.Faction faction = currentCombatant.getFaction();
         if (banner != null && title != null) {
             int mainColor = getResources().getColor(R.color.colorParty);
-            int backColor = getResources().getColor(R.color.standardBackground);
+            int textColor = themeBannerTextColor;
             switch (faction) {
                 case Party:
                     mainColor = getResources().getColor(R.color.colorParty);
-                    backColor = getResources().getColor(R.color.standardBackground);
                     break;
                 case Enemy:
                     mainColor = getResources().getColor(R.color.colorEnemy);
-                    backColor = getResources().getColor(R.color.standardBackground);
                     break;
                 case Neutral:
                     mainColor = getResources().getColor(R.color.colorNeutral);
-                    backColor = getResources().getColor(R.color.colorBlack);
+                    textColor = getResources().getColor(R.color.colorBlack);
             }
 
             banner.setBackgroundColor(mainColor);
             iconBorder.setBackgroundColor(mainColor);
             title.setBackgroundColor(mainColor);
-            title.setTextColor(backColor);
+            title.setTextColor(textColor);
             combatantIcon.getForeground().setTint(mainColor);
         }
     }

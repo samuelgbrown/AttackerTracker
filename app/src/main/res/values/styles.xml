@@ -1,13 +1,37 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="Light_Theme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="combatantBackground">@color/colorWhite</item>
+        <item name="factionPanel">@color/colorAccent</item>
+        <item name="combatantTab">@color/combatantTab</item>
+        <item name="selected">@color/selected</item>
+        <item name="encounterBanner">@color/gray</item>
+        <item name="iconColor">@color/colorBlack</item>
+        <item name="bannerTextColor">@color/darkGray</item>
+    </style>
+
+<!--    TODO SOON: Update the colors for both themes, so they don't physically hurt my eyes -->
+    <style name="Dark_Theme" parent="Theme.AppCompat">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="combatantBackground">@color/colorBlack</item>
+        <item name="factionPanel">@color/colorAccentDark</item>
+        <item name="combatantTab">@color/combatantTabDark</item>
+        <item name="selected">@color/selectedDark</item>
+        <item name="encounterBanner">@color/darkGray</item>
+        <item name="iconColor">@color/colorWhite</item>
+        <item name="bannerTextColor">@color/gray</item>
     </style>
 
 </resources>

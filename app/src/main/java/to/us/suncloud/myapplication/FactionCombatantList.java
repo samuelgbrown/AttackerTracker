@@ -75,6 +75,33 @@ public class FactionCombatantList implements Serializable {
         return new FactionCombatantList(subList, faction());
     }
 
+    public FactionCombatantList subListVisible(ArrayList<Integer> subListVisibleIndices) {
+        ArrayList<Combatant> subList = new ArrayList<>();
+        for (int subListVisIndInd = 0; subListVisIndInd < subListVisibleIndices.size(); subListVisIndInd++) {
+            int thisCombatantVisInd = subListVisibleIndices.get(subListVisIndInd);
+            // For each Combatant that we want (in subListVisibleIndices), go through the entire combatantArrayList to see which are visible
+            int visInd = 0;
+            for (int arrayInd = 0; arrayInd < combatantArrayList.size(); arrayInd++) {
+                // Go through the combatantArrayList, and count the number of visible Combatants we see
+                if (combatantArrayList.get(arrayInd).isVisible()) {
+                    // If we find a visible Combatant...
+                    if (visInd == thisCombatantVisInd) {
+                        // If this is the index of visible Combatants that we want
+                        subList.add(combatantArrayList.get(arrayInd)); // Get the Combatant at this index
+
+                        break; // Go on to the next Combatant in subListVisibleIndices
+                    } else {
+                        // Otherwise, iterate the number of visible Combatants we've seen and continue
+                        visInd++;
+                    }
+                }
+            }
+        }
+
+        // Return a new FactionCombatantList for this subList
+        return new FactionCombatantList(subList, faction());
+    }
+
     public void remove(int combatantIndToRemove) {
         combatantArrayList.remove(combatantIndToRemove);
     }
@@ -185,8 +212,22 @@ public class FactionCombatantList implements Serializable {
         return combatantArrayList.isEmpty();
     }
 
+    public boolean isVisibleEmpty() {
+        return visibleSize() == 0;
+    }
+
     public int size() {
         return combatantArrayList.size();
+    }
+
+    public int visibleSize() {
+        // Count the number of visible Combatants in the combatantArrayList
+        int returnSize = 0;
+        for (Combatant c : combatantArrayList) {
+            returnSize += c.isVisible() ? 1 : 0;
+        }
+
+        return returnSize;
     }
 
     public FactionCombatantList clone() {

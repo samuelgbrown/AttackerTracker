@@ -1,12 +1,13 @@
 package to.us.suncloud.myapplication;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.text.SpannableStringBuilder;
+import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +17,7 @@ import android.widget.Filterable;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,7 +30,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.jar.Attributes;
+
+import static android.graphics.Typeface.BOLD;
 
 public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListCombatantRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface {
     private static final int UNSET = -1;
@@ -210,7 +213,8 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
             super(itemView);
         }
 
-        void bind(int position) {}
+        void bind(int position) {
+        }
     }
 
     class CombatantViewHolder extends bindableVH {
@@ -314,7 +318,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                         FragmentManager fm = scanForActivity(view.getContext()).getSupportFragmentManager();
                         Bundle returnBundle = new Bundle(); // Put information into this Bundle so that we know where to put the new Combatant when it comes back
                         returnBundle.putInt(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION, posToCombatantInd(getAdapterPosition()));
-                        CreateOrModCombatant newDiag = CreateOrModCombatant.newInstance(ListCombatantRecyclerAdapter.this, combatantList_Master.subList(combatantFilteredIndices).get(posToCombatantInd(getAdapterPosition())), combatantList_Master, returnBundle); // Make a clone of this Combatant (such that the ID is the same, so it gets put back in the same spot when it returns)
+                        CreateOrModCombatant newDiag = CreateOrModCombatant.newInstance(ListCombatantRecyclerAdapter.this, combatantList_Master.subListVisible(combatantFilteredIndices).get(posToCombatantInd(getAdapterPosition())), combatantList_Master, returnBundle); // Make a clone of this Combatant (such that the ID is the same, so it gets put back in the same spot when it returns)
                         newDiag.show(fm, "CreateOrModCombatant");
                     }
                 });
@@ -380,7 +384,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
         public void bind(int position) {
             combatantInd = posToCombatantInd(position);
-            Combatant thisCombatant = combatantList_Master.subList(combatantFilteredIndices).get(combatantInd);
+            Combatant thisCombatant = combatantList_Master.subListVisible(combatantFilteredIndices).get(combatantInd);
 
             // Make sure that the Combatant is not selected
             setSelected(thisCombatant.isSelected());
@@ -391,21 +395,26 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
             // Set the color of the icon and the icon's border
             setFaction(thisCombatant.getFaction());
 
-            // TODO: Display the name differently based on the filter text
+            setName(thisCombatant.getName());
+        }
+
+        // Methods to update parts of the ViewHolder
+        public void setName(String name) {
+            // TO_DO: Display the name differently based on the filter text
 //            if (filteredText.isEmpty()) {
 //                // If the filter text is blank, then just display the name as is
-            setName(thisCombatant.getName());
+                NameView.setText(name);
 //            } else {
 //                // If the filter text is NOT blank, then bold the relevant part of the name
 //                // First, find the beginning and end of all occurrences of the string
-//                SpannableStringBuilder spannable = new SpannableStringBuilder(combatantName);
+//                SpannableStringBuilder spannable = new SpannableStringBuilder(name);
 //                StyleSpan span = new StyleSpan(BOLD);
-//                int filteredTextIndex = combatantName.indexOf(filteredText);
+//                int filteredTextIndex = name.indexOf(filteredText);
 //                if (filteredTextIndex != -1) {
 //                    // If the string appears in the name, then make it bold
 //                    spannable.setSpan(span, filteredTextIndex, filteredTextIndex + filteredText.length(), SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
 //
-//                    for (int i = -1; (i = combatantName.indexOf(filteredText, i + 1)) != -1; i++) {
+//                    for (int i = -1; (i = name.indexOf(filteredText, i + 1)) != -1; i++) {
 //                        // Find all occurrences forward
 //                        spannable.setSpan(span, i, i + filteredText.length(), SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
 //                    }
@@ -413,11 +422,6 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //
 //                NameView.setText(spannable);
 //            }
-        }
-
-        // Methods to update parts of the ViewHolder
-        public void setName(String name) {
-            NameView.setText(name);
         }
 
         public void setFaction(Combatant.Faction faction) {
@@ -509,7 +513,8 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     }
 
     private AllFactionCombatantLists displayList() {
-        return combatantList_Master.subList(combatantFilteredIndices);
+        // Return a shallow copy of the list that is being displayed (including information about filter text and visibility status)
+        return combatantList_Master.subListVisible(combatantFilteredIndices);
     }
 
     @Override
@@ -531,23 +536,59 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     @Override
     public void receiveCombatant(Combatant newCombatant, Bundle returnBundle) {
         // If a Combatant was MODIFIED
+
         if (returnBundle.containsKey(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION)) {
+            boolean addNewCombatant = true;
             int modCombatantLocation = returnBundle.getInt(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION); // Get the location of the Combatant being modified
             // NOTE: This location is relative to combatantList_Master(combatantFilteredIndices).
-            combatantList_Master.remove(displayList().get(modCombatantLocation)); // Get the Combatant referred to by the modCombatantLocation and remove it (easiest to just remove the Combatant and add it again (the add function will take care of any "smart naming" needs))
+
+            Combatant originalCombatant = displayList().get(modCombatantLocation); // The original version of the recently modified Combatant
+            combatantList_Master.remove(originalCombatant); // Get the Combatant referred to by the modCombatantLocation and remove it (easiest to just remove the Combatant and add it again (the add function will take care of any "smart naming" needs))
+
+            // Add a new Combatant to master list
+            if (combatantList_Master.containsName(newCombatant.getName())) {
+                // If the new name is already used by ANOTHER Combatant in the master list, then deal with it in different ways
+                Combatant existingCombatantWithNewName = combatantList_Master.getCombatant(newCombatant.getName());
+                if (existingCombatantWithNewName.isVisible()) {
+                    // If there is an exact match of this new Combatant's name to an existing VISIBLE Combatant, then just add the new Combatant back in without the new name, copying everything that was changed EXCEPT for the name
+                    newCombatant.setName(originalCombatant.getName()); // Set the Combatant's name to its old name
+
+                    // Let the user know that they screwed up
+                    Toast.makeText(parent.getContext(), "The name \"" + existingCombatantWithNewName.getName() + "\" is already being used.  Any other modifications were saved", Toast.LENGTH_SHORT).show();
+                } else {
+                    // If the Combatant that this modification would be replacing is invisible, then things...get a bit complicated
+                    // existingCombatantWithName existed before, and we're trying to add it back again, and this is basically a way to do that
+                    // We need to conserve the ID of the existing Combatant, and the new modified values of the new Combatant (as well as the name, which is the same between the two)
+                    existingCombatantWithNewName.displayCopy(newCombatant); // Update the old Combatant with any new information
+                    existingCombatantWithNewName.setVisible(true); // Make the old Combatant visible
+                    addNewCombatant = false; // We don't need to add another Combatant, we already "added" one (made it visible)
+                }
+            }
+
+            // If everything checks out, add the newly modified Combatant back in
+            if (addNewCombatant) {
+                combatantList_Master.addCombatant(newCombatant, true);
+            }
+
+            // Let the Adapter know that we have modified the Combatant list
+            clearMultiSelect(); // Clear the multi-select list
+            notifyCombatantListChanged();
+
+        } else {
+            Log.e(TAG, "No modification location was provided.");
         }
-
-        // Add a new Combatant to master list
-        combatantList_Master.addCombatant(newCombatant);
-
-        // Let the Adapter know that we have modified the Combatant list
-        clearMultiSelect(); // Clear the multi-select list
-        notifyCombatantListChanged();
     }
 
     private void removeCombatant(int position) {
         // Tell the parent to remove a Combatant in the list, based on the current position in the displayed List
-        combatantList_Master.remove(displayList().get(position));
+        AllFactionCombatantLists test =  displayList();
+        if (parent.safeToDelete(displayList().get(position))) {
+            // If the parent says we can fully delete this Combatant, then do so
+            combatantList_Master.remove(displayList().get(position));
+        } else {
+            // If the Combatant is not safe to delete, then make it invisible
+            displayList().get(position).setVisible(false); // Make the Combatant invisible (can be made visible again by adding a new Combatant with the same name)
+        }
 
         // Let the Adapter know that we have modified the Combatant list
         clearMultiSelect(); // Clear the multi-select list
@@ -562,10 +603,49 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         addCombatant(newCombatant);
     }
 
-    public void addCombatant(Combatant newCombatant) {
+    public void addCombatant(final Combatant newCombatant) {
         // Add the new Combatant (should already be unique)
-        combatantList_Master.addCombatant(newCombatant);
+        boolean result = combatantList_Master.addCombatant(newCombatant);
 
+        // TODO TEST: This seems to be working well, but could always use more thorough testing
+        if (!result) {
+            // If result is false, then it must mean that we are adding a Combatant that is an exact match to an existing invisible (previously deleted) Combatant
+            // Ask for user input
+            new AlertDialog.Builder(parent.getContext())
+                    .setTitle(R.string.add_combatant_copy_check_title)
+                    .setMessage(R.string.add_combatant_copy_check_message)
+                    .setPositiveButton(R.string.copy_combatant, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // The user wants to copy this Combatant as a new version
+                            combatantList_Master.addCombatant(newCombatant, false, true);
+
+                            // Clean up
+                            clearMultiSelect(); // Clear the multi-select list
+                            notifyCombatantListChanged();
+
+                            // Let the user know that any new version of this Combatant will be assumed to be copies
+                            Toast.makeText(parent.getContext(), R.string.copy_combatant_warning, Toast.LENGTH_LONG).show();
+                        }
+                    })
+                    .setNegativeButton(R.string.resurrect_combatant, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // The user wants to resurrect the old version of the Combatant
+                            combatantList_Master.addCombatant(newCombatant, true, true);
+
+                            // Clean up
+                            clearMultiSelect(); // Clear the multi-select list
+                            notifyCombatantListChanged();
+                        }
+                    })
+                    .show();
+
+            // Further interaction will occur in the dialog listeners
+            return;
+        }
+
+        // If the addition went smoothly (which it will 99% of the time), then clean up
         clearMultiSelect(); // Clear the multi-select list
         notifyCombatantListChanged();
     }
@@ -660,7 +740,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     @Override
     public int getItemCount() {
 //        return combatantList.size();
-        return combatantList_Master.subList(combatantFilteredIndices).sizeWithBanners(); // Get the size of the post-filtering list, including the banners
+        return combatantList_Master.subListVisible(combatantFilteredIndices).sizeWithBanners(); // Get the size of the post-filtering list, including the banners
     }
 
     private void notifyCombatantListChanged() {
@@ -669,11 +749,11 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         combatantFilteredIndices = combatantList_Master.getIndicesThatMatch(filteredText);
 
         // If anything about the combatants has changed (specifically the viewed version of the list according to combatantFilteredIndices), see if we need to rearrange the list
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantFilteredDiffUtil(combatantList_Memory, combatantList_Master.subList(combatantFilteredIndices)));
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantFilteredDiffUtil(combatantList_Memory, combatantList_Master.subListVisible(combatantFilteredIndices)));
         diffResult.dispatchUpdatesTo(this); // If anything has changed, move the list items around
 
         // Update the memory list
-        combatantList_Memory = combatantList_Master.subList(combatantFilteredIndices).clone();
+        combatantList_Memory = combatantList_Master.subListVisible(combatantFilteredIndices).clone();
 
         // Make sure that the multi-select status is updated
         updateMultiSelectStatus();
@@ -722,6 +802,8 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         void notifyCombatantListChanged(); // Let the parent know that the Combatant list changed, so it can update any views (such as the "no combatants" view)
 
         void notifyIsMultiSelecting(boolean isMultiSelecting); // Let the parent know that the multi-selecting status may have changed, so we may need to update the GUI
+
+        boolean safeToDelete(Combatant combatant); // Is a given Combatant safe to delete (does not appear in the EncounterCombatantList), or should it simply be turned invisible (appears in the list)
 
         // Note: No methods associated with modifying the FactionCombatantList, because any modifications that occur (through the "gear" button) are consistent between this adapter and other locations (because Java passes references...hopefully)
     }

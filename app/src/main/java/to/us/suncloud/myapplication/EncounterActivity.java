@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -33,6 +34,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     int roundNumber = 1;
     int maxRoundRolled = 0;
 
+    int curTheme; // The current theme of this Activity
+
     ConstraintLayout endOfRoundBanner;
     TextView prepBanner;
     RecyclerView encounterRecyclerView;
@@ -45,6 +48,10 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Set the theme
+        curTheme = PrefsHelper.getTheme(getApplicationContext());
+        setTheme(curTheme);
         setContentView(R.layout.activity_encounter);
 
         // Get info from the intent that started this activity
@@ -94,8 +101,6 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 //            curActiveCombatantIn = thisBundleData.getInt(ConfigureCombatantListActivity.ACTIVE_COMBATANT_NUMBER);
 //        }
 
-        // TODO: Get saved Instance state data?  Probably happens if we go back to the Configure screen and then come back here without destroying the Activity.  Learn how to use backstacks!!!! :P
-
         // Retrieve all Views
         encounterToolbar = findViewById(R.id.encounter_toolbar);
         encounterRecyclerView = findViewById(R.id.encounter_recycler_view);
@@ -107,17 +112,16 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         roundCounter = findViewById(R.id.encounter_round_counter);
 
         // Set up the RecyclerView
-        adapter = new EncounterCombatantRecyclerAdapter(this, masterCombatantList);
+        adapter = new EncounterCombatantRecyclerAdapter(this, masterCombatantList, roundNumber);
         encounterRecyclerView.setAdapter(adapter);
         encounterRecyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
 
         // Initialize the adapter as needed
-        adapter.setRoundNumber(roundNumber);
         adapter.updateCombatProgress();
         adapter.notifyCombatantsChanged(); // Let the adapter know that this is the initial state (update all "memory" parameters for the Combatant list and the currently active Combatant)
 
         // Set up the banner message
-        prepBanner.setText(getString(R.string.prepare_message, InitPrefsHelper.getModString(getApplicationContext())));
+        prepBanner.setText(getString(R.string.prepare_message, PrefsHelper.getModString(getApplicationContext())));
 
         // Set up the buttons
         nextButton.setOnClickListener(new View.OnClickListener() {
@@ -179,6 +183,12 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     protected void onResume() {
         super.onResume();
 
+        // Update the theme if needed
+        if (curTheme != PrefsHelper.getTheme(getApplicationContext())) {
+            // If the theme has been changed, then recreate the Activity
+            recreate();
+        }
+
         // Make sure the EncounterCombatantList has the most up-to-date preference information
         setSortIconVis();
         adapter.updatePrefs(getApplicationContext());
@@ -214,7 +224,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         roundNumber = adapter.getCurRoundNumber();
 
         // Change GUI elements based on the current state
-        if (adapter.getCombatantList().size() == 0) {
+        if (adapter.getCombatantList().isVisiblyEmpty()) {
             // If there aren't any Combatants, then make the next button Gone
             nextButtonVisibility = View.GONE;
         }
@@ -222,7 +232,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         if (currentlyActiveCombatant == EncounterCombatantRecyclerAdapter.PREP_PHASE) {
             // If the currently active Combatant is unset, then we are currently between rounds, waiting to roll initiative
             nextButtonText = R.string.encounter_roll_initiative;
-            prepBannerVisibility = masterCombatantList.isEmpty() ? View.GONE : View.VISIBLE; // Don't display the banner if the Combatant list is empty, that'd be just a little sad...
+            prepBannerVisibility = masterCombatantList.isVisiblyEmpty() ? View.GONE : View.VISIBLE; // Don't display the banner if the Combatant list is empty, that'd be just a little sad...
             if (roundNumber == 1) {
                 // If this is the 1st round prepare phase, then don't display the previous button
                 previousButtonVisibility = View.GONE;
@@ -236,7 +246,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
             if (currentlyActiveCombatant == 0 && roundNumber > maxRoundRolled && nextButton.getText().equals(getResources().getString(R.string.encounter_roll_initiative))) {
                 // If we just started the round, then emphasize the Roll Initiative button (for fun)!
                 doAnim = true;
-                maxRoundRolled = roundNumber; // Remember that we already did the fun animation for this round TODO: Make sure the maxRoundRolled gets counted immediately when returning from Configure (i.e. when curActiveCombatant == 1)
+                maxRoundRolled = roundNumber; // Remember that we already did the fun animation for this round TODO SOON: Make sure the maxRoundRolled gets counted immediately when returning from Configure (i.e. when curActiveCombatant == 1)
                 nextButton.setEnabled(false); // Disable the button momentarily while the animation plays out
                 nextButton.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.emphize_wobble));
             }
@@ -307,7 +317,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 
     private void updateNoCombatantView() {
         // Update the visibility of the no Combatant view message
-        if (masterCombatantList.isEmpty()) {
+        if (masterCombatantList.isVisiblyEmpty()) {
             // If the Combatant list is empty, then make the message visible
             noCombatantTextView.setVisibility(View.VISIBLE);
         } else {

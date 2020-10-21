@@ -242,7 +242,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
         // TODO LATER: This is VERY similar to the code in ConfigureCombatantListActivity, could perhaps consolidate them somehow?
         boolean haveCombatants = false;
         if (adapter.getCombatantList() != null) {
-            haveCombatants = !adapter.getCombatantList().isEmpty();
+            haveCombatants = !adapter.getCombatantList().isVisibleEmpty(); // Are any Combatant visible?
         }
 
         if (haveCombatants) {
@@ -376,6 +376,11 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
         // Set the visibility of both multi-select GUI elements
         multiSelectConfirm.setVisibility(visibility);
         multiSelectCancel.setVisibility(visibility);
+    }
+
+    @Override
+    public boolean safeToDelete(Combatant combatant) {
+        return true; // Combatants in the bookmarked section can always be fully deleted, if need-be
     }
 
     private void addCombatantToSave(Combatant newCombatant) {

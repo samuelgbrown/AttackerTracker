@@ -22,8 +22,11 @@ public class EncounterCombatantList implements Serializable {
     private SortMethod currentSortMethod = SortMethod.INITIATIVE;
     private InitPrefs prefs; // The preferences Object that dictates how the combat cycle should flow
     private boolean haveHadPrepPhase; // Has the preparation phase been completed yet?  Used to determine if all Combatants are checked because we are preparing now, or because we are in the end-of-round actions phase
+    private final HashSet<UUID> combatantsToRemove = new HashSet<>(); // Used only when Combatants are removed when an Encounter is resumed.  This Set saves the Combatants that must be removed in the upcoming round (used to synchronized visibility and the diceMap)
+    private final HashSet<UUID> combatantsToAdd = new HashSet<>(); // Used only when Combatants are added when an Encounter is resumed.  This Set saves the Combatants that must be added in the upcoming round (used to synchronized visibility and the diceMap)
 
-    private static Random rand = new Random(); // A random number generator (static, so that each Combatant uses the same one, and it does not just use the system clock as a first time seed each time
+    private static final Random rand = new Random(); // A random number generator (static, so that each Combatant uses the same one, and it does not just use the system clock as a first time seed each time
+    private long encounterRandomSeed = rand.nextLong(); // A random number, used for random tie breaking, that stays consistent for this entire Encounter
 
     public EncounterCombatantList(Context context) {
         combatantArrayList = new ArrayList<>();
@@ -59,6 +62,7 @@ public class EncounterCombatantList implements Serializable {
         lastRecordedRoundNumber = c.getLastRecordedRoundNumber();
         prefs = c.getPrefs();
         haveHadPrepPhase = c.haveHadPrepPhase();
+        encounterRandomSeed = c.encounterRandomSeed;
     }
 
     public InitPrefs getPrefs() {
@@ -94,6 +98,7 @@ public class EncounterCombatantList implements Serializable {
         diceRollList = new ArrayList<>();
         modifierList = new ArrayList<>();
         lastRecordedRoundNumber = 1;
+        encounterRandomSeed = rand.nextInt(); // Re-calculate the random seed used for tie-breaking
         initializeCombatants();
     }
 
@@ -107,6 +112,18 @@ public class EncounterCombatantList implements Serializable {
 //        doSorting();
 //        updateDuplicateInitiatives();
 //    }
+
+    public boolean contains (Combatant c) {
+        // Checks if the given Combatant is in this list
+        // Note: Check is by UUID!  Not by exact copy!
+        for (int i = 0;i < combatantArrayList.size();i++) {
+            if (combatantArrayList.get(i).getId() == c.getId()) {
+                return true; // Found the Combatant
+            }
+        }
+
+        return false; // Could not find this Combatant
+    }
 
     public void setCombatantArrayList(AllFactionCombatantLists factionList) {
         AllFactionCombatantLists clonedList = factionList.clone(); // First, make a cloned version of the list, so we don't affect any of the "real" copies of the Combatants
@@ -130,7 +147,8 @@ public class EncounterCombatantList implements Serializable {
     }
 
     public void updateCombatants(AllFactionCombatantLists factionList) {
-        // Add any new Combatants
+        // Update this Combatant list according to the incoming list
+        //      We should add any new Combatants, remove any that do not appear, and ensure that the meta-data for all matching Combatants is up to date
         // First, figure out what we should initialize the new Combatants to (I really hate this, there HAS to be a better way...I think isSelected may just need to become an enum
         int curPhase = calcActiveCombatant();
         final boolean initSelect = (curPhase == EncounterCombatantRecyclerAdapter.PREP_PHASE || curPhase == EncounterCombatantRecyclerAdapter.END_OF_ROUND_ACTIONS); // If we are in the preparation phase, then initialize selected to true (to stay in this phase).  If we are not in the preparatory phase (we are in the middle of a combat round), initialize selected to false, because the Combatant has not gone yet (god, I hate this so much...)
@@ -138,19 +156,56 @@ public class EncounterCombatantList implements Serializable {
         // Assumed to be unique by ID, because the names may have changed (i.e. adding a new second copy of a given Combatant, changing the first's ordinal to 1)
         AllFactionCombatantLists clonedList = factionList.clone(); // First, make a cloned version of the list, so we don't affect any of the "real" copies of the Combatants
         ArrayList<FactionCombatantList> factionLists = clonedList.getAllFactionLists();
+
+        // Go through the incoming Combatant list, Faction by Faction
         for (int facInd = 0; facInd < factionLists.size(); facInd++) {
             // For each faction, add any Combatants that are not already in this list
             FactionCombatantList thisFactionList = factionLists.get(facInd);
             for (Combatant cNew : thisFactionList.getCombatantArrayList()) {
                 // For each Combatant in the faction list
-                if (!idExists(cNew.getId())) {
-                    // If cNew does not exist in this EncounterCombatantList, then add it, and initialize it
-                    Combatant cToAdd = cNew.clone();
-                    cToAdd.setSelected(initSelect); // Initialize the selection according to where we are in the combat cycle
-                    combatantArrayList.add(cToAdd); // Add the new Combatant
+                if (cNew.isVisible()) {
+                    // If the Combatant is visible, then add it
+                    if (idExists(cNew.getId())) {
+                        Combatant existingCombatant = combatantArrayList.get(indByID(cNew.getId())); // A reference to the existing Combatant in this list that matches the one we are checking now from the Faction list
+
+                        // If Combatant cNew exists in this EncounterCombatantList, update the display values (Name, Faction, Icon, and Modifier) in case anything has changed
+                        existingCombatant.displayCopy(cNew);
+
+                        // Check if the existing Combatant is visible
+                        if (!existingCombatant.isVisible()) {
+                            // If this Combatant is not visible (i.e. if it was previously removed, and we are adding it in again), then make it visible and update its selection state as if it was just added in
+                            existingCombatant.setVisible(true);
+                            existingCombatant.setSelected(initSelect);
+                        }
+                    } else {
+                        // If Combatant cNew does not exist in this EncounterCombatantList, then add it, and initialize it
+                        Combatant cToAdd = cNew.clone();
+                        cToAdd.setSelected(initSelect); // Initialize the selection according to where we are in the combat cycle
+                        combatantArrayList.add(cToAdd); // Add the new Combatant
+                    }
+
+                    // Ensure that this Combatant is 1) checked off as existing in the new list, and 2) added to the diceRollMap in the next round (slightly redundant, but useful because the isVisible member isn't a reliable indicator of whether or not the Combatant was in the encounter in the last round)
+                    combatantsToAdd.add(cNew.getId());
                 }
             }
         }
+
+        // Finally, go through the current list of Combatants, find any that did not appear in the new AllFactionCombatantLists (or are not visible), and make them invisible from this new round on
+        for (Combatant c : combatantArrayList) {
+            if (!combatantsToAdd.contains(c.getId())) {
+                combatantsToRemove.add(c.getId()); // Add this Combatant to the removal Set, to indicate that it must be removed from the diceRollMap the next time the round is set
+            }
+        }
+
+        // OLD: Finally, go through the current list of Combatants and remove any that did not appear in the new AllFactionCombatantLists
+//        Iterator<Combatant> iterator = combatantArrayList.iterator();
+//        while (iterator.hasNext()) {
+//            Combatant c = iterator.next(); // Get the Combatant to test
+//            if (!combatantsToKeep.contains(c.getId())) {
+//                // If we are not keeping this Combatant, remove it from the combatantArrayList
+//                iterator.remove();
+//            }
+//        }
 
         // Finally, perform any post-processing (sorting, etc)
         doSorting();
@@ -167,7 +222,22 @@ public class EncounterCombatantList implements Serializable {
         return false; // The ID does not exist the combatantArrayList
     }
 
-    private void initializeCombatants() {
+    private int indByID(UUID id) {
+        int returnInd = -1;
+        for (int i = 0; i < combatantArrayList.size(); i++) {
+            Combatant c = combatantArrayList.get(i);
+            // Go through each Combatant in this EncounterCombatantList, and find the index of the Combatant with this UUID
+            if (id.equals(c.getId())) {
+                returnInd = i;
+                break;
+            }
+        }
+
+        // Return the index
+        return returnInd;
+    }
+
+    public void initializeCombatants() {
         // In a kind of annoying quirk of how the data is being stored, all Combatants being checked off is how the prep phase is indicated in calcActiveCombatant()
         // So, if we want to start off in the prep phase (and we do), we need to check off every Combatant.  Yay...
         for (Combatant c : combatantArrayList) {
@@ -188,7 +258,7 @@ public class EncounterCombatantList implements Serializable {
         if (currentSortMethod != SortMethod.INITIATIVE) {
             // If the current Combatant List is not sorted by initiative, do so
             sortedCombatants = (ArrayList<Combatant>) combatantArrayList.clone(); // Create a (shallow) copy of the Combatants List
-            Collections.sort(sortedCombatants, new CombatantSorter.SortByInitiative(prefs.getSortOrder())); // Sort the new list by Initiative
+            Collections.sort(sortedCombatants, new CombatantSorter.SortByInitiative(prefs.getSortOrder(), prefs.getTieBreaker(), encounterRandomSeed)); // Sort the new list by Initiative
         } else {
             sortedCombatants = combatantArrayList;
         }
@@ -199,6 +269,11 @@ public class EncounterCombatantList implements Serializable {
         for (int combInd = (sortedCombatants.size() - 1); combInd >= 0; combInd--) {
             // Go through the sorted Combatant list in reverse initiative order
             Combatant c = sortedCombatants.get(combInd);
+            if (!c.isVisible()) {
+                // If this Combatant is not visible, then ignore it
+                continue;
+            }
+
             if (!(foundUnSelected || c.isSelected())) {
                 // We found at least one unselected Combatant (going in reverse order)
                 foundUnSelected = true;
@@ -256,6 +331,10 @@ public class EncounterCombatantList implements Serializable {
         return lastRecordedRoundNumber;
     }
 
+    private long getTiebreakRand() {
+        return lastRecordedRoundNumber + encounterRandomSeed;
+    }
+
     public void sort(SortMethod sortMethod) {
         // Sort according to some rule
         if (currentSortMethod != sortMethod) {
@@ -274,7 +353,7 @@ public class EncounterCombatantList implements Serializable {
         // Depending on the current sorting style (currentSortMethod), sort the contents of combatantArrayList
         switch (currentSortMethod) {
             case INITIATIVE:
-                Collections.sort(combatantArrayList, new CombatantSorter.SortByInitiative(prefs.getSortOrder())); // Sort the combatantArrayList alphabetically
+                Collections.sort(combatantArrayList, new CombatantSorter.SortByInitiative(prefs.getSortOrder(), prefs.getTieBreaker(), getTiebreakRand())); // Sort the combatantArrayList alphabetically
                 return;
             case ALPHABETICALLY_BY_FACTION:
                 Collections.sort(combatantArrayList, new CombatantSorter.SortAlphabeticallyByFaction()); // Sort the combatantArrayList alphabetically by faction
@@ -282,7 +361,34 @@ public class EncounterCombatantList implements Serializable {
     }
 
     public void setRoundNumber(int roundNumber) {
-        // First, get the diceRollMap for this round
+        // First thing, see if we need to remove any Combatants from this round
+        if (!(combatantsToRemove.isEmpty() && combatantsToAdd.isEmpty())) {
+            // Go through each Combatant and see if we need to add or remove it
+            HashMap<UUID, Integer> thisDiceMap = diceRollList.get(roundNumber - 1); // Get a reference to the diceMap we will be modifying
+            for (Combatant c : combatantArrayList) {
+                UUID thisID = c.getId();
+                if (combatantsToRemove.contains(thisID)) {
+                    // If this Combatant is to be removed
+
+                    // Remove it from the diceRollList and modifierList for this round (they will be set invisible later in this function)
+                    thisDiceMap.remove(thisID);
+//                    modifierList.get(roundNumber - 1).remove(thisID);
+                }
+
+                if (combatantsToAdd.contains(thisID) && !thisDiceMap.containsKey(thisID)) {
+                    // If this Combatant is to be added, and it doesn't already appear in the dice map
+
+                    // Add it to the diceRoll List for this round, along with an initiative roll
+                    thisDiceMap.put(thisID, getInitiativeRoll());
+                }
+            }
+
+            // Now that we've dealt with all of the Combatants, clear the Sets
+            combatantsToRemove.clear();
+            combatantsToAdd.clear();
+        }
+
+        // Get the diceRollMap for this round
         HashMap<UUID, Integer> diceRollMap;
         if (prefs.isReRollInit()) {
             // If initiative is being re-rolled every round, then make sure we have the correct roll map for this round
@@ -348,20 +454,53 @@ public class EncounterCombatantList implements Serializable {
         // Now that we have the dice rolls/modifiers that we are going to use, assign them to each Combatant
         for (Combatant combatant : combatantArrayList) {
             // For each Combatant, retrieve the roll, and set it to the Combatant
+
             if (diceRollMap.containsKey(combatant.getId())) {
+                // If they are visible and they have a roll, then set it
                 combatant.setRoll(diceRollMap.get(combatant.getId()));
+                combatant.setVisible(true); // Ensure that the Combatant is visible if it has a roll
             } else {
-                // If the diceRollMap does not contain this key (this Combatant did not have a roll associated with it), then generate a new roll for this Combatant, and add it to the map
-                int newRoll = getInitiativeRoll();
-                combatant.setRoll(newRoll);
-                diceRollMap.put(combatant.getId(), newRoll); // Will be saved in diceRollList
+                // If they are invisible, or they do not have a roll recorded for this round, then set them invisible
+                combatant.setVisible(false); // If the Combatant does not have a roll this round, make them invisible
+
+                // OLD: Before, if we went back to a previous round before a certain Combatant was added, that Combatant got a new roll and was placed into the initiative order somewhere random
+//                // If the diceRollMap does not contain this key (this Combatant did not have a roll associated with it), then generate a new roll for this Combatant, and add it to the map
+//                int newRoll;
+//                if (prefs.doingIndividualInitiative()) {
+//                    // If each Combatant gets an individual roll, then just make a new one here and assign it
+//                    newRoll = getInitiativeRoll();
+//                } else {
+//                    // Oh, boy...
+//
+//                    // If each Faction gets its own roll, then go through the diceRollMap to see if any old Combatants with this Faction are already in there
+//                    boolean gotFacVal = false;
+//                    newRoll = -1; // If it's still -1, something has gone wrong...
+//                    for (Combatant combatantOld : combatantArrayList) {
+//                        if (combatantOld.getFaction() == combatant.getFaction()) {
+//                            // If we found a Combatant in the ArrayList that has the same Faction as this Combatant, check if the diceRollMap has a roll for it
+//                            if (diceRollMap.containsKey(combatantOld.getId())) {
+//                                // We found an old Combatant of the same Faction as this new Combatant.  So, we can just use its roll value!
+//                                newRoll = diceRollMap.get(combatantOld.getId());
+//                                gotFacVal = true;
+//                                break;
+//                            }
+//                        }
+//                    }
+//
+//                    if (!gotFacVal) {
+//                        // If we never found an old Combatant that matches the new Combatant's roll, then roll a new value for the new Combatant
+//                        newRoll = getInitiativeRoll();
+//                    }
+//                }
+//                combatant.setRoll(newRoll);
+//                diceRollMap.put(combatant.getId(), newRoll); // Will be saved in diceRollList
             }
 
             // For each Combatant, retrieve the modifier, and set it to the Combatant
             if (modifierMap.containsKey(combatant.getId())) {
                 combatant.setModifier(modifierMap.get(combatant.getId()));
             } else {
-                // If the modifierMap does not contain this key (this Combatant did not have a modifier associated with it), then get the  Combatant's current modifier (its default modifier), and add it to the map
+                // If the modifierMap does not contain this key (this Combatant did not have a modifier associated with it), then get the Combatant's current modifier (its default modifier), and add it to the map
                 modifierMap.put(combatant.getId(), combatant.getModifier()); // Will be saved in modifierList
             }
         }
@@ -375,15 +514,35 @@ public class EncounterCombatantList implements Serializable {
     }
 
     private HashMap<UUID, Integer> rollAllInitiative() {
-        // Generate an initiative roll for each Combatant, assign the rolls to a HashMap keyed by each Combatant's UUID, and return it
+        // Generate an initiative roll for each visible Combatant, assign the rolls to a HashMap keyed by each Combatant's UUID, and return it
 
         // Create a new Map
         HashMap<UUID, Integer> newDiceMap = new HashMap<>();
+        HashMap<Combatant.Faction, Integer> factionDiceMap = new HashMap<>(); // Create a new HashMap to keep track of rolls by Faction (used iff the Preference key_individual_initiative is set to "false" [meaning that each Faction should get its own initiative roll])
 
-        // For each Combatant, roll initiative
-        for (Combatant combatant : combatantArrayList) {
-            // Store the new rolls for each Combatant into the diceRollList, keyed by the Combatant's ID
-            newDiceMap.put(combatant.getId(), getInitiativeRoll());
+        // For each visible Combatant, roll initiative
+        for (Combatant c : combatantArrayList) {
+            if (c.isVisible()) {
+                int thisInitRoll;
+                if (prefs.doingIndividualInitiative()) {
+                    // If each Combatant is to get their own initiative roll...
+                    // Generate a new initiative roll for this Combatant
+                    thisInitRoll = getInitiativeRoll();
+                } else {
+                    // If each Faction gets their own initiative roll...
+                    // Check if we have rolled an initiative value for this Faction yet
+                    if (!factionDiceMap.containsKey(c.getFaction())) {
+                        // If the factionDiceMap does not have a roll for this Faction yet, create a new one
+                        factionDiceMap.put(c.getFaction(), getInitiativeRoll());
+                    }
+
+                    // Now that we definitely have an initiative roll for this Faction, assign it to the Combatant in the newDiceMap
+                    thisInitRoll = factionDiceMap.get(c.getFaction());
+                }
+
+                // Store the new roll for each Combatant into the newDiceMap, keyed by the Combatant's ID
+                newDiceMap.put(c.getId(), thisInitRoll);
+            }
         }
 
         // Return the Map
@@ -435,6 +594,46 @@ public class EncounterCombatantList implements Serializable {
         return combatantArrayList.size();
     }
 
+    public int visibleSize() {
+        // Get the number of visible Combatants
+        int returnSize = 0;
+        for (Combatant c : combatantArrayList) {
+            returnSize += c.isVisible() ? 1 : 0;
+        }
+
+        return returnSize;
+    }
+
+    public boolean isLastVisibleCombatant(int position) {
+        // Starting at the given position, see if there are any more visible combatants
+        if (position == combatantArrayList.size() - 1) {
+            // If this is the last Combatant, then it is the last visible Combatant
+            return true;
+        } else {
+            for (int i = position + 1;i < combatantArrayList.size();i++) {
+                if (combatantArrayList.get(i).isVisible()) {
+                    // If there is another visible Combatant, then we aren't last
+                    return false;
+                }
+            }
+
+            // If we got here, then we're the last visible Combatant
+            return true;
+        }
+    }
+
+    public int getLastVisibleCombatant() {
+        // Get the index of the last visible Combatant
+        for (int i = combatantArrayList.size() - 1;i >= 0;i--) {
+            if (combatantArrayList.get(i).isVisible()) {
+                return i;
+            }
+        }
+
+        // Uh oh
+        return 0;
+    }
+
     public Combatant get(int i) {
         return combatantArrayList.get(i);
     }
@@ -444,7 +643,6 @@ public class EncounterCombatantList implements Serializable {
     }
 
     public int getInitiativeIndexOf(int indexInCurrentList) {
-        // TODO: May want to try and optimize this...?  Store the sorted list, and update it every time it changes? Will need to figure out how to know when roll/modifier is changed, though...
         // A method to find the initiative index in combatantArrayList of a Combatant, regardless of the actual sorted state of the list
         if (currentSortMethod == SortMethod.INITIATIVE) {
             // If the array is already sorted by initiative, then just return the input index
@@ -455,10 +653,10 @@ public class EncounterCombatantList implements Serializable {
             ArrayList<Combatant> sortedList = new ArrayList<>(combatantArrayList); // Create a SHALLOW copy of the list (the Combatants themselves are not cloned, only their references are copied)
 
             // Do initiative sorting on the sortedList
-            Collections.sort(sortedList, new CombatantSorter.SortByInitiative(prefs.getSortOrder()));
+            Collections.sort(sortedList, new CombatantSorter.SortByInitiative(prefs.getSortOrder(), prefs.getTieBreaker(), getTiebreakRand()));
 
             // Finally, find the index in the initiative sorted list of the selected Combatant
-            return sortedList.indexOf(c);
+            return sortedList.indexOf(c);  // Ignores effects of invisible Combatants, as they are sorted at the end of the list
         }
     }
 
@@ -472,10 +670,10 @@ public class EncounterCombatantList implements Serializable {
             ArrayList<Combatant> sortedList = new ArrayList<>(combatantArrayList); // Create a SHALLOW copy of the list (the Combatants themselves are not cloned, only their references are copied)
 
             // Do initiative sorting on the sortedList
-            Collections.sort(sortedList, new CombatantSorter.SortByInitiative(prefs.getSortOrder()));
+            Collections.sort(sortedList, new CombatantSorter.SortByInitiative(prefs.getSortOrder(), prefs.getTieBreaker(), getTiebreakRand()));
             Combatant c = sortedList.get(indexInInitiativeOrder);
 
-            return combatantArrayList.indexOf(c);
+            return combatantArrayList.indexOf(c); // Ignores effects of invisible Combatants, as they are sorted at the end of the list
         }
     }
 
@@ -483,27 +681,39 @@ public class EncounterCombatantList implements Serializable {
         return combatantArrayList.isEmpty();
     }
 
+    public boolean isVisiblyEmpty() {
+        return visibleSize() == 0;
+    }
+
     public enum SortMethod {
         INITIATIVE,
         ALPHABETICALLY_BY_FACTION
     }
 
-    class InitPrefs implements Serializable {
-        private CombatantSorter.sortOrder sortOrder;
-        private boolean reRollInit;
-        private int diceSize;
-        private boolean endOfRound;
+    static class InitPrefs implements Serializable {
+        private final CombatantSorter.sortOrder sortOrder;
+        private final boolean reRollInit;
+        private final int diceSize;
+        private final boolean endOfRound;
+        private final boolean individualInitiative;
+        private final CombatantSorter.tieBreaker tieBreaker;
 
         InitPrefs(Context context) {
             // Using the InitPrefsHelper, populate this object
-            sortOrder = InitPrefsHelper.getSortOrder(context);
-            reRollInit = InitPrefsHelper.getReRollInit(context);
-            diceSize = InitPrefsHelper.getDiceSize(context);
-            endOfRound = InitPrefsHelper.doingEndOfRound(context);
+            sortOrder = PrefsHelper.getSortOrder(context);
+            reRollInit = PrefsHelper.getReRollInit(context);
+            diceSize = PrefsHelper.getDiceSize(context);
+            endOfRound = PrefsHelper.doingEndOfRound(context);
+            individualInitiative = PrefsHelper.doingIndividualInitiative(context);
+            tieBreaker = PrefsHelper.getTieBreaker(context);
         }
 
         public CombatantSorter.sortOrder getSortOrder() {
             return sortOrder;
+        }
+
+        public CombatantSorter.tieBreaker getTieBreaker() {
+            return tieBreaker;
         }
 
         public boolean isReRollInit() {
@@ -516,6 +726,10 @@ public class EncounterCombatantList implements Serializable {
 
         public boolean doingEndOfRound() {
             return endOfRound;
+        }
+
+        public boolean doingIndividualInitiative() {
+            return individualInitiative;
         }
     }
 }

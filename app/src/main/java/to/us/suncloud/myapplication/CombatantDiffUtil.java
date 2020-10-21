@@ -25,12 +25,12 @@ public class CombatantDiffUtil extends DiffUtil.Callback {
 
     @Override
     public int getOldListSize() {
-        return oldList.size();
+        return oldList.visibleSize();
     }
 
     @Override
     public int getNewListSize() {
-        return newList.size();
+        return newList.visibleSize();
     }
 
     @Override

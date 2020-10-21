@@ -11,10 +11,10 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="?attr/colorPrimary"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
         android:minHeight="?attr/actionBarSize"
         android:theme="?attr/actionBarTheme"
-        android:focusableInTouchMode="true"
-        android:focusable="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -35,56 +35,70 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/encounter_recycler_view"
-        android:clickable="true"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="4dp"
         android:layout_marginTop="4dp"
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/encounter_continue"
+        android:clickable="true"
+        app:layout_constraintBottom_toTopOf="@+id/button_box"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/encounter_banner" />
+        app:layout_constraintTop_toBottomOf="@+id/encounter_banner"
+        app:layout_constraintVertical_bias="1.0" />
 
-    <Button
-        android:id="@+id/encounter_continue"
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/button_box"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
-        android:text="@string/encounter_roll_initiative"
-        android:textSize="24sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/encounter_previous_combatant" />
+        app:layout_constraintStart_toStartOf="parent">
 
-    <ImageButton
-        android:id="@+id/encounter_previous_combatant"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginBottom="8dp"
-        android:backgroundTint="@android:color/holo_red_dark"
-        android:scaleType="centerCrop"
-        android:tint="@color/colorBlack"
-        android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/encounter_continue"
-        android:src="@drawable/up_arrow" />
+        <Button
+            android:id="@+id/encounter_continue"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/encounter_roll_initiative"
+            android:textSize="24sp"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/encounter_previous_combatant" />
+
+        <ImageButton
+            android:id="@+id/encounter_previous_combatant"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="@android:color/holo_red_dark"
+            android:scaleType="fitXY"
+            android:scaleX="1.2"
+            android:scaleY="1.2"
+            android:src="@drawable/up_arrow"
+            android:tint="@color/colorBlack"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintDimensionRatio="1:1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/round_banner_layout"
         android:layout_width="0dp"
         android:layout_height="40dp"
-        android:clickable="true"
-
-
         android:background="@android:color/darker_gray"
+
+
+        android:clickable="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/encounter_toolbar">
@@ -94,8 +108,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:text="@string/encounter_round_number"
             android:clickable="true"
+            android:text="@string/encounter_round_number"
 
             android:textSize="24sp"
             android:textStyle="bold|italic"
@@ -123,7 +137,7 @@
         android:id="@+id/encounter_banner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/gray"
+        android:background="?attr/encounterBanner"
         android:visibility="visible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -133,9 +147,9 @@
             android:id="@+id/encounter_prepare_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
             android:textAlignment="center"
             android:textSize="20sp"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -144,34 +158,34 @@
             android:id="@+id/encounter_end_of_round_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/gray"
-            android:visibility="gone"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/encounter_prepare_message">
-        <TextView
-            android:id="@+id/encounter_end_of_round_message"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/end_of_round_message"
-            android:textAlignment="center"
-            android:textSize="20sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:id="@+id/encounter_end_of_round_disable_message"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/end_of_round_disable_message"
-            android:textAlignment="center"
-            android:textSize="12sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/encounter_end_of_round_message" />
+            <TextView
+                android:id="@+id/encounter_end_of_round_message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/end_of_round_message"
+                android:textAlignment="center"
+                android:textSize="20sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/encounter_end_of_round_disable_message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/end_of_round_disable_message"
+                android:textAlignment="center"
+                android:textSize="12sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/encounter_end_of_round_message" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="tm">
+        <attr name="combatantBackground" format="color"/>
+        <attr name="factionPanel" format="color"/>
+        <attr name="bannerBackground" format="color"/>
+        <attr name="combatantTab" format="color"/>
+        <attr name="selected" format="color" />
+        <attr name="encounterBanner" format="color" />
+        <attr name="iconColor" format="color"/>
+        <attr name="bannerTextColor" format="color"/>
+    </declare-styleable>
+</resources>

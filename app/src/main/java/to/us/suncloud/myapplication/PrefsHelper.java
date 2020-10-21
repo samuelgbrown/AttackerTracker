@@ -8,8 +8,17 @@ import android.preference.PreferenceManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class InitPrefsHelper {
+public class PrefsHelper {
     // No constructor because I don't want to risk not clearing a Context and causing a memory leak
+
+    public static int getTheme(Context context) {
+        // Get the current theme as set in Settings
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean useDark = prefs.getBoolean(context.getString(R.string.key_dark_mode), false);
+
+        // Depending on the value of the boolean preference, return either the light theme or the dark theme
+        return useDark ? R.style.Dark_Theme : R.style.Light_Theme;
+    }
 
     public static String getModString(Context context) {
         // Get the corresponding string of the mod type to use by examining the user's preferences
@@ -68,6 +77,29 @@ public class InitPrefsHelper {
         }
     }
 
+    public static CombatantSorter.tieBreaker getTieBreaker(Context context) {
+        // Get the tie-breaker, in terms of the enum tieBreaker
+        // First get the preferences, and find the value that corresponds to the String we want
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        String tieBreakerEntry = prefs.getString(context.getString(R.string.key_tie_breaker), context.getString(R.string.tie_entry_modifier));
+
+        // Based on the value of the saved String, return a different tieBreaker, indicating what happens if there is a tie in initiative between two or more Combatants
+        if (tieBreakerEntry != null) {
+            switch (tieBreakerEntry) {
+                case "mod":
+                    return CombatantSorter.tieBreaker.Modifier;
+                case "alpha":
+                    return CombatantSorter.tieBreaker.AlphaByFaction;
+                case "rand":
+                    return CombatantSorter.tieBreaker.Random;
+                default:
+                    return CombatantSorter.tieBreaker.Modifier;
+            }
+        } else {
+            return CombatantSorter.tieBreaker.Modifier;
+        }
+    }
+
     public static boolean getReRollInit(Context context) {
         // Get whether or not initiative gets rerolled each round
         // Get the preferences, and find the value that corresponds to the boolean we want
@@ -80,5 +112,12 @@ public class InitPrefsHelper {
         // Get the preferences, and find the value that corresponds to the boolean we want
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         return prefs.getBoolean(context.getString(R.string.key_end_of_round), false);
+    }
+
+    public static boolean doingIndividualInitiative(Context context) {
+        // Determine whether or not we Initiative is rolled individually, or by Faction
+        // Get the preferences, and find the value that corresponds to the boolean we want
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        return prefs.getBoolean(context.getString(R.string.key_individual_initiative), true);
     }
 }
