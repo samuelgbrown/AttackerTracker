@@ -38,7 +38,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     // Stored values for the Encounter Activity
     AllFactionCombatantLists combatantLists = new AllFactionCombatantLists();
     int roundNumber = 1; // The current round number of the Encounter
-    int maxRoundNumber = 1; // The max round number that has been rolled of the Encounter
+    int maxRoundNumber = 0; // The max round number that has been rolled of the Encounter
     //    int curActiveCombatant = EncounterCombatantRecyclerAdapter.PREP_PHASE; // The currently active Combatant in the Encounter
     EncounterCombatantList curEncounterListData = null; // Keep track of any historical meta-data related to the encounter (dice rolls, any other things I was silly enough to try and keep consistent even though only like 2% of users will use this feature...)
 
@@ -124,6 +124,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         flags.adapterCanModify = true;
         adapter = new ListCombatantRecyclerAdapter(this, combatantLists, flags);
         combatantListView.setAdapter(adapter);
+        combatantListView.setHasFixedSize(true);
         combatantListView.addItemDecoration(new BannerDecoration(getApplicationContext()));
         combatantListView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
     }

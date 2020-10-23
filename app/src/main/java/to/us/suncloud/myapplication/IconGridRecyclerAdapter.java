@@ -25,12 +25,10 @@ public class IconGridRecyclerAdapter extends RecyclerView.Adapter<IconGridRecycl
     ArrayList<Integer> iconResourceIds;
     int selectedPortrait = -1;
 
-    public IconGridRecyclerAdapter() {
-    }
-
     public IconGridRecyclerAdapter(IconGridRecyclerAdapter.SendIconSelectionInterface parent, int selectedPortrait) {
         this.parent = parent;
         this.selectedPortrait = selectedPortrait;
+
     }
 
     @Override
@@ -38,7 +36,7 @@ public class IconGridRecyclerAdapter extends RecyclerView.Adapter<IconGridRecycl
         super.onAttachedToRecyclerView(recyclerView);
         context = recyclerView.getContext();
 
-        // TODO LATER: This code is used in a few places...move to its own class, or something?
+        // TO_DO LATER: This code is used in a few places...move to its own class, or something?
         // Create a list of resources that will be used to load svg's into the grid
         iconResourceIds = new ArrayList<>();
         int curNum = 0;

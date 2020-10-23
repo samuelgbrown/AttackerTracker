@@ -239,7 +239,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     }
 
     private void updateNoCombatantMessage() {
-        // TODO LATER: This is VERY similar to the code in ConfigureCombatantListActivity, could perhaps consolidate them somehow?
+        // TO_DO LATER: This is VERY similar to the code in ConfigureCombatantListActivity, could perhaps consolidate them somehow?
         boolean haveCombatants = false;
         if (adapter.getCombatantList() != null) {
             haveCombatants = !adapter.getCombatantList().isVisibleEmpty(); // Are any Combatant visible?

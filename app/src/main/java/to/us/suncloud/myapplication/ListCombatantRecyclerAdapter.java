@@ -135,6 +135,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //        clearMultiSelect(); // More trouble than it's worth...
         setupIconResourceIDs();
         combatantFilteredIndices = combatantList_Master.getIndicesThatMatch(filteredText);
+
     }
 
     private void setupIconResourceIDs() {
@@ -318,7 +319,8 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                         FragmentManager fm = scanForActivity(view.getContext()).getSupportFragmentManager();
                         Bundle returnBundle = new Bundle(); // Put information into this Bundle so that we know where to put the new Combatant when it comes back
                         returnBundle.putInt(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION, posToCombatantInd(getAdapterPosition()));
-                        CreateOrModCombatant newDiag = CreateOrModCombatant.newInstance(ListCombatantRecyclerAdapter.this, combatantList_Master.subListVisible(combatantFilteredIndices).get(posToCombatantInd(getAdapterPosition())), combatantList_Master, returnBundle); // Make a clone of this Combatant (such that the ID is the same, so it gets put back in the same spot when it returns)
+//                        CreateOrModCombatant newDiag = CreateOrModCombatant.newInstance(ListCombatantRecyclerAdapter.this, combatantList_Master.subListVisible(combatantFilteredIndices).get(posToCombatantInd(getAdapterPosition())), combatantList_Master, returnBundle); // Make a clone of this Combatant (such that the ID is the same, so it gets put back in the same spot when it returns)
+                        CreateOrModCombatant newDiag = CreateOrModCombatant.newInstance(ListCombatantRecyclerAdapter.this, combatantList_Master.getFromVisible(posToCombatantInd(getAdapterPosition()), combatantFilteredIndices), combatantList_Master, returnBundle); // Make a clone of this Combatant (such that the ID is the same, so it gets put back in the same spot when it returns)
                         newDiag.show(fm, "CreateOrModCombatant");
                     }
                 });
@@ -384,7 +386,8 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
         public void bind(int position) {
             combatantInd = posToCombatantInd(position);
-            Combatant thisCombatant = combatantList_Master.subListVisible(combatantFilteredIndices).get(combatantInd);
+//            Combatant thisCombatant = combatantList_Master.subListVisible(combatantFilteredIndices).get(combatantInd);
+            Combatant thisCombatant = combatantList_Master.getFromVisible(combatantInd, combatantFilteredIndices);
 
             // Make sure that the Combatant is not selected
             setSelected(thisCombatant.isSelected());
@@ -607,7 +610,6 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         // Add the new Combatant (should already be unique)
         boolean result = combatantList_Master.addCombatant(newCombatant);
 
-        // TODO TEST: This seems to be working well, but could always use more thorough testing
         if (!result) {
             // If result is false, then it must mean that we are adding a Combatant that is an exact match to an existing invisible (previously deleted) Combatant
             // Ask for user input

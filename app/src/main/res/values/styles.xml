@@ -17,7 +17,6 @@
         <item name="bannerTextColor">@color/darkGray</item>
     </style>
 
-<!--    TODO SOON: Update the colors for both themes, so they don't physically hurt my eyes -->
     <style name="Dark_Theme" parent="Theme.AppCompat">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>

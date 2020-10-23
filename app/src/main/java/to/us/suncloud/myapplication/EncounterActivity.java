@@ -86,6 +86,10 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
                 roundNumber = thisBundleData.getInt(ConfigureCombatantListActivity.ROUND_NUMBER);
             }
 
+            if (thisBundleData.containsKey(ConfigureCombatantListActivity.MAX_ROUND_ROLLED)) {
+                maxRoundRolled = thisBundleData.getInt(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, 0);
+            }
+
             // Get the Combatant List
             if (thisBundleData.containsKey(ConfigureCombatantListActivity.COMBATANT_LIST)) {
                 EncounterCombatantList newList = (EncounterCombatantList) thisBundleData.getSerializable(ConfigureCombatantListActivity.COMBATANT_LIST);
@@ -246,7 +250,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
             if (currentlyActiveCombatant == 0 && roundNumber > maxRoundRolled && nextButton.getText().equals(getResources().getString(R.string.encounter_roll_initiative))) {
                 // If we just started the round, then emphasize the Roll Initiative button (for fun)!
                 doAnim = true;
-                maxRoundRolled = roundNumber; // Remember that we already did the fun animation for this round TODO SOON: Make sure the maxRoundRolled gets counted immediately when returning from Configure (i.e. when curActiveCombatant == 1)
+                maxRoundRolled = roundNumber; // Remember that we already did the fun animation for this round
                 nextButton.setEnabled(false); // Disable the button momentarily while the animation plays out
                 nextButton.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.emphize_wobble));
             }

@@ -66,6 +66,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         this.parent = parent;
         this.curRoundNumber = curRoundNumber;
         Context context = parent.getContext();
+
 //        isCheckedList = new ArrayList<>(Collections.nCopies(this.combatantList.size(), false));
 
         // Initialize the isCheckedMap using the Combatant List
@@ -162,7 +163,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                     // Check off this Combatant, and update the progress of the combat round
                     if (!modifyingSelf) {
-                        // TODO LATER: If we want to have multiple ways of calculating the currently active Combatant, we can do a check here:
+                        // TO_DO LATER: If we want to have multiple ways of calculating the currently active Combatant, we can do a check here:
                         //  If this is NOT the currently active Combatant, but it would cause us to go into the next round (nextActiveCombatant, as calculated in EncounterActivity#updateGUIState(), is PREP_PHASE), then make sure the user actually wants to go to the next round
 //                        if (b && getInitiativeInd(combatantList, getAdapterPosition()) == (combatantList.size() - 1) && getInitiativeInd(combatantList, getAdapterPosition()) != activeCombatant()) {
 //                            // Otherwise, undo the check off on the GUI
@@ -535,16 +536,24 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
             int curActiveCombatant = activeCombatant();
             setInitValues();
-            setDuplicateColor(getDuplicateColor(combatantList, getAdapterPosition(), curActiveCombatant));
-            setStatus(getStatus(combatantList, getAdapterPosition(), curActiveCombatant));
-            setChecked(isCheckedState(combatantList, getAdapterPosition(), curActiveCombatant));
+            int pos = getAdapterPosition();
+            setDuplicateColor(getDuplicateColor(combatantList, pos, curActiveCombatant));
+            setStatus(getStatus(combatantList, pos, curActiveCombatant));
+            setChecked(isCheckedState(combatantList, pos, curActiveCombatant));
         }
 
         // Methods to update individual aspects of the ViewHolder
         public void setInitValues() {
             // Update the values of the initiative counters
             Combatant thisCombatant = combatantList.get(getAdapterPosition());
-            TotalInitiativeView.setText(String.valueOf(thisCombatant.getTotalInitiative()));
+            int  totalInit = thisCombatant.getTotalInitiative();
+            if (totalInit <= 99) {
+                // If we can display this value easily, then do so
+                TotalInitiativeView.setText(String.valueOf(totalInit));
+            } else {
+                // Uh oh...we can't display more than 2 digits...
+                TotalInitiativeView.setText(R.string.explode_head);
+            }
             RollView.setText(String.valueOf(thisCombatant.getRoll()));
 
             modifyingSelf = true;
@@ -1090,6 +1099,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     public void updatePrefs(Context context) {
         // Update the settings of the EncounterCombatantList, and make any necessary GUI changes as well
         combatantList.setPrefs(context);
+        combatantList.resort(); // In case something changed with the sorting method
 
         // If the Combatant List got reset because of the new preferences, update the round number, and let the Activity know what happened
         if (!combatantList.isMidCombat()) {

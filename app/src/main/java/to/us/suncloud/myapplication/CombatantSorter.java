@@ -42,7 +42,6 @@ public class CombatantSorter {
                 //  4e: Combatant with higher bonus (Dex+lvl+mods) goes first, otherwise random
                 //  5e: Random (or player determined), but it's a house rule
                 //  Note: If it's random, it must be CONSISTENTLY random...how?  I'm not sure...do a computation on the round number, perhaps?
-                //  TODO NOTE: Have an alert to the player when this is changed that it won't delete data, but ties in previous rounds will be recalculated?
 
                 switch (tieBreaker) {
                     case Modifier:
@@ -53,15 +52,16 @@ public class CombatantSorter {
                             // If the modifiers are different, return the difference
                             L2HInit = cM - tM;
                         } else {
-                            // If the modifiers are the same, randomly select one
+                            // If the initiative modifiers are also identical, then just randomly select the order
+                            // Create a random number generator based on the random seed
                             L2HInit = getRandDiff(randomSeed, combatant, t1);
                         }
+                        break;
 
-                        // If the initiative modifiers are also identical, then just randomly select the order
-                        // Create a random number generator based on the random seed
                     case Random:
                         // Create a random number generator based on the random seed, as well as each Combatant's IDs
                         L2HInit = getRandDiff(randomSeed, combatant, t1);
+                        break;
                     default:
                         // Used if tieBreaker == alphaByFaction
                         // Simply use the alphabetically by faction ordering
@@ -80,11 +80,17 @@ public class CombatantSorter {
         }
 
         private static int getRandDiff(long seed, Combatant c, Combatant t) {
-            Random randC = new Random(seed + c.getId().getMostSignificantBits());
-            Random randT = new Random(seed + t.getId().getMostSignificantBits());
+            // Get a random difference between these Combatants that is conserved between rounds
+            // If anyone who ACTUALLY knows anything about random number generation in Java wants to help me out with this, THAT WOULD BE AWESOME
+            Random randC = new Random(seed * c.getId().getMostSignificantBits());
+            Random randT = new Random(seed * t.getId().getMostSignificantBits());
 
             // Get unique, random values for each Combatant, and return the difference
-            return randC.nextInt() - randT.nextInt();
+            int rC = randC.nextInt();
+            int rT = randT.nextInt();
+//            int r = rC > rT ? 1 : -1; // Compare the values of the resulting random integers
+            long r = (long)rC - (long)rT;
+            return (int) r;
         }
     }
 

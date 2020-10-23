@@ -258,7 +258,7 @@ public class EncounterCombatantList implements Serializable {
         if (currentSortMethod != SortMethod.INITIATIVE) {
             // If the current Combatant List is not sorted by initiative, do so
             sortedCombatants = (ArrayList<Combatant>) combatantArrayList.clone(); // Create a (shallow) copy of the Combatants List
-            Collections.sort(sortedCombatants, new CombatantSorter.SortByInitiative(prefs.getSortOrder(), prefs.getTieBreaker(), encounterRandomSeed)); // Sort the new list by Initiative
+            Collections.sort(sortedCombatants, new CombatantSorter.SortByInitiative(prefs.getSortOrder(), prefs.getTieBreaker(), getTiebreakRand())); // Sort the new list by Initiative
         } else {
             sortedCombatants = combatantArrayList;
         }
@@ -332,7 +332,9 @@ public class EncounterCombatantList implements Serializable {
     }
 
     private long getTiebreakRand() {
-        return lastRecordedRoundNumber + encounterRandomSeed;
+        long seedAdd = lastRecordedRoundNumber;// << 40;
+        long tiebreakRand =  seedAdd + encounterRandomSeed; // Left bit-shift the recorded round number by 40 bits, because the random seed used by Random() only uses the first 48 bits
+        return tiebreakRand;
     }
 
     public void sort(SortMethod sortMethod) {
@@ -446,10 +448,9 @@ public class EncounterCombatantList implements Serializable {
                 // If the current round number has been done before, then retrieve the saved modifier map
                 modifierMap = modifierList.get(roundNumber - 1);
             }
-
-            // Save this round number, so we know what we last saved the modifier list
-            lastRecordedRoundNumber = roundNumber;
         }
+        // Save this round number, so we know what we last saved the modifier list
+        lastRecordedRoundNumber = roundNumber;
 
         // Now that we have the dice rolls/modifiers that we are going to use, assign them to each Combatant
         for (Combatant combatant : combatantArrayList) {

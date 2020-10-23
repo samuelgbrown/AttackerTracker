@@ -1,7 +1,5 @@
 package to.us.suncloud.myapplication;
 
-import android.widget.ArrayAdapter;
-
 import androidx.annotation.Nullable;
 
 import java.io.Serializable;
@@ -81,8 +79,8 @@ public class AllFactionCombatantLists implements Serializable {
     public boolean addCombatant(Combatant newCombatant, boolean newCombatantIsModifiedExistingCombatant, boolean force) {
         // If the Faction Lists contain a Combatant with this Combatant's name, then we must make the new Combatant's name unique.
         // First, check what the largest existing ordinal is for this Combatant's base name
-        // TODO LATER: Doing these checks could be a setting? Something like "Smart naming"?  Perhaps another setting could be if we even care about name uniqueness at all!
-        // TODO KNOWN BUG: Known minor bug: If two version of a Combatant are added, one without ordinal, and the non-ordinal Combatant is deleted (saved), and THEN the user adds a new version and decides to copy (not resurrect), then subsequent added copies also bring up the resurrect/copy dialog.  The horror.
+        // TO_DO LATER: Doing these checks could be a setting? Something like "Smart naming"?  Perhaps another setting could be if we even care about name uniqueness at all!
+        // KNOWN BUG: Known minor bug: If two version of a Combatant are added, one without ordinal, and the non-ordinal Combatant is deleted (saved), and THEN the user adds a new version and decides to copy (not resurrect), then subsequent added copies also bring up the resurrect/copy dialog.  The horror.
         int highestExistingOrdinal = getHighestOrdinalInstance(newCombatant);
         if (highestExistingOrdinal != Combatant.DOES_NOT_APPEAR) {
             // If the Combatant's name does appear, first check if there is an exact match to a Combatant that is invisible
@@ -185,6 +183,50 @@ public class AllFactionCombatantLists implements Serializable {
         }
 
         throw new IndexOutOfBoundsException("Index " + originalCombatantInd + ", Size " + size()); // The Combatant index is out of bounds
+    }
+
+    public Combatant getFromVisible(int desiredCombatantInd, ArrayList<ArrayList<Integer>> filteredIndices) {
+        // Get a Combatant using the ind, selected only from visible Combatants
+        int curLoc = 0;
+        for (int facInd = 0; facInd < filteredIndices.size(); facInd++) {
+            // For each Faction...
+
+            // Initialize our counting variables
+            int filterIndInd = 0;
+            int visInd = 0;
+
+            // Go through each Combatant
+            for (int combatantInd = 0; combatantInd < allFactionLists.get(facInd).size(); combatantInd++) {
+                // For each Combatant in this Faction...
+
+                if (allFactionLists.get(facInd).get(combatantInd).isVisible()) {
+                    // We have found the visInd'th visible Combatant
+
+                    if (visInd == filteredIndices.get(facInd).get(filterIndInd)) {
+                        // We have found the filteredIndices.get(facInd).get(filterIndInd)'th visible Combatant
+
+                        if (curLoc == desiredCombatantInd) {
+                            // If this is the Combatant that we want, then return it
+                            return allFactionLists.get(facInd).get(combatantInd);
+                        } else {
+                            // Record that we've traversed one visible, filtered Combatant
+                            curLoc++;
+                        }
+
+                        // Finalize
+                        filterIndInd++; // We have encountered one visible Combatant that was in the filter list
+
+                        if (filterIndInd >= filteredIndices.get(facInd).size()) {
+                            // If we have exhausted all of the visible Combatants in this Faction that are within the filter, then don't bother looking through the rest
+                            break;
+                        }
+                    }
+                    visInd++; // We have encountered one visible Combatant
+                }
+            }
+        }
+
+        throw new IndexOutOfBoundsException("Index " + desiredCombatantInd + ", Size " + size()); // The Combatant index is out of bounds
     }
 
     int posToCombatantInd(int position) {

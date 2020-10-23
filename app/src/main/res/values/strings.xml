@@ -86,7 +86,7 @@
 
     <!-- Preference Titles -->
     <string name="dnd_header">Initiative Calculation</string>
-    <string name="display_header">Displays</string>
+    <string name="display_header">Display</string>
 
     <!-- Messages Preferences -->
 <!--    <string name="signature_title">Your signature</string>-->
@@ -203,5 +203,6 @@
     <!-- Display Preferences -->
     <string name="key_dark_mode">KeyDarkMode</string>
     <string name="dark_mode_string">Dark Mode</string>
+    <string name="explode_head">&#129327;</string>
 
 </resources>
