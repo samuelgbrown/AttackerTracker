@@ -1,5 +1,6 @@
 package to.us.suncloud.myapplication;
 
+import android.animation.Animator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -9,6 +10,7 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewPropertyAnimator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
@@ -138,6 +140,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         private final ConstraintLayout CombatantIconBorder;
         private final ConstraintLayout RollLayout;
         private final ConstraintLayout DuplicateIndicator;
+
+        private ViewPropertyAnimator alphaAnimation;
 
         private final CheckBox CombatantCompletedCheck;
         private final ConstraintLayout CombatantGrayout;
@@ -630,13 +634,21 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             modifyingSelf = false;
 
             // Also set the visibility of the gray-out
-            float targetAlpha = isGrayed ? GRAYED_OUT : CLEAR; // If the Combatant is checked, then gray it out; otherwise, keep it clear
+            final float targetAlpha = isGrayed ? GRAYED_OUT : CLEAR; // If the Combatant is checked, then gray it out; otherwise, keep it clear
             float currentAlpha = CombatantGrayout.getAlpha();
 
             // Set the Combatant to be grayed out, if needed
-            if (currentAlpha != targetAlpha) {
-                // If the current alpha value is not what we want it to be, animate the change
-                CombatantGrayout.animate().alpha(targetAlpha).setDuration(300).setListener(null);
+            // First, see if there is an existing alphaAnimation
+            if (alphaAnimation != null) {
+                // If there is an animation that is currently playing
+                alphaAnimation.cancel(); // Cancel the existing animation (not exactly graceful, but...)
+                CombatantGrayout.setAlpha(targetAlpha);
+            } else {
+                // If there is no current animation
+                if (currentAlpha != targetAlpha) {
+                    // If the current alpha value is not what we want it to be, animate the change
+                    alphaAnimation = CombatantGrayout.animate().alpha(targetAlpha).setDuration(300).setListener(null);
+                }
             }
         }
 

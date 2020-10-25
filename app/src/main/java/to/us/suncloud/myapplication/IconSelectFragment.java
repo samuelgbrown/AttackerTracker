@@ -85,7 +85,7 @@ public class IconSelectFragment extends DialogFragment implements IconGridRecycl
         iconGridRecyclerView = fragView.findViewById(R.id.icon_grid_recycler_view);
 
         // Initialize aspects of the recycler
-        iconGridRecyclerView.setHasFixedSize(true); // We aren't adding or removing icons
+//        iconGridRecyclerView.setHasFixedSize(true); // We aren't adding or removing icons
         GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 4); // Make a grid layout manager, with 4 columns
         iconGridAdapter = new IconGridRecyclerAdapter(this, currentSelection); // Create a new adapter to feed views to the grid layout manager
 

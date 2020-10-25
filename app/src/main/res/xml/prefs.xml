@@ -74,4 +74,13 @@
             android:title="@string/dark_mode_string" />
     </PreferenceCategory>
 
+    <PreferenceCategory
+        android:key="info_category"
+        android:title="@string/info_header">
+
+        <Preference
+            android:title="@string/credits_string"
+            android:key="@string/key_credits" />
+    </PreferenceCategory>
+
 </PreferenceScreen>

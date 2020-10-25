@@ -8,6 +8,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentManager;
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.DropDownPreference;
 import androidx.preference.EditTextPreference;
@@ -31,6 +32,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     CheckBoxPreference endOfRoundPref; // The end-of-round actions preference
     CheckBoxPreference individualInitiativePref; // The group initiatives preference
     SwitchPreference darkModePref; // The dark mode preference
+    Preference creditsPref; // A button to open up the credits
 
     boolean isMidCombat = false; // Is the user currently mid-combat?
 
@@ -65,6 +67,9 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
         // Display Preferences
         darkModePref = manager.findPreference(getString(R.string.key_dark_mode));
+
+        // Info Preferences
+        creditsPref = manager.findPreference(getString(R.string.key_credits));
 
         // Set up the preset functionality
         presetPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
@@ -134,6 +139,15 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                 startActivity(getActivity().getIntent());
                 getActivity().overridePendingTransition(0, 0);
                 return true;
+            }
+        });
+
+        creditsPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                FragmentManager fm = getChildFragmentManager();
+                CreditsFragment.newInstance().show(fm, "CreditsDialog");
+                return false; // Never have anything actually CHANGE...
             }
         });
     }

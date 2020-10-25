@@ -113,10 +113,10 @@ public class EncounterCombatantList implements Serializable {
 //        updateDuplicateInitiatives();
 //    }
 
-    public boolean contains (Combatant c) {
+    public boolean contains(Combatant c) {
         // Checks if the given Combatant is in this list
         // Note: Check is by UUID!  Not by exact copy!
-        for (int i = 0;i < combatantArrayList.size();i++) {
+        for (int i = 0; i < combatantArrayList.size(); i++) {
             if (combatantArrayList.get(i).getId() == c.getId()) {
                 return true; // Found the Combatant
             }
@@ -305,7 +305,7 @@ public class EncounterCombatantList implements Serializable {
             return 0;
         } else {
             // If all of the Combatants are selected, then we are either in the end-of-round phase or the prep-phase
-            if (prefs.doingEndOfRound() &&  haveHadPrepPhase) {
+            if (prefs.doingEndOfRound() && haveHadPrepPhase) {
                 // If we already had a prep-phase this round, then all the Combatants must be checked because we have an end-of-round actions phase
                 return EncounterCombatantRecyclerAdapter.END_OF_ROUND_ACTIONS;
             } else {
@@ -333,7 +333,7 @@ public class EncounterCombatantList implements Serializable {
 
     private long getTiebreakRand() {
         long seedAdd = lastRecordedRoundNumber;// << 40;
-        long tiebreakRand =  seedAdd + encounterRandomSeed; // Left bit-shift the recorded round number by 40 bits, because the random seed used by Random() only uses the first 48 bits
+        long tiebreakRand = seedAdd + encounterRandomSeed; // Left bit-shift the recorded round number by 40 bits, because the random seed used by Random() only uses the first 48 bits
         return tiebreakRand;
     }
 
@@ -374,7 +374,6 @@ public class EncounterCombatantList implements Serializable {
 
                     // Remove it from the diceRollList and modifierList for this round (they will be set invisible later in this function)
                     thisDiceMap.remove(thisID);
-//                    modifierList.get(roundNumber - 1).remove(thisID);
                 }
 
                 if (combatantsToAdd.contains(thisID) && !thisDiceMap.containsKey(thisID)) {
@@ -388,31 +387,6 @@ public class EncounterCombatantList implements Serializable {
             // Now that we've dealt with all of the Combatants, clear the Sets
             combatantsToRemove.clear();
             combatantsToAdd.clear();
-        }
-
-        // Get the diceRollMap for this round
-        HashMap<UUID, Integer> diceRollMap;
-        if (prefs.isReRollInit()) {
-            // If initiative is being re-rolled every round, then make sure we have the correct roll map for this round
-            if (roundNumber > diceRollList.size()) {
-                // This is a new round, so generate new rolls
-                diceRollMap = rollAllInitiative();
-
-                diceRollList.add(diceRollMap); // Add a new HashMap for this round, because it is brand new
-            } else {
-                // If this is an "old" round (one that we already roll initiative for), then just retrieve the old values that we rolled already
-                diceRollMap = diceRollList.get(roundNumber - 1); // roundNumber is a user-facing variable, so it starts at 1 (ick)
-            }
-        } else {
-            // If we are using the same initiative roll for each round, then roll once and just hang onto it in the first position of diceRollList
-            if (diceRollList.isEmpty()) {
-                // diceRollList is empty, so we need to roll initiative now!
-                diceRollMap = rollAllInitiative();
-                diceRollList.add(diceRollMap); // Add the new dice map to the empty list
-            } else {
-                // We can just grab the initiative we rolled previously
-                diceRollMap = diceRollList.get(0);
-            }
         }
 
         // Modifier cases:
@@ -429,19 +403,28 @@ public class EncounterCombatantList implements Serializable {
         //      Don't store any
         //      Don't retrieve any
 
-        // Then, save the current modifier map to the modifierList, so we can retrieve it later
+        // Save the current dice roll and modifier maps, so we can retrieve them later
         HashMap<UUID, Integer> modifierMap = new HashMap<>();
+        HashMap<UUID, Integer> diceRollMap = new HashMap<>(); // The dice roll may have changed if the manual roll mode was used
         for (Combatant c : combatantArrayList) {
-            // For each Combatant, get the Combatant's modifier, and save it to modifierMap, keyed to the Combatant's ID
+            // For each Combatant, get the Combatant's roll and modifier, and save it to the corresponding map, keyed to the Combatant's ID
             modifierMap.put(c.getId(), c.getModifier());
+            diceRollMap.put(c.getId(), c.getRoll());
         }
 
-        // Save the modifierMap if we are changing rounds
+        // Save old values if needed
         if (lastRecordedRoundNumber != roundNumber) {
+            // Add enough empty HashMaps to modifierList such that the modifierList has a HashMap at position lastRecordedRoundNumber, so ArrayList<>#set() can be used
             while (modifierList.size() < lastRecordedRoundNumber) {
-                modifierList.add(new HashMap<UUID, Integer>()); // Add enough empty HashMaps to modifierList such that the modifierList has a HashMap at position lastRecordedRoundNumber, so ArrayList<>#set() can be used
+                modifierList.add(new HashMap<UUID, Integer>());
             }
+            while (diceRollList.size() < lastRecordedRoundNumber) {
+                diceRollList.add(new HashMap<UUID, Integer>());
+            }
+
+            // Save the diceRollMap and modifierMap if we are changing rounds
             modifierList.set(lastRecordedRoundNumber - 1, modifierMap);
+            diceRollList.set(lastRecordedRoundNumber - 1, diceRollMap);
 
             // Next get the modifierMap for this round, if needed (otherwise, use the current modifierMap, as seen on screen, that is currently saved in modifierMap)
             if (roundNumber <= modifierList.size()) {
@@ -449,6 +432,35 @@ public class EncounterCombatantList implements Serializable {
                 modifierMap = modifierList.get(roundNumber - 1);
             }
         }
+
+        // Get the diceRollMap for this round
+        if (prefs.isReRollInit()) {
+            // If initiative is being re-rolled every round, then make sure we have the correct roll map for this round
+            if (roundNumber > diceRollList.size()) {
+                // This is a new round, so generate new rolls
+                diceRollMap = rollAllInitiative();
+
+                diceRollList.add(diceRollMap); // Add a new HashMap for this round, because it is brand new
+            } else {
+                if (lastRecordedRoundNumber != roundNumber) {
+                    // If this is an "old" round (one that we already roll initiative for), then just retrieve the old values that we rolled already
+                    diceRollMap = diceRollList.get(roundNumber - 1); // roundNumber is a user-facing variable, so it starts at 1 (ick)
+                }
+                // If this is the same round, then we really shouldn't set a new roll map (the user may have gone to settings or something
+                // Use the diceMap that we just generated, based on the current view
+            }
+        } else {
+            // If we are using the same initiative roll for each round, then roll once and just hang onto it in the first position of diceRollList
+            if (diceRollList.isEmpty()) {
+                // diceRollList is empty, so we need to roll initiative now!
+                diceRollMap = rollAllInitiative();
+                diceRollList.add(diceRollMap); // Add the new dice map to the empty list
+            } else {
+                // We can just grab the initiative we rolled previously
+                diceRollMap = diceRollList.get(0);
+            }
+        }
+
         // Save this round number, so we know what we last saved the modifier list
         lastRecordedRoundNumber = roundNumber;
 
@@ -463,38 +475,6 @@ public class EncounterCombatantList implements Serializable {
             } else {
                 // If they are invisible, or they do not have a roll recorded for this round, then set them invisible
                 combatant.setVisible(false); // If the Combatant does not have a roll this round, make them invisible
-
-                // OLD: Before, if we went back to a previous round before a certain Combatant was added, that Combatant got a new roll and was placed into the initiative order somewhere random
-//                // If the diceRollMap does not contain this key (this Combatant did not have a roll associated with it), then generate a new roll for this Combatant, and add it to the map
-//                int newRoll;
-//                if (prefs.doingIndividualInitiative()) {
-//                    // If each Combatant gets an individual roll, then just make a new one here and assign it
-//                    newRoll = getInitiativeRoll();
-//                } else {
-//                    // Oh, boy...
-//
-//                    // If each Faction gets its own roll, then go through the diceRollMap to see if any old Combatants with this Faction are already in there
-//                    boolean gotFacVal = false;
-//                    newRoll = -1; // If it's still -1, something has gone wrong...
-//                    for (Combatant combatantOld : combatantArrayList) {
-//                        if (combatantOld.getFaction() == combatant.getFaction()) {
-//                            // If we found a Combatant in the ArrayList that has the same Faction as this Combatant, check if the diceRollMap has a roll for it
-//                            if (diceRollMap.containsKey(combatantOld.getId())) {
-//                                // We found an old Combatant of the same Faction as this new Combatant.  So, we can just use its roll value!
-//                                newRoll = diceRollMap.get(combatantOld.getId());
-//                                gotFacVal = true;
-//                                break;
-//                            }
-//                        }
-//                    }
-//
-//                    if (!gotFacVal) {
-//                        // If we never found an old Combatant that matches the new Combatant's roll, then roll a new value for the new Combatant
-//                        newRoll = getInitiativeRoll();
-//                    }
-//                }
-//                combatant.setRoll(newRoll);
-//                diceRollMap.put(combatant.getId(), newRoll); // Will be saved in diceRollList
             }
 
             // For each Combatant, retrieve the modifier, and set it to the Combatant
@@ -611,7 +591,7 @@ public class EncounterCombatantList implements Serializable {
             // If this is the last Combatant, then it is the last visible Combatant
             return true;
         } else {
-            for (int i = position + 1;i < combatantArrayList.size();i++) {
+            for (int i = position + 1; i < combatantArrayList.size(); i++) {
                 if (combatantArrayList.get(i).isVisible()) {
                     // If there is another visible Combatant, then we aren't last
                     return false;
@@ -625,7 +605,7 @@ public class EncounterCombatantList implements Serializable {
 
     public int getLastVisibleCombatant() {
         // Get the index of the last visible Combatant
-        for (int i = combatantArrayList.size() - 1;i >= 0;i--) {
+        for (int i = combatantArrayList.size() - 1; i >= 0; i--) {
             if (combatantArrayList.get(i).isVisible()) {
                 return i;
             }

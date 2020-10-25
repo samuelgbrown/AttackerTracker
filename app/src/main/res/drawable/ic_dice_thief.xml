@@ -3,8 +3,6 @@
     android:height="300dp"
     android:viewportWidth="32"
     android:viewportHeight="32">
-
-<!--  TODO: "Burglar Mask" By P Thanga Vignesh In the Law and Justice - Glyphs Collection at Noun Project -->
   <path
       android:pathData="m8.0239,11.2271l0,2.7171a1.6812,1.6812 0,0 0,0.6928 1.3594l0.0493,0.0361a3.3623,3.3623 0,0 0,3.3426 0.353l3.9008,-1.7337 3.9008,1.7337a3.3623,3.3623 0,0 0,3.3426 -0.353l0.0493,-0.0361a1.6812,1.6812 0,0 0,0.6928 -1.3594L23.9949,11.2271l-2.438,0.4498a30.6211,30.6211 0,0 1,-11.095 0zM9.4949,12.9082 L13.4877,13.5386 10.5456,14.7995zM22.5239,12.9082 L21.4732,14.7995 18.5311,13.5386z"
       android:strokeWidth="0.73520267"

@@ -3,7 +3,6 @@
     android:height="300dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-<!--  TODO: Credit to Atif Arshad, AE from thenounproject.com-->
 
   <path
       android:pathData="M21.288,4.02c-1.439,0 -2.611,1.171 -2.611,2.612c0,1.44 1.172,2.612 2.611,2.612c1.44,0 2.612,-1.172 2.612,-2.612C23.9,5.192 22.729,4.02 21.288,4.02zM21.288,8.443c-0.999,0 -1.811,-0.812 -1.811,-1.811s0.812,-1.812 1.811,-1.812S23.1,5.633 23.1,6.632S22.287,8.443 21.288,8.443z"

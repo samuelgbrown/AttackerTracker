@@ -137,6 +137,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
                 // Hide the keyboard
                 InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(nextButton.getWindowToken(), 0);
+                getCurrentFocus().clearFocus(); // Clear the current text focus
 
                 // Increment the combat step
                 nextButton.postDelayed(new Runnable() {
@@ -160,6 +161,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
                 // Hide the keyboard
                 InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(nextButton.getWindowToken(), 0);
+                getCurrentFocus().clearFocus(); // Clear the current text focus
 
                 // Decrement the combat step
                 previousButton.postDelayed(new Runnable() {
