@@ -33,14 +33,17 @@ public class EncounterCombatantList implements Serializable {
         setPrefs(context);
     }
 
-    public EncounterCombatantList(ArrayList<Combatant> combatantArrayList, Context context) {
-        setPrefs(context);
+    private EncounterCombatantList(ArrayList<Combatant> combatantArrayList, InitPrefs newPrefs) {
+        // NOTE: This is the only constructor that does NOT include safety features (sorting, initializing,etc).  combatantArrayList is assumed to have come from an otherwise already initialized EncounterCombatantList
+        // Set up the preferences)
+        prefs = newPrefs;
+
+        // Copy over the new Combatant List
         for (int i = 0; i < combatantArrayList.size(); i++) {
             this.combatantArrayList.add(combatantArrayList.get(i).clone()); // Create a clone of the referenced Combatant, and save it
         }
 
-        initializeCombatants();
-        doSorting();
+        // Initialize the duplicateInitiatives list
         updateDuplicateInitiatives();
     }
 
@@ -57,7 +60,7 @@ public class EncounterCombatantList implements Serializable {
 
         currentSortMethod = c.getCurrentSortMethod(); // List should already be in a sorted state
         duplicateInitiatives = c.getDuplicateInitiatives(); // List should already be in a prepared state
-        diceRollList = c.getDiceRollList();
+        diceRollList = c.getDiceRollList(); // TO_DO Could stand to be a deep copy instead of shallow...
         modifierList = c.getModifierList();
         lastRecordedRoundNumber = c.getLastRecordedRoundNumber();
         prefs = c.getPrefs();
@@ -363,32 +366,6 @@ public class EncounterCombatantList implements Serializable {
     }
 
     public void setRoundNumber(int roundNumber) {
-        // First thing, see if we need to remove any Combatants from this round
-        if (!(combatantsToRemove.isEmpty() && combatantsToAdd.isEmpty())) {
-            // Go through each Combatant and see if we need to add or remove it
-            HashMap<UUID, Integer> thisDiceMap = diceRollList.get(roundNumber - 1); // Get a reference to the diceMap we will be modifying
-            for (Combatant c : combatantArrayList) {
-                UUID thisID = c.getId();
-                if (combatantsToRemove.contains(thisID)) {
-                    // If this Combatant is to be removed
-
-                    // Remove it from the diceRollList and modifierList for this round (they will be set invisible later in this function)
-                    thisDiceMap.remove(thisID);
-                }
-
-                if (combatantsToAdd.contains(thisID) && !thisDiceMap.containsKey(thisID)) {
-                    // If this Combatant is to be added, and it doesn't already appear in the dice map
-
-                    // Add it to the diceRoll List for this round, along with an initiative roll
-                    thisDiceMap.put(thisID, getInitiativeRoll());
-                }
-            }
-
-            // Now that we've dealt with all of the Combatants, clear the Sets
-            combatantsToRemove.clear();
-            combatantsToAdd.clear();
-        }
-
         // Modifier cases:
         //  1: final Combatant to prep phase (go forwards)
         //      cur = last + 1
@@ -407,9 +384,15 @@ public class EncounterCombatantList implements Serializable {
         HashMap<UUID, Integer> modifierMap = new HashMap<>();
         HashMap<UUID, Integer> diceRollMap = new HashMap<>(); // The dice roll may have changed if the manual roll mode was used
         for (Combatant c : combatantArrayList) {
-            // For each Combatant, get the Combatant's roll and modifier, and save it to the corresponding map, keyed to the Combatant's ID
-            modifierMap.put(c.getId(), c.getModifier());
-            diceRollMap.put(c.getId(), c.getRoll());
+            // For each visible Combatant, get the Combatant's roll and modifier, and save it to the corresponding map, keyed to the Combatant's ID
+            if (c.isVisible()) {
+                modifierMap.put(c.getId(), c.getModifier());
+
+                if (!combatantsToAdd.contains(c.getId())) {
+                    // If this Combatant is not a new addition to combat
+                    diceRollMap.put(c.getId(), c.getRoll());
+                }
+            }
         }
 
         // Save old values if needed
@@ -431,6 +414,38 @@ public class EncounterCombatantList implements Serializable {
                 // If the current round number has been done before, then retrieve the saved modifier map
                 modifierMap = modifierList.get(roundNumber - 1);
             }
+        }
+
+        // Get the current values for
+
+        // Next, after saving previous values, see if we need to remove any Combatants from this round
+        if (!(combatantsToRemove.isEmpty() && combatantsToAdd.isEmpty())) {
+            // Go through each Combatant and see if we need to add or remove it
+            if (lastRecordedRoundNumber != roundNumber) {
+                // If this we are starting a new round
+                diceRollMap = diceRollList.get(roundNumber - 1); // Get a reference to the diceMap we will be modifying
+            } // If we are not starting a new round, use the same diceRollMap as above, which may be used later on (this logic hurts my head a little, but it ensures that Combatants can be added/removed AND the dice rolls can be manually modified)
+
+            for (Combatant c : combatantArrayList) {
+                UUID thisID = c.getId();
+                if (combatantsToRemove.contains(thisID)) {
+                    // If this Combatant is to be removed
+
+                    // Remove it from the diceRollList and modifierList for this round (they will be set invisible later in this function)
+                    diceRollMap.remove(thisID);
+                }
+
+                if (combatantsToAdd.contains(thisID) && !diceRollMap.containsKey(thisID)) {
+                    // If this Combatant is to be added, and it doesn't already appear in the dice map
+
+                    // Add it to the diceRoll List for this round, along with an initiative roll
+                    diceRollMap.put(thisID, getInitiativeRoll());
+                }
+            }
+
+            // Now that we've dealt with all of the Combatants, clear the Sets
+            combatantsToRemove.clear();
+            combatantsToAdd.clear();
         }
 
         // Get the diceRollMap for this round
@@ -617,6 +632,18 @@ public class EncounterCombatantList implements Serializable {
 
     public Combatant get(int i) {
         return combatantArrayList.get(i);
+    }
+
+    public EncounterCombatantList getVisibleSublist() {
+        // Return a new EncounterCombatantList with only the visible Combatants
+        ArrayList<Combatant> visibleCombatantsList = new ArrayList<>();
+        for (Combatant c : combatantArrayList) {
+            if (c.isVisible()) {
+                visibleCombatantsList.add(c); // Add every visible Combatant to the list
+            }
+        }
+
+        return new EncounterCombatantList(visibleCombatantsList, prefs); // A bit slow, but better than any alternative I've come up with...
     }
 
     public EncounterCombatantList clone() {

@@ -1,13 +1,18 @@
 package to.us.suncloud.myapplication;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.fragment.app.FragmentManager;
+import androidx.preference.Preference;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,8 +22,24 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
-public class ConfigureCombatantListActivity extends AppCompatActivity implements ListCombatantRecyclerAdapter.MasterCombatantKeeper, ViewSavedCombatantsFragment.ReceiveAddedCombatant {
+import com.android.billingclient.api.BillingClient;
+import com.android.billingclient.api.BillingResult;
+import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.PurchasesUpdatedListener;
+import com.android.billingclient.api.SkuDetails;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ConfigureCombatantListActivity extends AppCompatActivity implements ListCombatantRecyclerAdapter.MasterCombatantKeeper, ViewSavedCombatantsFragment.ReceiveAddedCombatant, PurchaseHandler.purchaseHandlerInterface {
 
     public static final String COMBATANT_LIST = "combatantListList"; // ID for inputs to the activity
     public static final String ROUND_NUMBER = "roundNumber"; // ID for inputs to the activity
@@ -29,6 +50,14 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     public static final int COMBATANT_LIST_CODE = 0; // The Code to represent requesting a Combatant List back from the Encounter Activity, used in startActivityForResult()
 
     int curTheme; // The current theme of this Activity
+
+    // Parameters related to display ads
+    ConstraintLayout adContainer;
+    AdView adView;
+    PrefsHelper.AdLocation curAdLoc;
+        String REMOVE_ADS_SKU = "attacker_tracker.remove_ads";
+//    String REMOVE_ADS_SKU = "android.test.purchased";
+    PurchaseHandler purchaseHandler;
 
     TextView mainButton; // The Main button at the bottom, to transfer over to the Encounter Activity
     TextView noCombatantMessage; // Text message to show the use when there are no Combatants
@@ -54,6 +83,17 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         curTheme = PrefsHelper.getTheme(getApplicationContext());
         setTheme(curTheme);
         setContentView(R.layout.activity_main);
+
+        // Initialize Ads (early because it involves a server request)
+        List<String> allSKUs = new ArrayList<>();
+        allSKUs.add(REMOVE_ADS_SKU);
+        purchaseHandler = new PurchaseHandler(this, allSKUs); // TODO START HERE
+        // Initialize the ad retrieval process (just in case)
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            }
+        });
 
         // Get the combatantList and any other initialization parameters
         if (savedInstanceState != null) {
@@ -83,6 +123,9 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         Toolbar toolbar = findViewById(R.id.configure_toolbar);
         noCombatantMessage = findViewById(R.id.configure_combatant_empty);
         combatantListView = findViewById(R.id.configure_combatant_list);
+
+//        // Ready Ads for display
+//        prepareAd();
 
         // Set up the Views
         // Main Button
@@ -127,6 +170,80 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         combatantListView.setHasFixedSize(true);
         combatantListView.addItemDecoration(new BannerDecoration(getApplicationContext()));
         combatantListView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
+    }
+
+    private void prepareAd() {
+        // Set up the banner ad on screen (if required, otherwise just remove it)
+        // Ensure that an ad is being displayed
+        // Get the ad's current location
+        PrefsHelper.AdLocation adLoc = PrefsHelper.getAdLocation(getApplicationContext());
+
+        // If this is a new location (or it's the first time we're loading an ad since we created this Activity
+        if (curAdLoc == null || adLoc != curAdLoc) {
+            // If we need to place an ad in the new container
+
+            // Set the old ad container back to standby
+            removeAd();
+
+            // Retrieve the new ad container, and make it visible
+            adContainer = getAdContainer(adLoc);
+            adContainer.setVisibility(View.VISIBLE);
+
+            // Add the ad to the container
+            if (adView == null) {
+                // If no AdView has been created yet, create one
+                adView = new AdView(this);
+                adView.setAdSize(AdSize.BANNER);
+
+                // TODO: Convert over to real ads for production
+                adView.setAdUnitId(getString(R.string.config_ad_id));
+
+                // Request and load an ad
+                AdRequest adRequest = new AdRequest.Builder().build();
+                adView.loadAd(adRequest);
+                adView.setId(View.generateViewId());
+            }
+            adContainer.addView(adView, 1);
+
+            // Ensure that the adView is in the center of the container
+            ConstraintSet set = new ConstraintSet();
+            set.clone(adContainer);
+            set.connect(adView.getId(), ConstraintSet.TOP, adContainer.getId(), ConstraintSet.TOP, 0);
+            set.connect(adView.getId(), ConstraintSet.BOTTOM, adContainer.getId(), ConstraintSet.BOTTOM, 0);
+            set.connect(adView.getId(), ConstraintSet.START, adContainer.getId(), ConstraintSet.START, 0);
+            set.connect(adView.getId(), ConstraintSet.END, adContainer.getId(), ConstraintSet.END, 0);
+            set.applyTo(adContainer);
+            adContainer.bringChildToFront(adView);
+        }
+
+        // Store the new ad's location
+        curAdLoc = adLoc;
+    }
+
+    private void removeAd() {
+        // Ensure that no ad is being displayed on screen
+        if (adContainer != null) {
+            // If there is already an ad on screen
+            if (adView != null) {
+                adContainer.removeView(adView); // Remove the adView, to be moved to a new container
+            }
+
+            // Make the old container invisible
+            adContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private ConstraintLayout getAdContainer(PrefsHelper.AdLocation adLoc) {
+        // Give an AdLocation, get the corresponding ConstraintLayout container in the layout
+        switch (adLoc) {
+            case Top:
+                return findViewById(R.id.configure_ad_container_top);
+            case Bottom_Above:
+                return findViewById(R.id.configure_ad_container_bottom_above);
+            case Bottom_Below:
+                return findViewById(R.id.configure_ad_container_bottom_below);
+        }
+        return findViewById(R.id.encounter_ad_container_bottom_below); // Default
     }
 
     @Override
@@ -185,6 +302,9 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         }
 
         updateNoCombatantMessage();
+
+        // Update the ad location, if needed
+        prepareAd();
     }
 
     @Override
@@ -414,6 +534,23 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public Activity getActivity() {
+        return this;
+    }
+
+    @Override
+    public void handlePurchase(Purchase purchase) {
+        if (purchase.getSku().equals(REMOVE_ADS_SKU)) {
+            // If the item has been purchased, then change the GUI
+            if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                removeAd(); // Remove the ads from the screen (if the screen is displayed right now)
+            } else {
+                prepareAd();
+            }
         }
     }
 }

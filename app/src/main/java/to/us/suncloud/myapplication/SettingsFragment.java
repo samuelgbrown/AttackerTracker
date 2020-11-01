@@ -1,26 +1,45 @@
 package to.us.suncloud.myapplication;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.net.wifi.aware.PublishConfig;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentManager;
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.DropDownPreference;
 import androidx.preference.EditTextPreference;
 import androidx.preference.Preference;
+import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
+import androidx.preference.PreferenceScreen;
 import androidx.preference.SwitchPreference;
+
+import com.android.billingclient.api.AcknowledgePurchaseParams;
+import com.android.billingclient.api.AcknowledgePurchaseResponseListener;
+import com.android.billingclient.api.BillingClient;
+import com.android.billingclient.api.BillingClientStateListener;
+import com.android.billingclient.api.BillingFlowParams;
+import com.android.billingclient.api.BillingResult;
+import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.PurchasesUpdatedListener;
+import com.android.billingclient.api.SkuDetails;
+import com.android.billingclient.api.SkuDetailsParams;
+import com.android.billingclient.api.SkuDetailsResponseListener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
-public class SettingsFragment extends PreferenceFragmentCompat {
+public class SettingsFragment extends PreferenceFragmentCompat implements PurchaseHandler.purchaseHandlerInterface {
     public static final String IS_MID_COMBAT = "isMidCombat";
 
     DropDownPreference presetPref; // The preset list preference
@@ -33,6 +52,41 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     CheckBoxPreference individualInitiativePref; // The group initiatives preference
     SwitchPreference darkModePref; // The dark mode preference
     Preference creditsPref; // A button to open up the credits
+    CheckBoxPreference buttonAnimPref; // A preference for the animation of the Roll Initiative button
+
+    // Ads members
+//    String AD_TAG = "ADS";
+    String REMOVE_ADS_SKU = "attacker_tracker.remove_ads";
+//    String REMOVE_ADS_SKU = "android.test.purchased";
+    //    DropDownPreference adLocPref; // Ads location preference
+    Preference purchasePref; // A button to purchase the entitlement to remove ads
+    PurchaseHandler purchaseHandler;
+//    SkuDetails removeAdsSKUDetails; // The SKU details of the in-app purchase option (retrieved from the asynchronous call to the billing client)
+//    int billConnectionTries = 0;
+//    final static int BILL_MAX_TRIES = 5;
+
+//    PurchasesUpdatedListener purchaseListener = new PurchasesUpdatedListener() { // A listener that receives updates on purchasing
+//        // Handle brand new purchases
+//        @Override
+//        public void onPurchasesUpdated(@NonNull BillingResult billingResult, @Nullable List<Purchase> purchases) {
+//            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && purchases != null) {
+//                for (Purchase purchase : purchases) {
+//                    purchase.getPurchaseToken(); // TODO: Do something with the token.  Email it to me, or dedicated email address?
+//                    handlePurchase(purchase);
+//                    if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+//                        // If the user just bought this, thank them!
+//                        Toast.makeText(getContext(), "Thank you for supporting the app! Enjoy!", Toast.LENGTH_SHORT).show();
+//                    }
+//                }
+//            } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
+//                // TODO: Handle an error caused by a user cancelling the purchase flow
+//            } else {
+//                // Handle any other error codes.
+//            }
+//        }
+//    };
+
+//    BillingClient client;
 
     boolean isMidCombat = false; // Is the user currently mid-combat?
 
@@ -40,6 +94,74 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.prefs, rootKey);
         PreferenceManager manager = getPreferenceManager();
+
+        // Start a connection with the billing client
+        // Make PurchaseHandler
+//        client = BillingClient.newBuilder(getContext())
+//                .setListener(purchaseListener)
+//                .enablePendingPurchases()
+//                .build(); // Build the client through which we will make purchases
+
+//        client.startConnection(new BillingClientStateListener() {
+//            @Override
+//            public void onBillingSetupFinished(@NonNull BillingResult billingResult) {
+//                if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+//                    // The BillingClient is ready, query available purchases (damn well better be only one...)
+//
+//                    List<String> skuList = new ArrayList<>();
+//                    skuList.add(REMOVE_ADS_SKU);
+//                    SkuDetailsParams.Builder params = SkuDetailsParams.newBuilder();
+//                    params.setSkusList(skuList).setType(BillingClient.SkuType.INAPP);
+//                    client.querySkuDetailsAsync(params.build(),
+//                            new SkuDetailsResponseListener() {
+//                                @Override
+//                                public void onSkuDetailsResponse(BillingResult billingResult, List<SkuDetails> skuDetailsList) {
+//                                    // Process the result
+//                                    if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+//                                        if (skuDetailsList != null && skuDetailsList.size() > 0) {
+//                                            removeAdsSKUDetails = skuDetailsList.get(0); // Save the first (and hopefully only) SKUDetails object
+//                                            purchasePref.setEnabled(true); // We got info from the Play store, so we can allow the purchase flow to begin
+//                                        }
+//                                    } else {
+//                                        Log.w(AD_TAG, "Could not retrieve SKU details: " + billingResult.getDebugMessage());
+//                                    }
+//
+//                                    // Now that we have SKU details, update the GUI
+//                                    updateAdVis();
+//                                }
+//                            });
+//                }
+//            }
+//
+//            @Override
+//            public void onBillingServiceDisconnected() {
+//                // ...Uh-oh
+//                billConnectionTries++;
+//                if (billConnectionTries < BILL_MAX_TRIES) {
+//                    // Try connecting again, up to 5 times
+//                    client.startConnection(this);
+//                } else {
+//                    Log.e(AD_TAG, "Could not connect to Billing Service.");
+////                        Toast.makeText(getContext(), "Could not connect to billing service", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
+
+        // Ads Preferences
+        // Set up the in-app purchasing interaction, in case it's needed
+        List<String> allSKUs = new ArrayList<>();
+        allSKUs.add(REMOVE_ADS_SKU);
+        purchaseHandler = new PurchaseHandler(this, allSKUs);
+        purchasePref = manager.findPreference(getString(R.string.key_purchase));
+        purchasePref.setEnabled(false); // Disable the ad removal purchase until we have retrieved SKU info from the Play Store
+
+        purchasePref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                purchaseHandler.startPurchase(REMOVE_ADS_SKU);
+                return false;
+            }
+        });
 
         // TO_DO : Add colorblind mode! Blue and yellow?  Orange?  Google it!
         //  Android already has a built-in colorblind mode
@@ -65,8 +187,11 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         individualInitiativePref = manager.findPreference(getString(R.string.key_individual_initiative));
         reRollPref = manager.findPreference(getString(R.string.key_re_roll));
 
+//        adLocPref = manager.findPreference(getString(R.string.key_ad_location));
+
         // Display Preferences
         darkModePref = manager.findPreference(getString(R.string.key_dark_mode));
+        buttonAnimPref = manager.findPreference(getString(R.string.key_button_anim));
 
         // Info Preferences
         creditsPref = manager.findPreference(getString(R.string.key_credits));
@@ -142,6 +267,17 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             }
         });
 
+        buttonAnimPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (!(boolean) newValue) {
+                    // If the user turned off the roll initiative button animation, CHIDE THEM
+                    Toast.makeText(getContext(), R.string.button_anim_chide, Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+        });
+
         creditsPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
@@ -150,6 +286,40 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                 return false; // Never have anything actually CHANGE...
             }
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // Check to see if any purchases have changed status
+        purchaseHandler.queryPurchases();
+//        updateAdVis();
+    }
+
+//    private void updateAdVis() {
+//        // Update the ad visibility on this screen based on whether or not the user purchased the no-ads item
+//        // Check the purchase status
+//        if (client != null) {
+//            Purchase.PurchasesResult result = client.queryPurchases(BillingClient.SkuType.INAPP);
+//            int responseCode = result.getResponseCode();
+//            if (responseCode == BillingClient.BillingResponseCode.OK) {
+//                // We now have a list of purchases
+//                List<Purchase> pList = result.getPurchasesList();
+//                for (Purchase p : pList) {
+//                    handlePurchase(p); // Go through each one and handle them as needed
+//                }
+//            } else {
+//                Log.w(AD_TAG, "Could not query purchases, got result: " + result.getBillingResult().getDebugMessage());
+//            }
+//        }
+//    }
+
+    private void removeAds() {
+        PreferenceScreen screen = findPreference(getString(R.string.key_screen));
+        if (screen != null) {
+            screen.removePreferenceRecursively(getString(R.string.key_ads_category)); // Remove the Ads category, because it no longer applies to them!
+        }
     }
 
     private boolean updateFromPreset(String newPresetValue) {
@@ -170,7 +340,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         // Get the current dice value, for comparison.  If this is changed mid-combat, then data will be lost
         int curDiceValue = Integer.parseInt(dicePref.getText());
 
-        if (newPresetValue.equals(getString(R.string.rpg_ver_dnd1))) {
+        if (newPresetValue.equals(getString(R.string.rpg_ver_entry_dnd1))) {
             // https://www.dandwiki.com/wiki/How_Combat_Works_(Basic_D%26D)
             // TODO SOON: Perhaps add a way to make a Combatant "lose" initiative (go last this round) because they are using a two-handed weapon, drawing a weapon, etc?
             //      Actions should also happen in order of: Movement, Missile combat, Spell casting, Hand-to-hand combat
@@ -187,7 +357,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             individualInitiativeVal = false; // Faction roll
         }
 
-        if (newPresetValue.equals(getString(R.string.rpg_ver_adnd1))) {
+        if (newPresetValue.equals(getString(R.string.rpg_ver_entry_adnd1))) {
             // The user just chose AD&D 1
             newVals = true;
 
@@ -310,7 +480,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
         if (forceUpdate) {
             // If this is a force update (the user just confirmed that they wanted to overwrite combat data), then set the value of the preset dropdown menu, because it wasn't set
-            ArrayList<String> presetVals = new ArrayList<>(Arrays.asList(getContext().getResources().getStringArray(R.array.rpg_ver_entry)));
+            ArrayList<String> presetVals = new ArrayList<>(Arrays.asList(getContext().getResources().getStringArray(R.array.rpg_ver_entry_vals)));
             if (presetVals.contains(newPresetValue)) {
                 presetPref.setValueIndex(presetVals.indexOf(newPresetValue));
             }
@@ -322,7 +492,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
     private void setPresetToCustom() {
         // Set the preset list preference to the "Custom" position, to indicate that something has been changed and we (may be) no longer in a preset
-        ArrayList<String> allPresetStrings = new ArrayList<>(Arrays.asList(getResources().getStringArray(R.array.rpg_ver_entry)));
+        ArrayList<String> allPresetStrings = new ArrayList<>(Arrays.asList(getResources().getStringArray(R.array.rpg_ver_entry_vals)));
         int custEntryIndex = allPresetStrings.indexOf(getString(R.string.rpg_ver_entry_cust)); // Get the value of the custom String in R.array.rpg_ver_entry
         if (custEntryIndex != -1) {
             presetPref.setValueIndex(custEntryIndex);
@@ -380,4 +550,26 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         setPresetToCustom();
         return true;
     }
+
+    public void handlePurchase(Purchase purchase) {
+        // Go through all purchase objects returned by the client, and handle the current payment status on each
+//        if (removeAdsSKUDetails != null) {
+        if (purchase.getSku().equals(REMOVE_ADS_SKU)) {
+            // If the item has been purchased, then change the GUI
+            if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                removeAds(); // Remove the ads from the screen (if the screen is displayed right now)
+                return;
+            }
+
+            // If the item has not been purchased, then set the purchasing button to be enabled or disabled, according to whether or not we are ready
+            if (purchasePref != null) {
+                purchasePref.setEnabled(purchaseHandler.isPurchaseFlowReady(REMOVE_ADS_SKU));
+            }
+        }
+//        } else {
+//            Log.w(AD_TAG, "Attempted to check purchase without having SKU details.  Purchase: " + purchase.getSku());
+//        }
+    }
+
+
 }

@@ -17,4 +17,6 @@
     <dimen name="small_icon_size">45dp</dimen>
     <dimen name="medium_icon_size">60dp</dimen>
     <dimen name="large_icon_size">100dp</dimen>
+    <dimen name="ad_height">50dp</dimen>
+    <dimen name="ad_font_size">18sp</dimen>
 </resources>

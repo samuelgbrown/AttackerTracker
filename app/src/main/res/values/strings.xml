@@ -52,7 +52,7 @@
     <string name="combatant_icon">Icon:</string>
     <string name="combatant_faction">Faction:</string>
 
-    <string name="leave_app_title">Close Attacker Tracker?</string>
+    <string name="leave_app_title">Close AttackerTracker?</string>
     <string name="leave_app_message">Are you sure you want to leave and lose this encounter\'s data?</string>
 
     <string name="mod_create_close_title">Lose changes</string>
@@ -87,8 +87,10 @@
     <string name="title_activity_settings">SettingsActivity</string>
 
     <!-- Preference Titles -->
+    <string name="key_screen">KeyPreferenceScreen</string>
     <string name="dnd_header">Initiative Calculation</string>
     <string name="display_header">Display</string>
+    <string name="ad_header">Ad Settings</string>
     <string name="info_header">Info</string>
 
     <!-- Messages Preferences -->
@@ -103,7 +105,7 @@
     <string name="key_preset">KeyPreset</string>
     <string name="key_dice_size">KeyDice</string>
     <string name="key_sort_order">KeySort</string>
-    <string name="key_tie_breaker">KeySort</string>
+    <string name="key_tie_breaker">KeyTie</string>
     <string name="key_mod_used">KeyMod</string>
     <string name="key_re_roll">KeyReRoll</string>
     <string name="key_end_of_round">KeyEndOfRound</string>
@@ -117,7 +119,7 @@
     <string name="rpg_ver_dnd5">Dungeons and Dragons 5e</string>
     <string name="rpg_ver_pf">Pathfinder</string>
     <string name="rpg_ver_cust">Custom</string>
-    <string-array name="rpg_ver">
+    <string-array name="rpg_ver_vals">
         <item>@string/rpg_ver_dnd1</item>
         <item>@string/rpg_ver_adnd1</item>
         <item>@string/rpg_ver_adnd2</item>
@@ -136,7 +138,7 @@
     <string name="rpg_ver_entry_dnd5">d5</string>
     <string name="rpg_ver_entry_pf">pf</string>
     <string name="rpg_ver_entry_cust">cust</string>
-    <string-array name="rpg_ver_entry">
+    <string-array name="rpg_ver_entry_vals">
         <item>@string/rpg_ver_entry_dnd1</item>
         <item>@string/rpg_ver_entry_adnd1</item>
         <item>@string/rpg_ver_entry_adnd2</item>
@@ -149,7 +151,7 @@
 
     <string name="sort_low_first">Lowest Goes First</string>
     <string name="sort_high_first">Highest Goes First</string>
-    <string-array name="sort_entry">
+    <string-array name="sort_vals">
         <item>@string/sort_low_first</item>
         <item>@string/sort_high_first</item>
     </string-array>
@@ -164,7 +166,7 @@
     <string name="tie_modifier">Best Modifier</string>
     <string name="tie_alpha">Party First</string>
     <string name="tie_random">Random</string>
-    <string-array name="tie_entry">
+    <string-array name="tie_vals">
         <item>@string/tie_modifier</item>
         <item>@string/tie_alpha</item>
         <item>@string/tie_random</item>
@@ -181,7 +183,7 @@
 
     <string name="mod_speed">Speed Factor</string>
     <string name="mod_init_mod">Initiative Mod</string>
-    <string-array name="mod_entry">
+    <string-array name="mod_vals">
         <item>@string/mod_speed</item>
         <item>@string/mod_init_mod</item>
     </string-array>
@@ -197,15 +199,47 @@
     <string name="change_dice_message">Changing the dice size mid-combat will reset your progress back to round 1.  Are you sure you want to change it?</string>
 
     <string name="re_roll_string">Re-roll Initiative Each Round</string>
+    <string name="re_roll_summary">If unchecked, the same initiative rolls will be used for every round</string>
 
     <string name="end_of_round_action_string">Pause at End Of Round</string>
+    <string name="end_of_round_summary">Useful for End-Of-Round Actions</string>
 
     <string name="individual_initiative_string">Initiative Per Combatant</string>
     <string name="individual_initiative_summary">Roll initiative for each combatant, or for each faction</string>
 
     <!-- Display Preferences -->
     <string name="key_dark_mode">KeyDarkMode</string>
+    <string name="key_button_anim">KeyButtonAnim</string>
     <string name="dark_mode_string">Dark Mode</string>
+    <string name="button_anim_string">Animate Initiative Button</string>
+    <string name="button_anim_chide">Aww, you\'re no fun…</string>
+
+    <!--    Ad Preferences-->
+    <string name="ad_loading">Ad Loading…</string>
+    <string name="key_ads_category">KeyAdCategory</string>
+    <string name="key_ad_location">KeyAdLoc</string>
+    <string name="key_purchase">KeyPurchase</string>
+    <string name="purchase_string">Remove Ads…</string>
+    <string name="ad_location_string">Ad Banner Location</string>
+
+    <string name="ad_loc_top">Top</string>
+    <string name="ad_loc_bottom_above">Bottom (Above Main Button)</string>
+    <string name="ad_loc_bottom_below">Bottom (Below Main Button)</string>
+    <array name="ad_loc_vals">
+        <item>@string/ad_loc_top</item>
+        <item>@string/ad_loc_bottom_above</item>
+        <item>@string/ad_loc_bottom_below</item>
+    </array>
+
+    <string name="ad_loc_entry_top">top</string>
+    <string name="ad_loc_entry_bottom_above">bottom_above</string>
+    <string name="ad_loc_entry_bottom_below">bottom_below</string>
+    <array name="ad_loc_entry_vals">
+        <item>@string/ad_loc_entry_top</item>
+        <item>@string/ad_loc_entry_bottom_above</item>
+        <item>@string/ad_loc_entry_bottom_below</item>
+    </array>
+
 
     <!-- Info Preferences -->
     <string name="key_credits">KeyCredits</string>

@@ -43,7 +43,7 @@
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="8dp"
         android:clickable="true"
-        app:layout_constraintBottom_toTopOf="@+id/button_box"
+        app:layout_constraintBottom_toTopOf="@+id/encounter_ad_container_bottom_above"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
@@ -51,10 +51,41 @@
         app:layout_constraintVertical_bias="1.0" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/encounter_ad_container_bottom_above"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/ad_height"
+        android:background="@color/colorBlack"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@id/button_box"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/encounter_ad_load_ba"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/ad_loading"
+            android:textColor="@color/gray"
+            android:textAlignment="center"
+            android:textSize="@dimen/ad_font_size"
+            android:textStyle="bold|italic"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/button_box"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/encounter_ad_container_bottom_below"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -93,16 +124,76 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/encounter_ad_container_bottom_below"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/ad_height"
+        android:background="@color/colorBlack"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/encounter_ad_load_bb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/ad_loading"
+            android:textColor="@color/gray"
+            android:textAlignment="center"
+            android:textSize="@dimen/ad_font_size"
+            android:textStyle="bold|italic"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/encounter_ad_container_top"
+        android:visibility="gone"
+        android:background="@color/colorBlack"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/ad_height"
+        app:layout_constraintTop_toBottomOf="@id/encounter_toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/encounter_ad_load_t"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/ad_loading"
+            android:textColor="@color/gray"
+            android:textAlignment="center"
+            android:textSize="@dimen/ad_font_size"
+            android:textStyle="bold|italic"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/round_banner_layout"
         android:layout_width="0dp"
         android:layout_height="40dp"
         android:background="@android:color/darker_gray"
-
-
         android:clickable="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/encounter_toolbar">
+        app:layout_constraintTop_toBottomOf="@id/encounter_ad_container_top">
 
         <TextView
             android:id="@+id/textView"
@@ -150,7 +241,7 @@
             android:layout_height="wrap_content"
             android:textAlignment="center"
             android:textSize="20sp"
-            android:visibility="gone"
+            android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />

@@ -2,6 +2,7 @@ package to.us.suncloud.myapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -11,7 +12,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -23,7 +23,15 @@ import android.widget.TextView;
 
 import androidx.appcompat.widget.Toolbar;
 
-public class EncounterActivity extends AppCompatActivity implements EncounterCombatantRecyclerAdapter.combatProgressInterface {
+import com.android.billingclient.api.Purchase;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+
+public class EncounterActivity extends AppCompatActivity implements EncounterCombatantRecyclerAdapter.combatProgressInterface, PurchaseHandler.purchaseHandlerInterface {
     EncounterCombatantList masterCombatantList;
     EncounterCombatantRecyclerAdapter adapter; // The adapter for the main Combatant list
 
@@ -35,6 +43,14 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     int maxRoundRolled = 0;
 
     int curTheme; // The current theme of this Activity
+
+    // Parameters related to display ads
+    ConstraintLayout adContainer;
+    AdView adView;
+    PrefsHelper.AdLocation curAdLoc;
+    String REMOVE_ADS_SKU = "attacker_tracker.remove_ads";
+    //    String REMOVE_ADS_SKU = "android.test.purchased";
+    PurchaseHandler purchaseHandler;
 
     ConstraintLayout endOfRoundBanner;
     TextView prepBanner;
@@ -49,10 +65,19 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Set the theme
+        // Set the view and theme
         curTheme = PrefsHelper.getTheme(getApplicationContext());
         setTheme(curTheme);
         setContentView(R.layout.activity_encounter);
+
+        // Initialize Ads (early because it involves a server request)
+        // TODO: Are we serving any ads?
+        // Initialize the ad retrieval process
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            }
+        });
 
         // Get info from the intent that started this activity
         Intent intent = getIntent();
@@ -114,6 +139,10 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         nextButton = findViewById(R.id.encounter_continue);
         previousButton = findViewById(R.id.encounter_previous_combatant);
         roundCounter = findViewById(R.id.encounter_round_counter);
+
+        // Ready Ads for display
+        // TODO: Remove all log points for production
+//        prepareAd();
 
         // Set up the RecyclerView
         adapter = new EncounterCombatantRecyclerAdapter(this, masterCombatantList, roundNumber);
@@ -185,6 +214,89 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         getSupportActionBar().setTitle(R.string.encounter_title);
     }
 
+    private void prepareAd() {
+        // Set up the banner ad on screen (if required, otherwise just remove it)
+
+        // TODO: Are we serving any ads?
+//        displayAds = true;
+//
+//        if (displayAds) {
+        // Ensure that an ad is being displayed
+        // Get the ad's current location
+        PrefsHelper.AdLocation adLoc = PrefsHelper.getAdLocation(getApplicationContext());
+
+        // If this is a new location (or it's the first time we're loading an ad since we created this Activity
+        if (curAdLoc == null || adLoc != curAdLoc) {
+            // If we need to place an ad in the new container
+
+            // Set the old ad container back to standby
+            removeAd();
+
+            // Retrieve the new ad container, and make it visible
+            adContainer = getAdContainer(adLoc);
+            adContainer.setVisibility(View.VISIBLE);
+
+            // Add the ad to the container
+            if (adView == null) {
+                // If no AdView has been created yet, create one
+                adView = new AdView(this);
+                adView.setAdSize(AdSize.BANNER);
+
+                // TODO: Convert over to real ads for production
+                adView.setAdUnitId(getString(R.string.encounter_ad_id));
+
+                // Request and load an ad
+                AdRequest adRequest = new AdRequest.Builder().build();
+                adView.loadAd(adRequest);
+                adView.setId(View.generateViewId());
+            }
+            adContainer.addView(adView, 1);
+
+            // Ensure that the adView is in the center of the container
+            ConstraintSet set = new ConstraintSet();
+            set.clone(adContainer);
+            set.connect(adView.getId(), ConstraintSet.TOP, adContainer.getId(), ConstraintSet.TOP, 0);
+            set.connect(adView.getId(), ConstraintSet.BOTTOM, adContainer.getId(), ConstraintSet.BOTTOM, 0);
+            set.connect(adView.getId(), ConstraintSet.START, adContainer.getId(), ConstraintSet.START, 0);
+            set.connect(adView.getId(), ConstraintSet.END, adContainer.getId(), ConstraintSet.END, 0);
+            set.applyTo(adContainer);
+            adContainer.bringChildToFront(adView);
+        }
+
+        // Store the new ad's location
+        curAdLoc = adLoc;
+//        } else {
+//            // No ad should be displayed, so remove any that are
+//            removeAd();
+//        }
+    }
+
+    private void removeAd() {
+        // Ensure that no ad is being displayed on screen
+        if (adContainer != null) {
+            // If there is already an ad on screen
+            if (adView != null) {
+                adContainer.removeView(adView); // Remove the adView, to be moved to a new container
+            }
+
+            // Make the old container invisible
+            adContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private ConstraintLayout getAdContainer(PrefsHelper.AdLocation adLoc) {
+        // Give an AdLocation, get the corresponding ConstraintLayout container in the layout
+        switch (adLoc) {
+            case Top:
+                return findViewById(R.id.encounter_ad_container_top);
+            case Bottom_Above:
+                return findViewById(R.id.encounter_ad_container_bottom_above);
+            case Bottom_Below:
+                return findViewById(R.id.encounter_ad_container_bottom_below);
+        }
+        return findViewById(R.id.encounter_ad_container_bottom_below); // Default
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -198,6 +310,10 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         // Make sure the EncounterCombatantList has the most up-to-date preference information
         setSortIconVis();
         adapter.updatePrefs(getApplicationContext());
+
+        // Update the ad location, if needed
+        // TODO: Are we displaying ads?
+        prepareAd();
     }
 
     @Override
@@ -250,11 +366,15 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         } else {
             // Check if we just moved into Combat
             if (currentlyActiveCombatant == 0 && roundNumber > maxRoundRolled && nextButton.getText().equals(getResources().getString(R.string.encounter_roll_initiative))) {
-                // If we just started the round, then emphasize the Roll Initiative button (for fun)!
-                doAnim = true;
                 maxRoundRolled = roundNumber; // Remember that we already did the fun animation for this round
-                nextButton.setEnabled(false); // Disable the button momentarily while the animation plays out
-                nextButton.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.emphize_wobble));
+
+                if (PrefsHelper.doingInitButtonAnim(getContext())) {
+                    // If we just started the round, then emphasize the Roll Initiative button (for fun)!
+
+                    doAnim = true;
+                    nextButton.setEnabled(false); // Disable the button momentarily while the animation plays out
+                    nextButton.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.emphize_wobble));
+                }
             }
 
             // The next button's test depends on what happens if the currently selected Combatant gets checked off
@@ -418,6 +538,18 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     @Override
     public Activity getActivity() {
         return this;
+    }
+
+    @Override
+    public void handlePurchase(Purchase purchase) {
+        if (purchase.getSku().equals(REMOVE_ADS_SKU)) {
+            // If the item has been purchased, then change the GUI
+            if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                removeAd(); // Remove the ads from the screen (if the screen is displayed right now)
+            } else {
+                prepareAd();
+            }
+        }
     }
 
     @Override

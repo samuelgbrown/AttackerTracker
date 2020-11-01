@@ -81,6 +81,9 @@ public class AllFactionCombatantLists implements Serializable {
         // First, check what the largest existing ordinal is for this Combatant's base name
         // TO_DO LATER: Doing these checks could be a setting? Something like "Smart naming"?  Perhaps another setting could be if we even care about name uniqueness at all!
         // KNOWN BUG: Known minor bug: If two version of a Combatant are added, one without ordinal, and the non-ordinal Combatant is deleted (saved), and THEN the user adds a new version and decides to copy (not resurrect), then subsequent added copies also bring up the resurrect/copy dialog.  The horror.
+        // TODO START HERE: Name bug! (Yay...) If there are 3 ordinal Combatants (1,2,3) that have been in the encounter, 2 is deleted, 3 is copied, and (The new) 4 is renamed to 2
+        //  Expected behavior: Old version of 2 will be resurrected
+        //  Actual behavior: A second 3 appears
         int highestExistingOrdinal = getHighestOrdinalInstance(newCombatant);
         if (highestExistingOrdinal != Combatant.DOES_NOT_APPEAR) {
             // If the Combatant's name does appear, first check if there is an exact match to a Combatant that is invisible
@@ -462,6 +465,13 @@ public class AllFactionCombatantLists implements Serializable {
         // Sort the Faction lists according to the order we would like to see them on screen
         // If the order should be changed, change the order of the constants defined in the enum Combatant.Faction
         Collections.sort(allFactionLists, new CombatantSorter.SortFactionList());
+    }
+
+    public void sortAllLists() {
+        // Sort all of the Faction lists by Alphabetical order
+        for (FactionCombatantList list : allFactionLists) {
+            list.sort();
+        }
     }
 
     public AllFactionCombatantLists getRawCopy() {

@@ -241,9 +241,15 @@ public class FactionCombatantList implements Serializable {
     public ArrayList<Integer> getIndicesThatMatch(String text) {
         // Get indices in this List of Combatants whose name contains this text
         ArrayList<Integer> indices = new ArrayList<>();
+        int visInd = 0;
         for (int i = 0; i < combatantArrayList.size(); i++) {
-            if (text.isEmpty() || combatantArrayList.get(i).getName().toLowerCase().contains(text)) {
-                indices.add(i);
+            Combatant c = combatantArrayList.get(i);
+            if (c.isVisible()) {
+                if (text.isEmpty() || c.getName().toLowerCase().contains(text)) {
+                    // If the Combatant is visible and it matches the text String
+                    indices.add(visInd); // Add the index (relative to the indices of visible Combatants)
+                }
+                visInd++; // Regardless, we have traversed one visible Combatant
             }
         }
 

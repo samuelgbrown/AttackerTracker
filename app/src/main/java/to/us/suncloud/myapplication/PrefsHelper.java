@@ -33,7 +33,7 @@ public class PrefsHelper {
         int modTypeEntryResourceInd = entryVals.indexOf(modTypeEntry);
         if (modTypeEntryResourceInd != -1) {
             // If this is a valid index in the entryVals ArrayList, use its index location to find the actual preference we are interested in
-            ArrayList<String> modTypes = new ArrayList<>(Arrays.asList(res.getStringArray(R.array.mod_entry))); // Get all values as an ArrayList<String>
+            ArrayList<String> modTypes = new ArrayList<>(Arrays.asList(res.getStringArray(R.array.mod_vals))); // Get all values as an ArrayList<String>
             if (modTypeEntryResourceInd < modTypes.size()) {
                 // If the entry value is in the actual mod types list (the arrays weren't improperly formatted in the xml)
                 modType = modTypes.get(modTypeEntryResourceInd);
@@ -119,5 +119,40 @@ public class PrefsHelper {
         // Get the preferences, and find the value that corresponds to the boolean we want
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         return prefs.getBoolean(context.getString(R.string.key_individual_initiative), true);
+    }
+
+    public static boolean doingInitButtonAnim(Context context) {
+        // Determine whether or not we are doing the Roll Initiative button animation
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        return prefs.getBoolean(context.getString(R.string.key_button_anim), true);
+    }
+
+    public static AdLocation getAdLocation(Context context) {
+        // Get the ad location, in terms of the enum AdLocation
+        // First get the preferences, and find the value that corresponds to the String we want
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        String adLocationEntry = prefs.getString(context.getString(R.string.key_ad_location), context.getString(R.string.ad_loc_entry_bottom_below));
+
+        // Based on the value of the saved String, return a different tieBreaker, indicating what happens if there is a tie in initiative between two or more Combatants
+        if (adLocationEntry != null) {
+            switch (adLocationEntry) {
+                case "top":
+                    return AdLocation.Top;
+                case "bottom_below":
+                    return AdLocation.Bottom_Below;
+                case "bottom_above":
+                    return AdLocation.Bottom_Above;
+                default:
+                    return AdLocation.Bottom_Below;
+            }
+        } else {
+            return AdLocation.Bottom_Below;
+        }
+    }
+
+    public enum AdLocation {
+        Bottom_Below,
+        Bottom_Above,
+        Top
     }
 }

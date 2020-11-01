@@ -565,6 +565,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                     existingCombatantWithNewName.displayCopy(newCombatant); // Update the old Combatant with any new information
                     existingCombatantWithNewName.setVisible(true); // Make the old Combatant visible
                     addNewCombatant = false; // We don't need to add another Combatant, we already "added" one (made it visible)
+                    combatantList_Master.sortAllLists(); // Sort the lists, since we just modified a Combatant (possibly changing its name)
                 }
             }
 

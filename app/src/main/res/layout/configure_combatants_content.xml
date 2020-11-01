@@ -5,34 +5,36 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/finish_button"
-        android:layout_width="0dp"
-        android:layout_height="75dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
-        android:text="@string/begin_encounter"
-        android:textAllCaps="true"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/configure_combatant_list"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/configure_ad_container_top"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/finish_button"
+        android:layout_height="@dimen/ad_height"
+        android:background="@color/colorBlack"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/configure_ad_load_t"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/ad_loading"
+            android:textAlignment="center"
+            android:textColor="@color/gray"
+            android:textSize="24sp"
+            android:textStyle="bold|italic"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <TextView
         android:id="@+id/configure_combatant_empty"
@@ -45,109 +47,97 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-<!--        <LinearLayout-->
-<!--            android:id="@+id/combatant_fragment_parent"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:orientation="vertical">-->
+        app:layout_constraintTop_toBottomOf="@+id/configure_ad_container_top" />
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/configure_combatant_list"
+        android:scrollbars="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@+id/configure_ad_container_bottom_above"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/configure_ad_container_top" />
 
-<!--        </LinearLayout>-->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/configure_ad_container_bottom_above"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/ad_height"
+        android:background="@color/colorBlack"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@id/finish_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
-<!--        &lt;!&ndash;            <androidx.constraintlayout.widget.ConstraintLayout&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:id="@+id/partyViewsLayout"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
-<!--        &lt;!&ndash;                app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;                app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;                app:layout_constraintTop_toTopOf="parent">&ndash;&gt;-->
+        <TextView
+            android:id="@+id/configure_ad_load_ba"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/ad_loading"
+            android:textAlignment="center"
+            android:textColor="@color/gray"
+            android:textSize="@dimen/ad_font_size"
+            android:textStyle="bold|italic"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-<!--        &lt;!&ndash;            <TextView&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:id="@+id/partyTextView"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:background="@color/colorAccent"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:text="@string/party_header"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:textAlignment="center"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:textSize="20sp"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:textStyle="bold"&ndash;&gt;-->
-<!--        &lt;!&ndash;                app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;                app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;                app:layout_constraintTop_toTopOf="parent" />&ndash;&gt;-->
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-<!--        &lt;!&ndash;            <androidx.recyclerview.widget.RecyclerView&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:id="@+id/partyCombatant_view"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
-<!--        &lt;!&ndash;                app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;                app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;                app:layout_constraintTop_toBottomOf="@+id/partyTextView" />&ndash;&gt;-->
+    <Button
+        android:id="@+id/finish_button"
+        android:layout_width="0dp"
+        android:layout_height="75dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="@string/begin_encounter"
+        android:textAllCaps="true"
+        android:textSize="@dimen/ad_font_size"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/configure_ad_container_bottom_below"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-<!--        &lt;!&ndash;        </androidx.constraintlayout.widget.ConstraintLayout>&ndash;&gt;-->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/configure_ad_container_bottom_below"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/ad_height"
+        android:background="@color/colorBlack"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
-<!--        &lt;!&ndash;    <androidx.constraintlayout.widget.ConstraintLayout&ndash;&gt;-->
-<!--        &lt;!&ndash;        android:id="@+id/enemyViewsLayout"&ndash;&gt;-->
-<!--        &lt;!&ndash;        android:layout_width="match_parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;        android:layout_height="wrap_content"&ndash;&gt;-->
-<!--        &lt;!&ndash;        app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;        app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;        app:layout_constraintTop_toBottomOf="@id/partyViewsLayout">&ndash;&gt;-->
+        <TextView
+            android:id="@+id/configure_ad_load_bb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/ad_loading"
+            android:textAlignment="center"
+            android:textColor="@color/gray"
+            android:textSize="@dimen/ad_font_size"
+            android:textStyle="bold|italic"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-<!--        &lt;!&ndash;        <TextView&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:id="@+id/enemyTextView"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:background="@color/colorAccent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:text="@string/enemy_header"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:textAlignment="center"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:textSize="20sp"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:textStyle="bold"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintTop_toTopOf="parent" />&ndash;&gt;-->
-
-<!--        &lt;!&ndash;        <androidx.recyclerview.widget.RecyclerView&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:id="@+id/enemyCombatant_view"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintTop_toBottomOf="@+id/enemyTextView" />&ndash;&gt;-->
-<!--        &lt;!&ndash;    </androidx.constraintlayout.widget.ConstraintLayout>&ndash;&gt;-->
-
-<!--        &lt;!&ndash;    <androidx.constraintlayout.widget.ConstraintLayout&ndash;&gt;-->
-<!--        &lt;!&ndash;        android:id="@+id/neutralViewsLayout"&ndash;&gt;-->
-<!--        &lt;!&ndash;        android:layout_width="match_parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;        android:layout_height="wrap_content"&ndash;&gt;-->
-<!--        &lt;!&ndash;        app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;        app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;        app:layout_constraintTop_toBottomOf="@id/enemyViewsLayout">&ndash;&gt;-->
-
-<!--        &lt;!&ndash;        <TextView&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:id="@+id/neutralTextView"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:background="@color/colorAccent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:text="@string/neutral_header"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:textAlignment="center"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:textSize="20sp"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:textStyle="bold"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintTop_toTopOf="parent" />&ndash;&gt;-->
-
-<!--        &lt;!&ndash;        <androidx.recyclerview.widget.RecyclerView&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:id="@+id/neutralCombatant_view"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
-<!--        &lt;!&ndash;            app:layout_constraintTop_toBottomOf="@+id/neutralTextView" />&ndash;&gt;-->
-<!--        &lt;!&ndash;    </androidx.constraintlayout.widget.ConstraintLayout>&ndash;&gt;-->
-
-
-<!--    </ScrollView>-->
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

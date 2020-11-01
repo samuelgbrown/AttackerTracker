@@ -1015,6 +1015,11 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         switch (curActiveCombatant) {
             case PREP_PHASE:
                 // In the special case that we are in the prep phase, we just went back into the previous round of Combat
+                if (curRoundNumber == 1) {
+                    // If this is the first round, don't do anything! The combat step was decremented in error
+                    return;
+                }
+
                 // Decrement the round number, and retrieve the previous rolls
                 curRoundNumber--;
                 combatantList.setRoundNumber(curRoundNumber);
@@ -1079,24 +1084,9 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
     private void setIsChecked(int viewPos, boolean isChecked) {
         // Only check a single Combatant (viewPos is according to the current layout)
-//        setViewIsChecked(viewPos, 1, isChecked);
-//        isCheckedMap.put(combatantList.get(viewPos).getName(), isChecked);
         combatantList.get(viewPos).setSelected(isChecked);
     }
 
-//    private void setViewIsChecked(int positionStart, int numViews, boolean isChecked) {
-//        // Set a range of Combatants to be checked off (positions all according to the initiative sorted order
-//        for (int i = 0; i < numViews; i++) {
-//            // Find the Combatant currently at this position *in the initiative order*, then use its name as a key to update the current value of isChecked
-//            isCheckedMap.put(combatantList.get(getInitiativeInd(positionStart)).getName(), isChecked);
-//        }
-//
-////        notifyDataSetChanged();
-//
-////        Bundle payload = new Bundle();
-////        payload.putBoolean(PAYLOAD_CHECK, isChecked); // Check all of the combatants
-////        notifyItemRangeChanged(positionStart, numViews, payload); // Let the adapter know that all Combatants except the last should now become checked (the last Combatant is technically never checked off...)
-//    }
 
     public void toggleDiceCheat() {
         diceCheatModeOn = !diceCheatModeOn; // Toggle the state of Dice Cheat mode
