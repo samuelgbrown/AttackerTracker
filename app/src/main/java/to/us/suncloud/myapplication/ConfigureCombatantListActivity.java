@@ -55,8 +55,8 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     ConstraintLayout adContainer;
     AdView adView;
     PrefsHelper.AdLocation curAdLoc;
-        String REMOVE_ADS_SKU = "attacker_tracker.remove_ads";
-//    String REMOVE_ADS_SKU = "android.test.purchased";
+    String REMOVE_ADS_SKU = "attacker_tracker.remove_ads";
+    //    String REMOVE_ADS_SKU = "android.test.purchased";
     PurchaseHandler purchaseHandler;
 
     TextView mainButton; // The Main button at the bottom, to transfer over to the Encounter Activity

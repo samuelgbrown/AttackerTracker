@@ -33,7 +33,7 @@ import java.util.Locale;
 
 import static android.graphics.Typeface.BOLD;
 
-public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListCombatantRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface {
+public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListCombatantRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface, Serializable {
     private static final int UNSET = -1;
 
     public static final int COMBATANT_VIEW = 0;
@@ -209,7 +209,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         super.onAttachedToRecyclerView(recyclerView);
     }
 
-    static class bindableVH extends RecyclerView.ViewHolder {
+    static class bindableVH extends RecyclerView.ViewHolder implements Serializable {
         public bindableVH(@NonNull View itemView) {
             super(itemView);
         }
@@ -218,7 +218,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         }
     }
 
-    class CombatantViewHolder extends bindableVH {
+    class CombatantViewHolder extends bindableVH implements Serializable {
 
         int combatantInd = UNSET;
 
@@ -481,7 +481,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
         return null;
     }
 
-    class FactionBannerViewHolder extends bindableVH {
+    class FactionBannerViewHolder extends bindableVH implements Serializable{
         TextView FactionName;
 
         public FactionBannerViewHolder(@NonNull View itemView) {
@@ -812,7 +812,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
     }
 
     // A simple class that holds onto a bunch of input parameters for the ListCombatantRecyclerAdapter.  Really only exists because having 3+ flags input to the constructor IN ADDITION to a bunch of other stuff just kinda makes me sad...
-    static public class LCRAFlags {
+    static public class LCRAFlags implements Serializable {
         public boolean adapterCanModify = false;
         public boolean adapterCanCopy = false;
         public boolean mustReturnCombatant = false;

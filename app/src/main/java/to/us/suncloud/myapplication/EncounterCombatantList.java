@@ -161,41 +161,47 @@ public class EncounterCombatantList implements Serializable {
         ArrayList<FactionCombatantList> factionLists = clonedList.getAllFactionLists();
 
         // Go through the incoming Combatant list, Faction by Faction
+        HashSet<UUID> combatantsInThisEncounter = new HashSet<>();
         for (int facInd = 0; facInd < factionLists.size(); facInd++) {
             // For each faction, add any Combatants that are not already in this list
             FactionCombatantList thisFactionList = factionLists.get(facInd);
             for (Combatant cNew : thisFactionList.getCombatantArrayList()) {
                 // For each Combatant in the faction list
-                if (cNew.isVisible()) {
-                    // If the Combatant is visible, then add it
-                    if (idExists(cNew.getId())) {
-                        Combatant existingCombatant = combatantArrayList.get(indByID(cNew.getId())); // A reference to the existing Combatant in this list that matches the one we are checking now from the Faction list
 
-                        // If Combatant cNew exists in this EncounterCombatantList, update the display values (Name, Faction, Icon, and Modifier) in case anything has changed
-                        existingCombatant.displayCopy(cNew);
+                if (idExists(cNew.getId())) {
+                    // If Combatant cNew already exists in this EncounterCombatantList, just update the display values (Name, Faction, Icon, Modifier) in case anything has changed (even if we end up removing it from combat, we still want display to be saved)
+                    Combatant existingCombatant = combatantArrayList.get(indByID(cNew.getId())); // A reference to the existing Combatant in this list that matches the one we are checking now from the Faction list
+                    existingCombatant.displayCopy(cNew);
 
-                        // Check if the existing Combatant is visible
-                        if (!existingCombatant.isVisible()) {
-                            // If this Combatant is not visible (i.e. if it was previously removed, and we are adding it in again), then make it visible and update its selection state as if it was just added in
-                            existingCombatant.setVisible(true);
-                            existingCombatant.setSelected(initSelect);
-                        }
-                    } else {
-                        // If Combatant cNew does not exist in this EncounterCombatantList, then add it, and initialize it
+                    if (cNew.isVisible() && !existingCombatant.isVisible()) {
+                        // Update the visibility if this Combatant is not visible in the Encounter
+                        existingCombatant.setVisible(true);
+                        existingCombatant.setSelected(initSelect);
+                    }
+                } else {
+                    // If the Combatant does not already exist in the Encounter list (it's new), we only care about it if it's *visible* in the Faction list
+                    if (cNew.isVisible()) {
+                        // Add and initialize it
                         Combatant cToAdd = cNew.clone();
                         cToAdd.setSelected(initSelect); // Initialize the selection according to where we are in the combat cycle
                         combatantArrayList.add(cToAdd); // Add the new Combatant
-                    }
 
-                    // Ensure that this Combatant is 1) checked off as existing in the new list, and 2) added to the diceRollMap in the next round (slightly redundant, but useful because the isVisible member isn't a reliable indicator of whether or not the Combatant was in the encounter in the last round)
-                    combatantsToAdd.add(cNew.getId());
+                        // Make sure the Combatant is added to the diceRollMap in the next round (slightly redundant, but useful because the isVisible member isn't a reliable indicator of whether or not the Combatant was in the encounter in the last round)
+                        combatantsToAdd.add(cNew.getId());
+                    }
+                }
+
+                if (cNew.isVisible()) {
+                    // Regardless of how it was processed, ensure that, if the Combatant was visible, it is checked off as existing in the new list
+                    combatantsInThisEncounter.add(cNew.getId());
                 }
             }
         }
 
         // Finally, go through the current list of Combatants, find any that did not appear in the new AllFactionCombatantLists (or are not visible), and make them invisible from this new round on
         for (Combatant c : combatantArrayList) {
-            if (!combatantsToAdd.contains(c.getId())) {
+            if (!combatantsInThisEncounter.contains(c.getId())) {
+                // If this Combatant shouldn't be in the current encounter, remove it
                 combatantsToRemove.add(c.getId()); // Add this Combatant to the removal Set, to indicate that it must be removed from the diceRollMap the next time the round is set
             }
         }
@@ -212,6 +218,7 @@ public class EncounterCombatantList implements Serializable {
 
         // Finally, perform any post-processing (sorting, etc)
         doSorting();
+
         updateDuplicateInitiatives();
     }
 
@@ -385,13 +392,10 @@ public class EncounterCombatantList implements Serializable {
         HashMap<UUID, Integer> diceRollMap = new HashMap<>(); // The dice roll may have changed if the manual roll mode was used
         for (Combatant c : combatantArrayList) {
             // For each visible Combatant, get the Combatant's roll and modifier, and save it to the corresponding map, keyed to the Combatant's ID
-            if (c.isVisible()) {
+            if (c.isVisible() && !combatantsToRemove.contains(c.getId()) && !combatantsToAdd.contains(c.getId())) {
+                // If this Combatant is visible and not about to be removed
                 modifierMap.put(c.getId(), c.getModifier());
-
-                if (!combatantsToAdd.contains(c.getId())) {
-                    // If this Combatant is not a new addition to combat
-                    diceRollMap.put(c.getId(), c.getRoll());
-                }
+                diceRollMap.put(c.getId(), c.getRoll());
             }
         }
 
@@ -416,39 +420,7 @@ public class EncounterCombatantList implements Serializable {
             }
         }
 
-        // Get the current values for
-
-        // Next, after saving previous values, see if we need to remove any Combatants from this round
-        if (!(combatantsToRemove.isEmpty() && combatantsToAdd.isEmpty())) {
-            // Go through each Combatant and see if we need to add or remove it
-            if (lastRecordedRoundNumber != roundNumber) {
-                // If this we are starting a new round
-                diceRollMap = diceRollList.get(roundNumber - 1); // Get a reference to the diceMap we will be modifying
-            } // If we are not starting a new round, use the same diceRollMap as above, which may be used later on (this logic hurts my head a little, but it ensures that Combatants can be added/removed AND the dice rolls can be manually modified)
-
-            for (Combatant c : combatantArrayList) {
-                UUID thisID = c.getId();
-                if (combatantsToRemove.contains(thisID)) {
-                    // If this Combatant is to be removed
-
-                    // Remove it from the diceRollList and modifierList for this round (they will be set invisible later in this function)
-                    diceRollMap.remove(thisID);
-                }
-
-                if (combatantsToAdd.contains(thisID) && !diceRollMap.containsKey(thisID)) {
-                    // If this Combatant is to be added, and it doesn't already appear in the dice map
-
-                    // Add it to the diceRoll List for this round, along with an initiative roll
-                    diceRollMap.put(thisID, getInitiativeRoll());
-                }
-            }
-
-            // Now that we've dealt with all of the Combatants, clear the Sets
-            combatantsToRemove.clear();
-            combatantsToAdd.clear();
-        }
-
-        // Get the diceRollMap for this round
+        // After saving the previous values, get the diceRollMap for this round
         if (prefs.isReRollInit()) {
             // If initiative is being re-rolled every round, then make sure we have the correct roll map for this round
             if (roundNumber > diceRollList.size()) {
@@ -474,6 +446,32 @@ public class EncounterCombatantList implements Serializable {
                 // We can just grab the initiative we rolled previously
                 diceRollMap = diceRollList.get(0);
             }
+        }
+
+        // See if we need to add or remove any Combatants from this round
+        if (!(combatantsToRemove.isEmpty() && combatantsToAdd.isEmpty())) {
+            // Go through each Combatant and see if we need to add or remove it
+            for (Combatant c : combatantArrayList) {
+                UUID thisID = c.getId(); // This Combatant's UUID
+                if (combatantsToRemove.contains(thisID)) {
+                    // If this Combatant is to be removed
+
+                    // Remove it from the diceRollList and modifierList for this round (they will be set invisible later in this function)
+                    diceRollMap.remove(thisID);
+                }
+
+//                if (combatantsToAdd.contains(thisID) && !diceRollMap.containsKey(thisID)) {
+                if (combatantsToAdd.contains(thisID)) {
+                    // If this Combatant is to be added, and it doesn't already appear in the dice map
+
+                    // Add it to the diceRoll List for this round, along with an initiative roll
+                    diceRollMap.put(thisID, getInitiativeRoll());
+                }
+            }
+
+            // Now that we've dealt with all of the Combatants, clear the Sets
+            combatantsToRemove.clear();
+            combatantsToAdd.clear();
         }
 
         // Save this round number, so we know what we last saved the modifier list
