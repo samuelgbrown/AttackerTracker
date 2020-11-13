@@ -18,18 +18,22 @@ import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.appcompat.widget.Toolbar;
 
-import com.android.billingclient.api.Purchase;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 public class EncounterActivity extends AppCompatActivity implements EncounterCombatantRecyclerAdapter.combatProgressInterface, PurchaseHandler.purchaseHandlerInterface {
     EncounterCombatantList masterCombatantList;
@@ -48,7 +52,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     ConstraintLayout adContainer;
     AdView adView;
     PrefsHelper.AdLocation curAdLoc;
-    String REMOVE_ADS_SKU = "attacker_tracker.remove_ads";
+    String REMOVE_ADS_SKU = "attacker_tracker.remove.ads";
     //    String REMOVE_ADS_SKU = "android.test.purchased";
     PurchaseHandler purchaseHandler;
 
@@ -71,7 +75,10 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         setContentView(R.layout.activity_encounter);
 
         // Initialize Ads (early because it involves a server request)
-        // TODO: Are we serving any ads?
+        List<String> allSKUs = new ArrayList<>();
+        allSKUs.add(REMOVE_ADS_SKU);
+        purchaseHandler = new PurchaseHandler(this, allSKUs);
+
         // Initialize the ad retrieval process
         MobileAds.initialize(this, new OnInitializationCompleteListener() {
             @Override
@@ -141,7 +148,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         roundCounter = findViewById(R.id.encounter_round_counter);
 
         // Ready Ads for display
-        // TODO: Remove all log points for production
+        // TODO SOON: Remove all log points for production
 //        prepareAd();
 
         // Set up the RecyclerView
@@ -212,89 +219,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         // Setup the toolbar
         setSupportActionBar(encounterToolbar);
         getSupportActionBar().setTitle(R.string.encounter_title);
-    }
-
-    private void prepareAd() {
-        // Set up the banner ad on screen (if required, otherwise just remove it)
-
-        // TODO: Are we serving any ads?
-//        displayAds = true;
-//
-//        if (displayAds) {
-        // Ensure that an ad is being displayed
-        // Get the ad's current location
-        PrefsHelper.AdLocation adLoc = PrefsHelper.getAdLocation(getApplicationContext());
-
-        // If this is a new location (or it's the first time we're loading an ad since we created this Activity
-        if (curAdLoc == null || adLoc != curAdLoc) {
-            // If we need to place an ad in the new container
-
-            // Set the old ad container back to standby
-            removeAd();
-
-            // Retrieve the new ad container, and make it visible
-            adContainer = getAdContainer(adLoc);
-            adContainer.setVisibility(View.VISIBLE);
-
-            // Add the ad to the container
-            if (adView == null) {
-                // If no AdView has been created yet, create one
-                adView = new AdView(this);
-                adView.setAdSize(AdSize.BANNER);
-
-                // TODO: Convert over to real ads for production
-                adView.setAdUnitId(getString(R.string.encounter_ad_id));
-
-                // Request and load an ad
-                AdRequest adRequest = new AdRequest.Builder().build();
-                adView.loadAd(adRequest);
-                adView.setId(View.generateViewId());
-            }
-            adContainer.addView(adView, 1);
-
-            // Ensure that the adView is in the center of the container
-            ConstraintSet set = new ConstraintSet();
-            set.clone(adContainer);
-            set.connect(adView.getId(), ConstraintSet.TOP, adContainer.getId(), ConstraintSet.TOP, 0);
-            set.connect(adView.getId(), ConstraintSet.BOTTOM, adContainer.getId(), ConstraintSet.BOTTOM, 0);
-            set.connect(adView.getId(), ConstraintSet.START, adContainer.getId(), ConstraintSet.START, 0);
-            set.connect(adView.getId(), ConstraintSet.END, adContainer.getId(), ConstraintSet.END, 0);
-            set.applyTo(adContainer);
-            adContainer.bringChildToFront(adView);
-        }
-
-        // Store the new ad's location
-        curAdLoc = adLoc;
-//        } else {
-//            // No ad should be displayed, so remove any that are
-//            removeAd();
-//        }
-    }
-
-    private void removeAd() {
-        // Ensure that no ad is being displayed on screen
-        if (adContainer != null) {
-            // If there is already an ad on screen
-            if (adView != null) {
-                adContainer.removeView(adView); // Remove the adView, to be moved to a new container
-            }
-
-            // Make the old container invisible
-            adContainer.setVisibility(View.GONE);
-        }
-    }
-
-    private ConstraintLayout getAdContainer(PrefsHelper.AdLocation adLoc) {
-        // Give an AdLocation, get the corresponding ConstraintLayout container in the layout
-        switch (adLoc) {
-            case Top:
-                return findViewById(R.id.encounter_ad_container_top);
-            case Bottom_Above:
-                return findViewById(R.id.encounter_ad_container_bottom_above);
-            case Bottom_Below:
-                return findViewById(R.id.encounter_ad_container_bottom_below);
-        }
-        return findViewById(R.id.encounter_ad_container_bottom_below); // Default
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true); // Show the back arrow in the toolbar
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
     }
 
     @Override
@@ -311,9 +237,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         setSortIconVis();
         adapter.updatePrefs(getApplicationContext());
 
-        // Update the ad location, if needed
-        // TODO: Are we displaying ads?
-        prepareAd();
+        // Update the ad location, if needed (based on if we THINK the user bought ads)
+        displayAd(!purchaseHandler.wasPurchased(REMOVE_ADS_SKU));
     }
 
     @Override
@@ -485,49 +410,45 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        switch (id) {
-            case R.id.sort_alpha:
-                // Sort the Combatants alphabetically by faction
-                adapter.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION);
-                setSortIconVis();
-                return true;
-            case R.id.sort_initiative:
-                // (Attempt to) sort the Combatants by initiative
-                adapter.sort(EncounterCombatantList.SortMethod.INITIATIVE);
-                setSortIconVis();
-                return true;
-            case R.id.dice_cheat:
-                // Toggle the dice cheat mode on and off
-                adapter.toggleDiceCheat();
-                return true;
-            case R.id.settings:
-                // Open the settings menu
-                Intent settingsIntent = new Intent(this, SettingsActivity.class);
-                settingsIntent.putExtra(SettingsFragment.IS_MID_COMBAT, masterCombatantList.isMidCombat()); // Let the Settings Activity know if we are mid-combat
-                startActivity(settingsIntent);
-                return true;
-            case R.id.restart:
-                // Restart Combat, if the user (really) wants it
-                new AlertDialog.Builder(this)
-                        .setTitle(getString(R.string.restart_combat_title))
-                        .setMessage(getString(R.string.restart_combat_message))
-                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                adapter.restartCombat(); // This will update all relevant GUI's
-                            }
-                        })
-                        .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                // Do nothing
-                            }
-                        })
-                        .show();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        if (id == R.id.sort_alpha) {// Sort the Combatants alphabetically by faction
+            adapter.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION);
+            setSortIconVis();
+            return true;
+        } else if (id == R.id.sort_initiative) {// (Attempt to) sort the Combatants by initiative
+            adapter.sort(EncounterCombatantList.SortMethod.INITIATIVE);
+            setSortIconVis();
+            return true;
+        } else if (id == R.id.dice_cheat) {// Toggle the dice cheat mode on and off
+            adapter.toggleDiceCheat();
+            return true;
+        } else if (id == R.id.settings) {// Open the settings menu
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            settingsIntent.putExtra(SettingsFragment.IS_MID_COMBAT, masterCombatantList.isMidCombat()); // Let the Settings Activity know if we are mid-combat
+            startActivity(settingsIntent);
+            return true;
+        } else if (id == R.id.restart) {// Restart Combat, if the user (really) wants it
+            new AlertDialog.Builder(this)
+                    .setTitle(getString(R.string.restart_combat_title))
+                    .setMessage(getString(R.string.restart_combat_message))
+                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            adapter.restartCombat(); // This will update all relevant GUI's
+                        }
+                    })
+                    .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // Do nothing
+                        }
+                    })
+                    .show();
+            return true;
+        } else if (id == android.R.id.home) {
+            returnFromActivity();
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -541,25 +462,116 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     }
 
     @Override
-    public void handlePurchase(Purchase purchase) {
-        if (purchase.getSku().equals(REMOVE_ADS_SKU)) {
-            // If the item has been purchased, then change the GUI
-            if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                removeAd(); // Remove the ads from the screen (if the screen is displayed right now)
-            } else {
-                prepareAd();
-            }
+    public void handlePurchases(HashSet<String> purchases) {
+        displayAd(!purchases.contains(REMOVE_ADS_SKU)); // If the user purchased the remove_ads entitlement, do not display ads
+    }
+
+    public void displayAd(boolean isVisible) {
+        // Display an ad if required, or remove it
+        if (isVisible) {
+            setupAd(); // Put up the ad
+        } else {
+            removeAd(); // Remove the ads from the screen (if the screen is displayed right now)
         }
+    }
+
+    private void setupAd() {
+        // Set up the banner ad on screen (if required, otherwise just remove it)
+
+        // Ensure that an ad is being displayed
+        // Get the ad's current location
+        PrefsHelper.AdLocation adLoc = PrefsHelper.getAdLocation(getApplicationContext());
+
+        // If this is a new location (or it's the first time we're loading an ad since we created this Activity
+        if (curAdLoc == null || adLoc != curAdLoc) {
+            // If we need to place an ad in the new container
+
+            // Set the old ad container back to standby
+            removeAd();
+
+            // Retrieve the new ad container, and make it visible
+            adContainer = getAdContainer(adLoc);
+            adContainer.setVisibility(View.VISIBLE);
+
+            // Add the ad to the container
+            if (adView == null) {
+                // If no AdView has been created yet, create one
+                adView = new AdView(this);
+                adView.setAdSize(AdSize.BANNER);
+
+                adView.setAdUnitId(getString(R.string.encounter_ad_id));
+
+                // Request and load an ad
+                AdRequest adRequest = new AdRequest.Builder().build();
+                adView.loadAd(adRequest);
+                adView.setId(View.generateViewId());
+            }
+            adContainer.addView(adView, 1);
+
+            // Ensure that the adView is in the center of the container
+            ConstraintSet set = new ConstraintSet();
+            set.clone(adContainer);
+            set.connect(adView.getId(), ConstraintSet.TOP, adContainer.getId(), ConstraintSet.TOP, 0);
+            set.connect(adView.getId(), ConstraintSet.BOTTOM, adContainer.getId(), ConstraintSet.BOTTOM, 0);
+            set.connect(adView.getId(), ConstraintSet.START, adContainer.getId(), ConstraintSet.START, 0);
+            set.connect(adView.getId(), ConstraintSet.END, adContainer.getId(), ConstraintSet.END, 0);
+            set.applyTo(adContainer);
+            adContainer.bringChildToFront(adView);
+        }
+
+        // Store the new ad's location
+        curAdLoc = adLoc;
+//        } else {
+//            // No ad should be displayed, so remove any that are
+//            removeAd();
+//        }
+    }
+
+    private void removeAd() {
+        // Ensure that no ad is being displayed on screen
+        if (adContainer != null) {
+            // If there is already an ad on screen
+            if (adView != null) {
+                adContainer.removeView(adView); // Remove the adView, to be moved to a new container
+            }
+
+            // Make the old container invisible
+            adContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private ConstraintLayout getAdContainer(PrefsHelper.AdLocation adLoc) {
+        // Give an AdLocation, get the corresponding ConstraintLayout container in the layout
+        switch (adLoc) {
+            case Top:
+                return findViewById(R.id.encounter_ad_container_top);
+            case Bottom_Above:
+                return findViewById(R.id.encounter_ad_container_bottom_above);
+            case Bottom_Below:
+                return findViewById(R.id.encounter_ad_container_bottom_below);
+        }
+        return findViewById(R.id.encounter_ad_container_bottom_below); // Default
     }
 
     @Override
     public void onBackPressed() {
+        View focusedView = getCurrentFocus();
+        if (focusedView instanceof EditText) {
+            // If we are currently focused on an EditView, then back just means "lose the current focus"...
+            focusedView.clearFocus();
+        } else {
+            // ...otherwise, it means go back to the configure screen
+            returnFromActivity();
+        }
+    }
+
+    private void returnFromActivity() {
+        // Go back to the Configure Combatants screen
         Intent returnIntent = new Intent();
         returnIntent.putExtra(ConfigureCombatantListActivity.COMBATANT_LIST, adapter.getCombatantList()); // Create an Intent that has the current Combatant List (complete with rolls, modifiers, etc)
         returnIntent.putExtra(ConfigureCombatantListActivity.ROUND_NUMBER, roundNumber); // Add the round number to the intent
         returnIntent.putExtra(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, maxRoundRolled); // Add the maximum round rolled to the intent
-//        returnIntent.putExtra(ConfigureCombatantListActivity.ACTIVE_COMBATANT_NUMBER, adapter.getCurActiveCombatant()); // Add the currently active Combatant to the intent
         setResult(RESULT_OK, returnIntent);
-        super.onBackPressed();
+        finish();
     }
 }

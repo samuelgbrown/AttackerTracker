@@ -2,6 +2,7 @@ package to.us.suncloud.myapplication;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -22,10 +23,22 @@ import com.android.billingclient.api.SkuDetailsResponseListener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 
 public class PurchaseHandler {
-    String AD_TAG = "ADS";
+    String PURCHASE_TAG = "ADS";
 
     BillingClient client;
     PurchasesUpdatedListener purchaseListener;
@@ -43,16 +56,10 @@ public class PurchaseHandler {
             @Override
             public void onPurchasesUpdated(@NonNull BillingResult billingResult, @Nullable List<Purchase> purchases) {
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && purchases != null) {
-                    for (Purchase purchase : purchases) {
-                        purchase.getPurchaseToken(); // TODO: Do something with the token.  Email it to me, or dedicated email address?
-                        handlePurchase(purchase);
-                        if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                            // If the user just bought this, thank them!
-                            onNewPurchase(purchase);
-                        }
-                    }
+                    // Allow parent to handle each purchase SKU
+                    handlePurchases(purchases);
                 } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
-                    // TODO: Handle an error caused by a user cancelling the purchase flow
+                    Log.d(PURCHASE_TAG, "User canceled purchase");
                 } else {
                     // Handle any other error codes.
                 }
@@ -83,10 +90,9 @@ public class PurchaseHandler {
                                             for (SkuDetails details : skuDetailsList) {
                                                 allSKUDetailsMap.put(details.getSku(), details); // Save each details object, mapped according to its SKU
                                             }
-//TODO:                                            purchasePref.setEnabled(true); // We got info from the Play store, so we can allow the purchase flow to begin
                                         }
                                     } else {
-                                        Log.w(AD_TAG, "Could not retrieve SKU details: " + billingResult.getDebugMessage());
+                                        Log.w(PURCHASE_TAG, "Could not retrieve SKU details: " + billingResult.getDebugMessage());
                                     }
 
                                     // Now that we have SKU details, update the GUI
@@ -104,41 +110,46 @@ public class PurchaseHandler {
                     // Try connecting again, up to 5 times
                     client.startConnection(this);
                 } else {
-                    Log.e(AD_TAG, "Could not connect to Billing Service.");
+                    Log.e(PURCHASE_TAG, "Could not connect to Billing Service.");
 //                        Toast.makeText(getContext(), "Could not connect to billing service", Toast.LENGTH_SHORT).show();
                 }
             }
         });
     }
 
-    private void handlePurchase(Purchase purchase) {
+    private void handlePurchases(List<Purchase> purchases) {
         // Do everything required to handle each purchase as its details get resolved
-        parent.handlePurchase(purchase);
-        ackPurchase(purchase);
+        // Send a Set of purchased SKU's to the parent
+        parent.handlePurchases(purchasesToSKUSet(purchases));
+
+        // Ensure that each purchase has been acknowledged
+        postProcessPurchases(purchases);
     }
 
     public void startPurchase(String sku) {
         if (allSKUDetailsMap.containsKey(sku)) {
             // First, double check that we should still be allowed to make this purchase (we haven't purchased it before already)
-            boolean canBuy = false;
+            boolean canBuy = true; // Default to true, in case the purchase does not appear in the returned purchases list (meaning remove_ads has not been purchased, so we can buy it)
             Purchase.PurchasesResult result = client.queryPurchases(BillingClient.SkuType.INAPP);
             if (result.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                 // We now have a list of purchases
-                for (Purchase p : result.getPurchasesList()) {
+                List<Purchase> purchasesList = result.getPurchasesList();
+                for (Purchase p : purchasesList) {
                     if (p.getSku().equals(sku)) {
                         // We found the remove ads Purchase
-                        if (p.getPurchaseState() != Purchase.PurchaseState.PURCHASED && p.getPurchaseState() != Purchase.PurchaseState.PENDING) {
-                            canBuy = true; // If it is NOT purchased (and a purchase isn't pending for), we can buy the entitlement
+                        if (p.getPurchaseState() == Purchase.PurchaseState.PURCHASED && p.getPurchaseState() == Purchase.PurchaseState.PENDING) {
+                            canBuy = false; // If it is purchased (or a purchase is pending), we cannot buy the entitlement
+                            break;
                         }
                     }
                 }
             } else {
-                Log.w(AD_TAG, "Could not query purchases, got result: " + result.getBillingResult().getDebugMessage());
+                Log.w(PURCHASE_TAG, "Could not query purchases, got result: " + result.getBillingResult().getDebugMessage());
                 Toast.makeText(parent.getContext(), "There was an error connecting to the Play store", Toast.LENGTH_SHORT).show();
             }
 
             if (canBuy) {
-                // The removeAds entitlement is ready to be purchased
+                // The entitlement is ready to be purchased
                 BillingFlowParams billingFlowParams = BillingFlowParams.newBuilder()
                         .setSkuDetails(allSKUDetailsMap.get(sku))
                         .build();
@@ -173,28 +184,156 @@ public class PurchaseHandler {
             if (responseCode == BillingClient.BillingResponseCode.OK) {
                 // We now have a list of purchases
                 List<Purchase> pList = result.getPurchasesList();
-                for (Purchase p : pList) {
-                    handlePurchase(p); // Go through each one and handle them as needed
-                }
+                handlePurchases(pList);
+//                for (Purchase p : pList) {
+//                    handlePurchase(p); // Go through each one and handle them as needed
+//                }
             } else {
-                Log.w(AD_TAG, "Could not query purchases, got result: " + result.getBillingResult().getDebugMessage());
+                Log.w(PURCHASE_TAG, "Could not query purchases, got result: " + result.getBillingResult().getDebugMessage());
             }
         }
     }
 
-    public void ackPurchase(Purchase purchase) {
-        // Acknowledge the purchase
-        if (!purchase.isAcknowledged()) {
-            AcknowledgePurchaseParams acknowledgePurchaseParams =
-                    AcknowledgePurchaseParams.newBuilder()
-                            .setPurchaseToken(purchase.getPurchaseToken())
-                            .build();
-            client.acknowledgePurchase(acknowledgePurchaseParams, new AcknowledgePurchaseResponseListener() {
-                @Override
-                public void onAcknowledgePurchaseResponse(@NonNull BillingResult billingResult) {
+    public void postProcessPurchases(List<Purchase> purchases) {
+        // Post-process all purchases (send token, send acknowledgement, thank user)
+        SharedPreferences prefs = parent.getContext().getSharedPreferences(parent.getContext().getString(R.string.iap_shared_prefs_file), Context.MODE_PRIVATE);
+        Set<String> wasPurchased = prefs.getStringSet(parent.getContext().getString(R.string.was_purchased), new HashSet<String>());
+        Set<String> wasAcknowledged = prefs.getStringSet(parent.getContext().getString(R.string.was_acknowledged), new HashSet<String>());
+        Set<String> tokenSent = prefs.getStringSet(parent.getContext().getString(R.string.token_sent), new HashSet<String>());
+        if (!purchases.isEmpty()) {
+            for (Purchase purchase : purchases) {
+                if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                    // If this item has been purchased, do any required post-processing (if they haven't been done already)
+                    final String thisSKU = purchase.getSku();
 
+                    // Is this a new purchase?
+                    if (!wasPurchased.contains(thisSKU)) {
+                        // If has not yet been purchased before, then record it, and use this opportunity to perform any just-purchased actions
+                        onNewPurchase(purchase);
+
+                        setPref(R.string.was_purchased, thisSKU); // Note that we have made this purchase
+                    }
+
+                    // Check if the purchase was acknowledged
+                    if (!wasAcknowledged.contains(thisSKU)) {
+                        // If this SKU has not yet been acknowledged with Google, then do so
+                        AcknowledgePurchaseParams acknowledgePurchaseParams =
+                                AcknowledgePurchaseParams.newBuilder()
+                                        .setPurchaseToken(purchase.getPurchaseToken())
+                                        .build();
+                        client.acknowledgePurchase(acknowledgePurchaseParams, new AcknowledgePurchaseResponseListener() {
+                            @Override
+                            public void onAcknowledgePurchaseResponse(@NonNull BillingResult billingResult) {
+                                if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                                    // If the acknowledgement process worked, record it
+                                    setPref(R.string.was_acknowledged, thisSKU);
+                                }
+                            }
+                        });
+                    }
+
+                    // Check if we sent the purchase token
+                    if (!tokenSent.contains(thisSKU)) {
+                        // If the purchase token has not yet been sent, then do so
+                        sendPurchaseToken(purchase); // tokenSent will be updated upon successful email delivery
+                    }
                 }
-            });
+            }
+        }
+
+        // Clean up refunded purchases
+        HashSet<String> refundedPurchases = new HashSet<>(wasPurchased);
+        refundedPurchases.removeAll(purchasesToSKUSet(purchases)); // Find all purchases that were previously own (are in wasPurchased) but are no longer owned (are NOT in purchaseSKUSet), and clear them
+        clearAllPrefs(refundedPurchases); // Clear these purchases from the SharedPreference object that tracks our acknowledgement progress (we will need to re-acknowledge after a new purchase, if it happens) and our app's default behavior
+    }
+
+    private HashSet<String> purchasesToSKUSet(List<Purchase> purchases) {
+        HashSet<String> purchaseSKUSet = new HashSet<>();
+        for (Purchase p : purchases) {
+            if (p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                purchaseSKUSet.add(p.getSku());
+            }
+        }
+
+        return purchaseSKUSet;
+    }
+
+    private void sendPurchaseToken(final Purchase p) {
+        final String username = parent.getContext().getString(R.string.mail_address);
+        final String password = parent.getContext().getString(R.string.mail_p);
+
+        // Attempt to send an email with the purchase token (and other meta-data) on a new thread
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Properties props = new Properties();
+                props.put("mail.smtp.auth", "true");
+                props.put("mail.smtp.starttls.enable", "true");
+                props.put("mail.smtp.host", "smtp.gmail.com");
+                props.put("mail.smtp.port", "587");
+
+                Session session = Session.getInstance(props,
+                        new javax.mail.Authenticator() {
+                            protected PasswordAuthentication getPasswordAuthentication() {
+                                return new PasswordAuthentication(username, password);
+                            }
+                        });
+
+                try {
+                    Message message = new MimeMessage(session);
+                    message.setFrom(new InternetAddress(username));
+                    message.setRecipients(Message.RecipientType.TO,
+                            InternetAddress.parse(username));
+                    message.setSubject("Purchase Info");
+                    message.setText("purchase_SKU: " + p.getSku() + "\n" +
+                            "purchase_token: " + p.getPurchaseToken() + "\n" +
+                            "order_id: " + p.getOrderId());
+
+                    Transport.send(message);
+
+                    setPref(R.string.token_sent, p.getSku());
+
+                } catch (AddressException e) {
+                    Log.e(PURCHASE_TAG, "Got AddressException when attempting to send purchase token: " + e.toString());
+                } catch (MessagingException e) {
+                    Log.e(PURCHASE_TAG, "Got MessagingException when attempting to send purchase token: " + e.toString());
+                }
+            }
+        }).start();
+    }
+
+    private void setPref(int prefID, String SKUtoSet) {
+        // Add the given SKU to the Set<String> held by the shared preferences object with key prefID (used to keep track of which purchases have been already purchased, acknowledged, and have had the token sent to me)
+        SharedPreferences prefs = parent.getContext().getSharedPreferences(parent.getContext().getString(R.string.iap_shared_prefs_file), Context.MODE_PRIVATE);
+        Set<String> thisPrefSet = new HashSet<>(prefs.getStringSet(parent.getContext().getString(prefID), new HashSet<String>())); // Create a new HashSet, because the Set being returned from the SharedPreferences cannot be modified
+        thisPrefSet.add(SKUtoSet);
+
+        // Save the newly modified string set
+        prefs.edit()
+                .putStringSet(parent.getContext().getString(prefID), thisPrefSet)
+                .apply();
+    }
+
+    private void clearAllPrefs(Set<String> SKUToClear) {
+        // Called when the app detects that a previously purchased item has been refunded
+        // Remove these SKU's from the was_purchased, was_acknowledged, and token_sent SharedPreferences
+        if (!SKUToClear.isEmpty()) {
+            SharedPreferences prefs = parent.getContext().getSharedPreferences(parent.getContext().getString(R.string.iap_shared_prefs_file), Context.MODE_PRIVATE);
+            Set<String> wasPurchased = new HashSet<>(prefs.getStringSet(parent.getContext().getString(R.string.was_purchased), new HashSet<String>())); // Get modifiable copy of the wasPurchased Set
+            Set<String> wasAcknowledged = new HashSet<>(prefs.getStringSet(parent.getContext().getString(R.string.was_acknowledged), new HashSet<String>())); // Get modifiable copy of the wasAcknowledged Set
+            Set<String> tokenSent = new HashSet<>(prefs.getStringSet(parent.getContext().getString(R.string.token_sent), new HashSet<String>())); // Get modifiable copy of the tokenSent Set
+
+            // Remove the refunded SKU's
+            wasPurchased.removeAll(SKUToClear);
+            wasAcknowledged.removeAll(SKUToClear);
+            tokenSent.removeAll(SKUToClear);
+
+            // Save these Sets to the SharedPreferences
+            prefs.edit()
+                    .putStringSet(parent.getContext().getString(R.string.was_purchased), wasPurchased)
+                    .putStringSet(parent.getContext().getString(R.string.was_acknowledged), wasAcknowledged)
+                    .putStringSet(parent.getContext().getString(R.string.token_sent), tokenSent)
+                    .apply();
         }
     }
 
@@ -203,9 +342,20 @@ public class PurchaseHandler {
         return allSKUDetailsMap.containsKey(sku);
     }
 
-    interface purchaseHandlerInterface{
+    public boolean wasPurchased(String SKU) {
+        // Was the item with the given SKU purchased *as of the last time we checked the billing client*
+        // NOTE: This method is fast, but may not be accurate if a purchase was recently made/refunded. Use this to optimally initialize the Activity based on what we expect, but not to make decisions on whether or not a purchase has been made
+        SharedPreferences prefs = parent.getContext().getSharedPreferences(parent.getContext().getString(R.string.iap_shared_prefs_file), Context.MODE_PRIVATE);
+
+        // If the wasPurchased String Set contains the given SKU, then (as of the last time we connected with Google Play) this entitlement has been purchased and is active
+        return prefs.getStringSet(parent.getContext().getString(R.string.was_purchased), new HashSet<String>()).contains(SKU);
+    }
+
+    interface purchaseHandlerInterface {
         Context getContext(); // Receive a context from the parent
+
         Activity getActivity(); // Receive an Activity from the parent
-        void handlePurchase(Purchase purchase);  // Handle each purchase that is found by queryPurchases or onPurchasesUpdated (a new purchase bought)
+
+        void handlePurchases(HashSet<String> purchase);  // Handle each purchase that is found by queryPurchases or onPurchasesUpdated (a new purchase bought)
     }
 }

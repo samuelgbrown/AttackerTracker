@@ -37,6 +37,7 @@ import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class ConfigureCombatantListActivity extends AppCompatActivity implements ListCombatantRecyclerAdapter.MasterCombatantKeeper, ViewSavedCombatantsFragment.ReceiveAddedCombatant, PurchaseHandler.purchaseHandlerInterface {
@@ -55,7 +56,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     ConstraintLayout adContainer;
     AdView adView;
     PrefsHelper.AdLocation curAdLoc;
-    String REMOVE_ADS_SKU = "attacker_tracker.remove_ads";
+    String REMOVE_ADS_SKU = "attacker_tracker.remove.ads";
     //    String REMOVE_ADS_SKU = "android.test.purchased";
     PurchaseHandler purchaseHandler;
 
@@ -87,7 +88,8 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         // Initialize Ads (early because it involves a server request)
         List<String> allSKUs = new ArrayList<>();
         allSKUs.add(REMOVE_ADS_SKU);
-        purchaseHandler = new PurchaseHandler(this, allSKUs); // TODO START HERE
+        purchaseHandler = new PurchaseHandler(this, allSKUs);
+
         // Initialize the ad retrieval process (just in case)
         MobileAds.initialize(this, new OnInitializationCompleteListener() {
             @Override
@@ -172,8 +174,23 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         combatantListView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
     }
 
-    private void prepareAd() {
+    @Override
+    public void handlePurchases(HashSet<String> purchases) {
+        displayAd(!purchases.contains(REMOVE_ADS_SKU)); // If the user purchased the remove_ads entitlement, do not display ads
+    }
+
+    public void displayAd(boolean isVisible) {
+        // Display an ad if required, or remove it
+        if (isVisible) {
+            setupAd(); // Put up the ad
+        } else {
+            removeAd(); // Remove the ads from the screen (if the screen is displayed right now)
+        }
+    }
+
+    private void setupAd() {
         // Set up the banner ad on screen (if required, otherwise just remove it)
+
         // Ensure that an ad is being displayed
         // Get the ad's current location
         PrefsHelper.AdLocation adLoc = PrefsHelper.getAdLocation(getApplicationContext());
@@ -195,8 +212,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                 adView = new AdView(this);
                 adView.setAdSize(AdSize.BANNER);
 
-                // TODO: Convert over to real ads for production
-                adView.setAdUnitId(getString(R.string.config_ad_id));
+                adView.setAdUnitId(getString(R.string.encounter_ad_id));
 
                 // Request and load an ad
                 AdRequest adRequest = new AdRequest.Builder().build();
@@ -218,6 +234,10 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
         // Store the new ad's location
         curAdLoc = adLoc;
+//        } else {
+//            // No ad should be displayed, so remove any that are
+//            removeAd();
+//        }
     }
 
     private void removeAd() {
@@ -303,8 +323,8 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
         updateNoCombatantMessage();
 
-        // Update the ad location, if needed
-        prepareAd();
+        // Update the ad location, if needed (based on if we THINK the user bought ads)
+        displayAd(!purchaseHandler.wasPurchased(REMOVE_ADS_SKU));
     }
 
     @Override
@@ -328,93 +348,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
             // If there are no combatants, display the message
             noCombatantMessage.setVisibility(View.VISIBLE);
         }
-
-        // Create a fragment for each faction, if we need to
-//        FragmentManager fm = getSupportFragmentManager();
-//        FragmentTransaction fragTransaction = null; // We will use this if we actually need to add a fragment
-//
-//        ArrayList<FactionCombatantList> factionCombatantLists = combatantLists.getAllFactionLists(); // The list of FactionCombatantLists will now be in the order that they should be displayed
-//        for (int facInd = 0; facInd < factionCombatantLists.size(); facInd++) {
-//            FactionCombatantList factionList = factionCombatantLists.get(facInd);
-//
-//            // Check the two cases in which we will need to do a fragment transaction
-//            boolean mustAdd = !factionList.isEmpty() && !factionFragmentMap.containsKey(factionList.faction());  // We must add a fragment if the list is not empty, but there is no fragment for this faction
-//            boolean mustRemove = factionList.isEmpty() && factionFragmentMap.containsKey(factionList.faction());  // We must remove a fragment if the list is empty, but there is a fragment for this faction
-//
-//            // First, see if we've already started a fragment transaction
-//            if ((mustAdd || mustRemove) && fragTransaction == null) {
-//                // If we need to do something but we haven't started a transaction yet, then start one
-//                fragTransaction = fm.beginTransaction();
-//            }
-//
-//            if (mustAdd) {
-//                // If we must add a fragment to display this faction
-//
-//                // Create a recyclerAdapter for each faction's recyclerview (done here so that item click handling will be simpler
-//                ListCombatantRecyclerAdapter adapter = new ListCombatantRecyclerAdapter(this, getApplicationContext(), factionList, true, true);
-//
-//                // Create a new container view to add to the LinearLayout
-//                FrameLayout thisFragmentContainer = new FrameLayout(getApplicationContext());
-//                thisFragmentContainer.setId(facInd + 1000); // Set some id for the FrameLayout
-//                combatantGroupParent.addView(thisFragmentContainer, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-//
-//                // Create a new fragment, and place it in the container
-//                CombatantGroupFragment newFrag = new CombatantGroupFragment(adapter, factionList.faction());
-//                fragTransaction.add(thisFragmentContainer.getId(), newFrag, Combatant.factionToString(factionCombatantLists.get(facInd).faction()) + "_configure_fragment");
-//
-//                // Add the fragment to the map, so we can refer to it later
-//                factionFragmentMap.put(factionList.faction(), new FactionFragmentInfo(newFrag, thisFragmentContainer));
-//
-//                continue;
-//            }
-//
-//            if (mustRemove) {
-//                // If we must remove this faction
-//                // Delete the view in which the faction fragment is contained
-//                combatantGroupParent.removeView(factionFragmentMap.get(factionList.faction()).getContainer());
-//
-//                // Remove the fragment from the View
-//                fragTransaction.remove(factionFragmentMap.get(factionList.faction()).getFragment());
-//
-//                // Delete the key from the factionFragmentMap (it is no longer being displayed)
-//                factionFragmentMap.remove(factionList.faction());
-//
-//                continue;
-//            }
-//
-//            if (factionFragmentMap.containsKey(factionList.faction())) {
-//                // Let the adapter know that the Combatants list *may* have changed, if we are neither adding a Fragment (nothing changed because we just initialized it) nor removing one (it no longer exists, so doesn't need to update)
-//                factionFragmentMap.get(factionList.faction()).getFragment().getAdapter().notifyCombatantListChanged();
-//
-//                // Remove and re-add the Fragment view, so that the views are all in order, if we are neither adding a Fragment (already added this loop) nor removing a Fragment (don't need to worry about it anymore)
-//                combatantGroupParent.removeView(factionFragmentMap.get(factionList.faction()).getContainer());
-//                combatantGroupParent.addView(factionFragmentMap.get(factionList.faction()).getContainer());
-//            }
-//        }
-//
-//        if (fragTransaction != null) {
-//            // If we have started a fragment transaction in the above loop, commit it
-//            fragTransaction.commit();
-//        }
     }
-
-//    static class FactionFragmentInfo {
-//        public CombatantGroupFragment thisFrag;
-//        public FrameLayout thisContainer;
-//
-//        FactionFragmentInfo(CombatantGroupFragment thisFrag, FrameLayout thisContainer) {
-//            this.thisFrag = thisFrag;
-//            this.thisContainer = thisContainer;
-//        }
-//
-//        public CombatantGroupFragment getFragment() {
-//            return thisFrag;
-//        }
-//
-//        public FrameLayout getContainer() {
-//            return thisContainer;
-//        }
-//    }
 
     // Interface methods
 
@@ -540,17 +474,5 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     @Override
     public Activity getActivity() {
         return this;
-    }
-
-    @Override
-    public void handlePurchase(Purchase purchase) {
-        if (purchase.getSku().equals(REMOVE_ADS_SKU)) {
-            // If the item has been purchased, then change the GUI
-            if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                removeAd(); // Remove the ads from the screen (if the screen is displayed right now)
-            } else {
-                prepareAd();
-            }
-        }
     }
 }

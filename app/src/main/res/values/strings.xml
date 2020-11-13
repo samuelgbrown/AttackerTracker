@@ -22,6 +22,14 @@
     <string name="icon_title">Choose an Icon</string>
     <string name="explode_head">&#129327;</string>
 
+    <!-- In-app purchasing related settings-->
+    <string name="iap_shared_prefs_file">iap_shared_prefs_file</string>
+    <string name="was_purchased">was_purchased</string>
+    <string name="was_acknowledged">was_acknowledged</string>
+    <string name="token_sent">token_sent</string>
+    <string name="mail_address">attackertrackerapp@gmail.com</string>
+    <string name="mail_p">AttackTheTracker!</string>
+
 
     <string name="add_combatant_copy_check_title">Add New Copy?</string>
     <string name="add_combatant_copy_check_message">A combatant with this name has already appeared in this encounter.  Resurrect the previous version, or create a new copy?</string>

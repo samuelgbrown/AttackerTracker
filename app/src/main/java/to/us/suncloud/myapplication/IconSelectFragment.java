@@ -42,7 +42,6 @@ public class IconSelectFragment extends DialogFragment implements IconGridRecycl
      * @return A new instance of fragment IconSelectFragment.
      */
     public static IconSelectFragment newInstance(ReceiveIconSelectionInterface parent, int currentSelection) {
-        // TODO SOON: A small visual glitch appears if the Icon select dialog appears when the softinput keyboard is up (all items seem to try and center themselves).  Try making the dialog box shorter...?
         IconSelectFragment fragment = new IconSelectFragment();
         Bundle args = new Bundle();
         args.putInt(CURRENT_SELECTION, currentSelection);

@@ -226,7 +226,7 @@
                             android:layout_marginTop="4dp"
                             android:layout_marginBottom="4dp"
                             android:scaleType="fitCenter"
-                            android:tint="?attr/iconColor"
+                            app:tint="?attr/iconColor"
                             android:clickable="true"
 
 
@@ -238,7 +238,7 @@
 
                         <EditText
                             android:id="@+id/combatant_enc_modifier"
-                            android:layout_width="0dp"
+                            android:layout_width="50dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
                             android:inputType="numberSigned"
@@ -275,7 +275,7 @@
                                 android:layout_marginEnd="4dp"
                                 android:layout_marginBottom="4dp"
                                 android:background="?attr/combatantBackground"
-                                android:tint="@color/colorNeutral"
+                                app:tint="@color/colorNeutral"
                                 android:clickable="true"
 
 

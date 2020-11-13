@@ -1,17 +1,13 @@
 package to.us.suncloud.myapplication;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.net.wifi.aware.PublishConfig;
 import android.os.Bundle;
 import android.text.InputType;
-import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentManager;
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.DropDownPreference;
@@ -23,20 +19,9 @@ import androidx.preference.PreferenceManager;
 import androidx.preference.PreferenceScreen;
 import androidx.preference.SwitchPreference;
 
-import com.android.billingclient.api.AcknowledgePurchaseParams;
-import com.android.billingclient.api.AcknowledgePurchaseResponseListener;
-import com.android.billingclient.api.BillingClient;
-import com.android.billingclient.api.BillingClientStateListener;
-import com.android.billingclient.api.BillingFlowParams;
-import com.android.billingclient.api.BillingResult;
-import com.android.billingclient.api.Purchase;
-import com.android.billingclient.api.PurchasesUpdatedListener;
-import com.android.billingclient.api.SkuDetails;
-import com.android.billingclient.api.SkuDetailsParams;
-import com.android.billingclient.api.SkuDetailsResponseListener;
-
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 public class SettingsFragment extends PreferenceFragmentCompat implements PurchaseHandler.purchaseHandlerInterface {
@@ -56,10 +41,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
 
     // Ads members
 //    String AD_TAG = "ADS";
-    String REMOVE_ADS_SKU = "attacker_tracker.remove_ads";
-//    String REMOVE_ADS_SKU = "android.test.purchased";
+    String REMOVE_ADS_SKU = "attacker_tracker.remove.ads";
+    //    String REMOVE_ADS_SKU = "android.test.purchased";
     //    DropDownPreference adLocPref; // Ads location preference
     Preference purchasePref; // A button to purchase the entitlement to remove ads
+    private final boolean adCatIsAttached = true; // Is the ads category currently attached
     PurchaseHandler purchaseHandler;
 //    SkuDetails removeAdsSKUDetails; // The SKU details of the in-app purchase option (retrieved from the asynchronous call to the billing client)
 //    int billConnectionTries = 0;
@@ -71,7 +57,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
 //        public void onPurchasesUpdated(@NonNull BillingResult billingResult, @Nullable List<Purchase> purchases) {
 //            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && purchases != null) {
 //                for (Purchase purchase : purchases) {
-//                    purchase.getPurchaseToken(); // TODO: Do something with the token.  Email it to me, or dedicated email address?
+//                    purchase.getPurchaseToken();
 //                    handlePurchase(purchase);
 //                    if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
 //                        // If the user just bought this, thank them!
@@ -79,7 +65,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
 //                    }
 //                }
 //            } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
-//                // TODO: Handle an error caused by a user cancelling the purchase flow
 //            } else {
 //                // Handle any other error codes.
 //            }
@@ -162,6 +147,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
                 return false;
             }
         });
+
+        // Set the visibility of the ad preference category, depending on on whether we THINK the user has bought the remove_ad feature
+        setAdCategoryVisible(!purchaseHandler.wasPurchased(REMOVE_ADS_SKU));
 
         // TO_DO : Add colorblind mode! Blue and yellow?  Orange?  Google it!
         //  Android already has a built-in colorblind mode
@@ -315,11 +303,31 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
 //        }
 //    }
 
-    private void removeAds() {
-        PreferenceScreen screen = findPreference(getString(R.string.key_screen));
-        if (screen != null) {
-            screen.removePreferenceRecursively(getString(R.string.key_ads_category)); // Remove the Ads category, because it no longer applies to them!
-        }
+    private void setAdCategoryVisible(boolean isVisible) {
+        // TODO CHECK THIS!!!
+        PreferenceCategory adCat = findPreference(getString(R.string.key_ads_category));
+        adCat.setVisible(isVisible);
+
+//        PreferenceScreen screen = findPreference(getString(R.string.key_screen));
+//        if (isVisible) {
+//            if (!adCatIsAttached) {
+//                // If the category is not attached, but it should be visible...
+//                PreferenceCategory adCat = findPreference(getString(R.string.key_ads_category));
+//                if (adCat != null) {
+//                    screen.addPreference(adCat); // Attach the category
+//                }
+//            }
+//        } else {
+//            if (adCatIsAttached) {
+//                // If the category is attached, but it should be invisible...
+//                if (screen != null) {
+//                    screen.removePreferenceRecursively(getString(R.string.key_ads_category)); // Remove the Ads category, because it no longer applies to them!
+//                }
+//            }
+//        }
+//
+//        // Update the stored value of this category's visibility
+//        adCatIsAttached = isVisible;
     }
 
     private boolean updateFromPreset(String newPresetValue) {
@@ -551,25 +559,14 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
         return true;
     }
 
-    public void handlePurchase(Purchase purchase) {
+    public void handlePurchases(HashSet<String> purchases) {
         // Go through all purchase objects returned by the client, and handle the current payment status on each
-//        if (removeAdsSKUDetails != null) {
-        if (purchase.getSku().equals(REMOVE_ADS_SKU)) {
-            // If the item has been purchased, then change the GUI
-            if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                removeAds(); // Remove the ads from the screen (if the screen is displayed right now)
-                return;
-            }
+        // Display Ad settings, depending on whether or not the user has bought the remove-ads entitlement
+        setAdCategoryVisible(!purchases.contains(REMOVE_ADS_SKU));
 
-            // If the item has not been purchased, then set the purchasing button to be enabled or disabled, according to whether or not we are ready
-            if (purchasePref != null) {
-                purchasePref.setEnabled(purchaseHandler.isPurchaseFlowReady(REMOVE_ADS_SKU));
-            }
+        if (!purchases.contains(REMOVE_ADS_SKU)) {
+            // If the user has not bought the remove_ads entitlement, and we have gotten here, it means that they are now able to buy it if they would like
+            purchasePref.setEnabled(purchaseHandler.isPurchaseFlowReady(REMOVE_ADS_SKU));
         }
-//        } else {
-//            Log.w(AD_TAG, "Attempted to check purchase without having SKU details.  Purchase: " + purchase.getSku());
-//        }
     }
-
-
 }
