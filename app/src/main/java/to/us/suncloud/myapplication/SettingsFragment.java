@@ -1,6 +1,7 @@
 package to.us.suncloud.myapplication;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.InputType;
@@ -39,7 +40,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
     Preference creditsPref; // A button to open up the credits
     CheckBoxPreference buttonAnimPref; // A preference for the animation of the Roll Initiative button
 
-    // Ads members
+    // Ads TODOmembers
 //    String AD_TAG = "ADS";
     String REMOVE_ADS_SKU = "attacker_tracker.remove.ads";
     //    String REMOVE_ADS_SKU = "android.test.purchased";
@@ -305,8 +306,12 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
 
     private void setAdCategoryVisible(boolean isVisible) {
         // TODO CHECK THIS!!!
-        PreferenceCategory adCat = findPreference(getString(R.string.key_ads_category));
-        adCat.setVisible(isVisible);
+        try {
+            PreferenceCategory adCat = findPreference(getString(R.string.key_ads_category)); // TODO: Getting Fragment not attached to context error
+            adCat.setVisible(isVisible);
+        } catch (Exception e) {
+            // Do nothing...the visibility being wrong can't really hurt us, because the purchase flow won't start if the remove-ads entitlement has been bought already
+        }
 
 //        PreferenceScreen screen = findPreference(getString(R.string.key_screen));
 //        if (isVisible) {

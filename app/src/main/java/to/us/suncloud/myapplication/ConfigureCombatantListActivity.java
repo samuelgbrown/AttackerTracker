@@ -36,6 +36,7 @@ import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -278,7 +279,6 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
         super.onSaveInstanceState(outState);
     }
 
-
     public void updateMainButton() {
         if (roundNumber > 1) {
             mainButton.setText(R.string.resume_encounter);
@@ -463,7 +463,8 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
             case R.id.add_combatant:
                 // Open the add Combatant menu
                 FragmentManager fm_ac = getSupportFragmentManager();
-                ViewSavedCombatantsFragment addCombatantFrag = ViewSavedCombatantsFragment.newAddCombatantToListInstance(this, adapter.getCombatantList());
+//                ViewSavedCombatantsFragment addCombatantFrag = ViewSavedCombatantsFragment.newAddCombatantToListInstance(this, adapter.getCombatantList());
+                ViewSavedCombatantsFragment addCombatantFrag = ViewSavedCombatantsFragment.newAddCombatantToListInstance(adapter.getCombatantList());
                 addCombatantFrag.show(fm_ac, "AddCombatantToList");
                 return true;
             default:

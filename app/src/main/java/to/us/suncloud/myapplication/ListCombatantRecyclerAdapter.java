@@ -33,7 +33,8 @@ import java.util.Locale;
 
 import static android.graphics.Typeface.BOLD;
 
-public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListCombatantRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface, Serializable {
+public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListCombatantRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface {
+    // TODO TEST: ListCombatantRecyclerAdapter is no longer Serializable (because it shouldn't be), but this will probably break something...question is, what?
     private static final int UNSET = -1;
 
     public static final int COMBATANT_VIEW = 0;
@@ -124,6 +125,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 //    }
 
     public ListCombatantRecyclerAdapter(MasterCombatantKeeper parent, AllFactionCombatantLists combatantList, LCRAFlags flags) {
+        // TODO START HERE: I think there is a problem having this object hold onto the parent object (can't be serialized...?)
         this.parent = parent;
         this.adapterCanModify = flags.adapterCanModify;
         this.adapterCanCopy = flags.adapterCanCopy;

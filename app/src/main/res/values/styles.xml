@@ -14,7 +14,7 @@
         <item name="selected">@color/selected</item>
         <item name="encounterBanner">@color/gray</item>
         <item name="iconColor">@color/colorBlack</item>
-        <item name="bannerTextColor">@color/darkGray</item>
+        <item name="bannerTextColor">@color/colorWhite</item>
     </style>
 
     <style name="Dark_Theme" parent="Theme.AppCompat">

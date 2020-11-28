@@ -21,6 +21,7 @@ import com.android.billingclient.api.SkuDetails;
 import com.android.billingclient.api.SkuDetailsParams;
 import com.android.billingclient.api.SkuDetailsResponseListener;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,7 +38,7 @@ import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-public class PurchaseHandler {
+public class PurchaseHandler implements Serializable {
     String PURCHASE_TAG = "ADS";
 
     BillingClient client;
@@ -47,9 +48,12 @@ public class PurchaseHandler {
 
     int billConnectionTries = 0;
     final static int BILL_MAX_TRIES = 5;
+    String TEST_SKU = "android.test.purchased";
 
     PurchaseHandler(final purchaseHandlerInterface parent, final List<String> allSKUs) {
         this.parent = parent;
+        final List<String> TEST_SKU_LIST = new ArrayList<>();
+        TEST_SKU_LIST.add(TEST_SKU);
 
         purchaseListener = new PurchasesUpdatedListener() { // A listener that receives updates on purchasing
             // Handle brand new purchases
@@ -77,7 +81,9 @@ public class PurchaseHandler {
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                     // The BillingClient is ready, query available purchases (damn well better be only one...)
 
-                    List<String> skuList = new ArrayList<>(allSKUs);
+                    // TODO PURCHASE TEST
+//                    List<String> skuList = new ArrayList<>(allSKUs);
+                    List<String> skuList = TEST_SKU_LIST;
                     SkuDetailsParams.Builder params = SkuDetailsParams.newBuilder();
                     params.setSkusList(skuList).setType(BillingClient.SkuType.INAPP);
                     client.querySkuDetailsAsync(params.build(),
@@ -109,6 +115,7 @@ public class PurchaseHandler {
                 if (billConnectionTries < BILL_MAX_TRIES) {
                     // Try connecting again, up to 5 times
                     client.startConnection(this);
+                    Log.w(PURCHASE_TAG, "Disconnected from Billing Service (try " + billConnectionTries + ")");
                 } else {
                     Log.e(PURCHASE_TAG, "Could not connect to Billing Service.");
 //                        Toast.makeText(getContext(), "Could not connect to billing service", Toast.LENGTH_SHORT).show();
@@ -127,6 +134,9 @@ public class PurchaseHandler {
     }
 
     public void startPurchase(String sku) {
+        // TODO PURCHASE TEST
+        sku = TEST_SKU;
+
         if (allSKUDetailsMap.containsKey(sku)) {
             // First, double check that we should still be allowed to make this purchase (we haven't purchased it before already)
             boolean canBuy = true; // Default to true, in case the purchase does not appear in the returned purchases list (meaning remove_ads has not been purchased, so we can buy it)
@@ -339,6 +349,8 @@ public class PurchaseHandler {
 
     public boolean isPurchaseFlowReady(String sku) {
         // If the details map contains the key, then we have the details that we need to begin the purchasing flow
+        // TODO PURCHASE TEST
+        sku = TEST_SKU;
         return allSKUDetailsMap.containsKey(sku);
     }
 

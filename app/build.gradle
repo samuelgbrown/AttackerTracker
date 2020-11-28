@@ -8,15 +8,16 @@ android {
         applicationId "to.us.suncloud.myapplication"
         minSdkVersion 23
         targetSdkVersion 29
-        versionCode 4
-        versionName "1.03"
+        versionCode 5
+        versionName "1.04"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

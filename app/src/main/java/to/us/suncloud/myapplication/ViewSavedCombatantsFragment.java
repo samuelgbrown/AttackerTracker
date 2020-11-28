@@ -45,7 +45,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 //    HashMap<Combatant.Faction, FactionFragmentInfo> factionFragmentMap = new HashMap<>();
 
 
-
     //    private AllFactionCombatantLists eligibleCombatantsList = null; // An list of Combatants that appear in the savedCombatantsList plus any Combatants that have been added
     private AllFactionCombatantLists savedCombatantsList = null; // An exact copy of the Combatant list from the saved file
     private AllFactionCombatantLists currentFactionCombatantList = null; // Used to generate a master Combatant list, to send to the CreateOrModCombatant dialogue
@@ -70,11 +69,12 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
      *
      * @return A new instance of fragment AddCombatantFragment.
      */
-    static ViewSavedCombatantsFragment newAddCombatantToListInstance(ReceiveAddedCombatant combatantDestination, AllFactionCombatantLists currentFactionCombatantList) {
+//    static ViewSavedCombatantsFragment newAddCombatantToListInstance(ReceiveAddedCombatant combatantDestination, AllFactionCombatantLists currentFactionCombatantList) {
+    static ViewSavedCombatantsFragment newAddCombatantToListInstance(AllFactionCombatantLists currentFactionCombatantList) {
         ViewSavedCombatantsFragment fragment = new ViewSavedCombatantsFragment();
         Bundle args = new Bundle();
         args.putSerializable(CURRENT_COMBATANT_LIST, currentFactionCombatantList);
-        args.putSerializable(COMBATANT_DESTINATION, combatantDestination);
+//        args.putSerializable(COMBATANT_DESTINATION, combatantDestination);
         args.putBoolean(EXPECTING_RETURNED_COMBATANT, true); // If an AddCombatant Fragment is requested, then they are expecting a Combatant to be returned to the calling Activity/Fragment
         fragment.setArguments(args);
         return fragment;
@@ -114,11 +114,18 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
                     currentFactionCombatantList = new AllFactionCombatantLists(); // No other Combatants need to be considered, aside from those that are saved
                 }
 
-                if (getArguments().containsKey(COMBATANT_DESTINATION)) {
-                    combatantDestination = (ReceiveAddedCombatant) getArguments().getSerializable(COMBATANT_DESTINATION);
-                } else {
-                    Log.e(TAG, "Did not receive Combatant Destination");
+                // Save the Combatant destination (cannot be passed as Fragment argument, otherwise there will be Serialization errors)
+                try {
+                    combatantDestination = (ReceiveAddedCombatant) getActivity();
+                } catch (ClassCastException e) {
+                    Log.e(TAG, "Activity cannot be cast to ReceiveAddedCombatant: " + e.getLocalizedMessage());
                 }
+
+//                if (getArguments().containsKey(COMBATANT_DESTINATION)) {
+//                    combatantDestination = (ReceiveAddedCombatant) getArguments().getSerializable(COMBATANT_DESTINATION);
+//                } else {
+//                    Log.e(TAG, "Did not receive Combatant Destination");
+//                }
             } else {
                 // If this Fragment is intended only to modify the saved Combatant list?
                 currentFactionCombatantList = new AllFactionCombatantLists(); // No other Combatants need to be considered, aside from those that are saved
@@ -213,7 +220,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
                     ArrayList<Combatant> returnList = adapter.getAllSelectedCombatants(); // Get a list of all selected Combatants
 
                     // Go through the entire list, and send each one to the destination, one-by-one
-                    for (int i = 0;i < returnList.size();i++) {
+                    for (int i = 0; i < returnList.size(); i++) {
                         combatantDestination.receiveAddedCombatant(returnList.get(i).cloneUnique()); // Clone the Combatant and send it
                     }
 
