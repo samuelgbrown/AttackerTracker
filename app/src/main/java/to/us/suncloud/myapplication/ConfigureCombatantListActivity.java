@@ -252,6 +252,8 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
             // Make the old container invisible
             adContainer.setVisibility(View.GONE);
         }
+
+        curAdLoc = null; // The ad does not have a location any more
     }
 
     private ConstraintLayout getAdContainer(PrefsHelper.AdLocation adLoc) {
@@ -325,6 +327,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
 
         // Update the ad location, if needed (based on if we THINK the user bought ads)
         displayAd(!purchaseHandler.wasPurchased(REMOVE_ADS_SKU));
+        purchaseHandler.queryPurchases(); // Check to see if anything has changed on the Purchases front...
     }
 
     @Override

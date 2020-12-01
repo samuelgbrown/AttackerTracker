@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -19,6 +20,10 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 import androidx.preference.PreferenceScreen;
 import androidx.preference.SwitchPreference;
+
+import com.android.billingclient.api.BillingClient;
+import com.android.billingclient.api.ConsumeParams;
+import com.android.billingclient.api.Purchase;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,8 +45,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
     Preference creditsPref; // A button to open up the credits
     CheckBoxPreference buttonAnimPref; // A preference for the animation of the Roll Initiative button
 
-    // Ads TODOmembers
-//    String AD_TAG = "ADS";
+    // Ads
+    String AD_TAG = "ADS";
     String REMOVE_ADS_SKU = "attacker_tracker.remove.ads";
     //    String REMOVE_ADS_SKU = "android.test.purchased";
     //    DropDownPreference adLocPref; // Ads location preference
@@ -161,6 +166,57 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
             if (args.containsKey(IS_MID_COMBAT)) {
                 isMidCombat = args.getBoolean(IS_MID_COMBAT);
             }
+        }
+
+        // TODO START HERE: Developer options (only appears in debug version)
+        if (BuildConfig.DEBUG) {
+            PreferenceCategory devOptionsCat = new PreferenceCategory(getContext());
+            devOptionsCat.setTitle("Developer Options");
+            Preference restoreAds = new Preference(getContext());
+            restoreAds.setTitle("Restore Ads");
+            restoreAds.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    // TODO: Restore ads (if possible)
+                    if (purchaseHandler.wasPurchased(REMOVE_ADS_SKU)) {
+                        Purchase.PurchasesResult purchaseResult = purchaseHandler.getQueriedPurchases();
+                        if (purchaseResult != null) {
+                            int responseCode = purchaseResult.getResponseCode();
+                            if (responseCode == BillingClient.BillingResponseCode.OK) {
+                                List<Purchase> pList = purchaseResult.getPurchasesList();
+                                boolean gotSKU = false;
+                                for (Purchase p : pList) {
+                                    if (p.getSku().equals(REMOVE_ADS_SKU)) {
+                                        // Got the Purchase associated with the remove ads product
+                                        // Submit a request to consume this item, so it goes away
+                                        purchaseHandler.consumePurchase(p); // If successful, will send a toast via listener
+                                        gotSKU = true;
+                                    }
+                                }
+
+                                if (!gotSKU) {
+                                    Toast.makeText(getContext(), "Cannot restore Ads, could not find purchase associated with " + REMOVE_ADS_SKU + ".", Toast.LENGTH_SHORT).show();
+                                    Log.d(AD_TAG, "Cannot restore Ads, could not find purchase associated with " + REMOVE_ADS_SKU + ".");
+                                }
+                            } else {
+                                Toast.makeText(getContext(), "Cannot restore Ads, billing client response was " + responseCode, Toast.LENGTH_SHORT).show();
+                                Log.d(AD_TAG, "Cannot restore Ads, billing client response was " + responseCode);
+                            }
+                        } else {
+                            Toast.makeText(getContext(), "Cannot restore Ads, billing client not connected.", Toast.LENGTH_SHORT).show();
+                            Log.d(AD_TAG, "Cannot restore Ads, billing client not connected.");
+                        }
+                    } else {
+                        Toast.makeText(getContext(), "Cannot restore Ads, item " + REMOVE_ADS_SKU + " was not purchased.", Toast.LENGTH_SHORT).show();
+                        Log.d(AD_TAG, "Cannot restore Ads, item " + REMOVE_ADS_SKU + " was not purchased.");
+                    }
+                    return false;
+                }
+            });
+
+            // Add the preferences (category first)
+            manager.getPreferenceScreen().addPreference(devOptionsCat);
+            devOptionsCat.addPreference(restoreAds);
         }
 
         // Grab any Preferences that we need
