@@ -24,8 +24,8 @@
             android:layout_marginBottom="8dp"
             android:text="@string/new_combatant"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/cancel_multi_select"/>
+            app:layout_constraintEnd_toStartOf="@id/cancel_multi_select"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <ImageButton
             android:id="@+id/cancel_multi_select"
@@ -55,7 +55,6 @@
             app:layout_constraintTop_toTopOf="@id/cancel_multi_select" />
 
 
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/add_combatant_title_background"
             android:layout_width="match_parent"
@@ -82,28 +81,28 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-<!--            <ImageButton-->
-<!--                android:id="@+id/view_list_close"-->
-<!--                android:layout_width="0dp"-->
-<!--                android:layout_height="0dp"-->
-<!--                android:layout_marginEnd="8dp"-->
-<!--                android:backgroundTint="@android:color/transparent"-->
-<!--                android:src="@android:drawable/btn_dialog"-->
-<!--                android:visibility="gone"-->
-<!--                app:layout_constraintBottom_toBottomOf="parent"-->
-<!--                app:layout_constraintDimensionRatio="w,1:1"-->
-<!--                app:layout_constraintEnd_toEndOf="parent"-->
-<!--                app:layout_constraintTop_toTopOf="parent" />-->
+            <!--            <ImageButton-->
+            <!--                android:id="@+id/view_list_close"-->
+            <!--                android:layout_width="0dp"-->
+            <!--                android:layout_height="0dp"-->
+            <!--                android:layout_marginEnd="8dp"-->
+            <!--                android:backgroundTint="@android:color/transparent"-->
+            <!--                android:src="@android:drawable/btn_dialog"-->
+            <!--                android:visibility="gone"-->
+            <!--                app:layout_constraintBottom_toBottomOf="parent"-->
+            <!--                app:layout_constraintDimensionRatio="w,1:1"-->
+            <!--                app:layout_constraintEnd_toEndOf="parent"-->
+            <!--                app:layout_constraintTop_toTopOf="parent" />-->
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.cardview.widget.CardView
             android:id="@+id/search_card"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="10dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
+            app:cardCornerRadius="10dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/add_combatant_title_background">
@@ -132,18 +131,48 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/search_card" />
 
-        <TextView
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/add_combatants_empty"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
-            android:text="@string/empty_add_combatants"
-            android:textAlignment="center"
             android:visibility="visible"
             app:layout_constraintEnd_toEndOf="@id/view_saved_combatants_list"
             app:layout_constraintStart_toStartOf="@id/view_saved_combatants_list"
-            app:layout_constraintTop_toTopOf="@id/view_saved_combatants_list" />
+            app:layout_constraintTop_toTopOf="@id/view_saved_combatants_list">
+
+            <TextView
+                android:id="@+id/empty_combatants_1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="@string/dont_seem_combatants"
+                android:textAlignment="center"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="visible"
+                android:layout_marginStart="0dp"
+                android:layout_marginEnd="0dp"
+                android:layout_marginTop="0dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/empty_combatants_2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="@string/empty_add_combatants"
+                android:textAlignment="center"
+                android:textSize="18sp"
+                android:visibility="visible"
+                android:layout_marginStart="0dp"
+                android:layout_marginEnd="0dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintTop_toBottomOf="@id/empty_combatants_1"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

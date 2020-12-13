@@ -332,6 +332,9 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                             });
 
                             setRollValueIfValid(v.getText().toString());
+
+                            // Clear the focus
+                            RollViewEdit.clearFocus();
                             return true;
                         }
                     }
@@ -507,30 +510,33 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
         public void setModifierValueIfValid(String newModifierValString) {
             // This method will be used any time the user confirms a text string in the roll view EditText
-            int combatantInd = getAdapterPosition(); // TODO SOON: This can sometimes return -1...?  Try testing with very large numbers of Combatants
-            int currentModifier = combatantList.get(combatantInd).getModifier(); // The current roll for this Combatant
-            int newModifierVal = currentModifier; // Initial value never used, but at least the IDE won't yell at me...
-            boolean newValIsValid = false;
-            try {
-                newModifierVal = Integer.parseInt(newModifierValString); // Get the value that was entered into the text box
+            int combatantInd = getAdapterPosition(); // TO_DO SOON: This can sometimes return -1...?  Try testing with very large numbers of Combatants
+            if (0 <= combatantInd && combatantInd < getItemCount()) {
+                // If the current combatantInd is valid
+                int currentModifier = combatantList.get(combatantInd).getModifier(); // The current roll for this Combatant
+                int newModifierVal = currentModifier; // Initial value never used, but at least the IDE won't yell at me...
+                boolean newValIsValid = false;
+                try {
+                    newModifierVal = Integer.parseInt(newModifierValString); // Get the value that was entered into the text box
 
-                // If the modifier value is valid, make sure that it is different than the current modifier.  If so, then set the new value is valid
-                newValIsValid = currentModifier != newModifierVal;
-            } catch (NumberFormatException e) {
+                    // If the modifier value is valid, make sure that it is different than the current modifier.  If so, then set the new value is valid
+                    newValIsValid = currentModifier != newModifierVal;
+                } catch (NumberFormatException e) {
 //                newValIsValid = false;
-            }
+                }
 
-            // If the new modifier is NOT valid, then just revert the EditText and return
-            if (!newValIsValid) {
-                ModifierView.setText(String.valueOf(currentModifier)); // Revert to the current modifier
+                // If the new modifier is NOT valid, then just revert the EditText and return
+                if (!newValIsValid) {
+                    ModifierView.setText(String.valueOf(currentModifier)); // Revert to the current modifier
 //                return false;
-                return;
-            }
+                    return;
+                }
 
-            // If the new modifier IS valid, then set the Combatant's modifier to the new value
-            combatantList.get(combatantInd).setModifier(newModifierVal);
-            reSortInitiative(); // Resort the combatantList (also update the duplicate indices List), and update the adapter display
+                // If the new modifier IS valid, then set the Combatant's modifier to the new value
+                combatantList.get(combatantInd).setModifier(newModifierVal);
+                reSortInitiative(); // Resort the combatantList (also update the duplicate indices List), and update the adapter display
 //            return true;
+            }
         }
 
         // Single method to initialize the ViewHolder to its most up-to-date status

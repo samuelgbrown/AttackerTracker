@@ -62,7 +62,7 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
     PurchaseHandler purchaseHandler;
 
     TextView mainButton; // The Main button at the bottom, to transfer over to the Encounter Activity
-    TextView noCombatantMessage; // Text message to show the use when there are no Combatants
+    View noCombatantMessage; // Text message to show the use when there are no Combatants
     RecyclerView combatantListView; // RecyclerView that holds the Combatant List
     ListCombatantRecyclerAdapter adapter; // Adapter that holds the combatantList
 
@@ -299,7 +299,8 @@ public class ConfigureCombatantListActivity extends AppCompatActivity implements
                     EncounterCombatantList newCombatantList = (EncounterCombatantList) data.getSerializableExtra(COMBATANT_LIST);
                     if (newCombatantList != null && !newCombatantList.isEmpty()) {
                         curEncounterListData = newCombatantList; // Save the Encounter meta-data
-                        adapter.setCombatantList(new AllFactionCombatantLists(newCombatantList)); // Get a Combatant list back from the Encounter
+                        combatantLists = new AllFactionCombatantLists(newCombatantList); // Get a Combatant list back from the Encounter
+                        adapter.setCombatantList(combatantLists); // Save this Combatant list to the adapter
                     }
 
                     // Get the current and max round numbers

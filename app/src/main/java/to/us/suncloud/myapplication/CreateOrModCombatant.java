@@ -226,45 +226,64 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         modTypeView.setText(modString);
 
         // TODO: Cassie's device: When defaultModifier is focused and the view is scrolled down
-        defaultModifier.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+//        defaultModifier.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+//            @Override
+//            public void onFocusChange(View v, boolean hasFocus) {
+//                if (v instanceof EditText) {
+//                    if (hasFocus) {
+//                        // If we are gaining focus, select all text
+//                        ((EditText) v).selectAll();
+//                    } else {
+//                        // If we have lost focus, the user has likely navigated away.  So, confirm the new value
+//
+//                        // It damn well better be...
+//                        defaultModifier.post(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                setModifierIfValid(defaultModifier.getText().toString()); // Set the new modifier, if possible
+//                            }
+//                        });
+//                    }
+//                }
+//            }
+//        });
+        defaultModifier.addTextChangedListener(new TextWatcher() {
             @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (v instanceof EditText) {
-                    if (hasFocus) {
-                        // If we are gaining focus, select all text
-                        ((EditText) v).selectAll();
-                    } else {
-                        // If we have lost focus, the user has likely navigated away.  So, confirm the new value
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
-                        // It damn well better be...
-                        defaultModifier.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                setModifierIfValid(defaultModifier.getText().toString()); // Set the new modifier, if possible
-                            }
-                        });
-                    }
-                }
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                int newMod = Integer.parseInt(editable.toString());
+                currentCombatant.setModifier(newMod);
             }
         });
-
         defaultModifier.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
 //                if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                     if (event == null || !event.isShiftPressed()) {
-                        // The user is done typing, so attempt to set the modifier
-                        defaultModifier.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                setModifierIfValid(defaultModifier.getText().toString()); // Set the new modifier, if possible
-                            }
-                        });
-
+//                        // The user is done typing, so attempt to set the modifier
+//                        defaultModifier.post(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                setModifierIfValid(defaultModifier.getText().toString()); // Set the new modifier, if possible
+//                            }
+//                        });
+//
                         // If the user hit Done, then hide the keyboard
                         InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
                         imm.hideSoftInputFromWindow(defaultModifier.getWindowToken(), 0);
+
+                        // Clear the focus
+                        v.clearFocus();
                         return true;
                     }
                 }
@@ -313,7 +332,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         combatantFaction.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                String factionString = ((CharSequence) adapterView.getItemAtPosition(i)).toString(); // Get a string representing the faction that was chosen
+                String factionString = adapterView.getItemAtPosition(i).toString(); // Get a string representing the faction that was chosen
 
                 // Based on the string of the item that was selected, set the faction of the combatantw
                 Combatant.Faction thisFaction = Combatant.Faction.Party;

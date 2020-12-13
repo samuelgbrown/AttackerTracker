@@ -1,6 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        debug {
+            storeFile file('/home/sambrown/Android/keystores/keystore.jks')
+            storePassword 'Alpha2Bet^Google'
+            keyAlias 'key0'
+            keyPassword 'Alpha2Bet^Google'
+        }
+    }
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
 
@@ -8,8 +16,8 @@ android {
         applicationId "to.us.suncloud.myapplication"
         minSdkVersion 23
         targetSdkVersion 29
-        versionCode 6
-        versionName "1.05"
+        versionCode 8
+        versionName "1.11"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

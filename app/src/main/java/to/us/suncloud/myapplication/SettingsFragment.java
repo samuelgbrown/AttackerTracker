@@ -3,6 +3,8 @@ package to.us.suncloud.myapplication;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
@@ -32,6 +34,7 @@ import java.util.List;
 
 public class SettingsFragment extends PreferenceFragmentCompat implements PurchaseHandler.purchaseHandlerInterface {
     public static final String IS_MID_COMBAT = "isMidCombat";
+    String SETTINGS_TAG = "SETTINGS";
 
     DropDownPreference presetPref; // The preset list preference
     DropDownPreference sortPref; // The sort order preference
@@ -44,6 +47,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
     SwitchPreference darkModePref; // The dark mode preference
     Preference creditsPref; // A button to open up the credits
     CheckBoxPreference buttonAnimPref; // A preference for the animation of the Roll Initiative button
+    Preference feedbackPref; // A button to send me an email <3
 
     // Ads
     String AD_TAG = "ADS";
@@ -168,7 +172,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
             }
         }
 
-        // TODO START HERE: Developer options (only appears in debug version)
         if (BuildConfig.DEBUG) {
             PreferenceCategory devOptionsCat = new PreferenceCategory(getContext());
             devOptionsCat.setTitle("Developer Options");
@@ -177,7 +180,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
             restoreAds.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                 @Override
                 public boolean onPreferenceClick(Preference preference) {
-                    // TODO: Restore ads (if possible)
                     if (purchaseHandler.wasPurchased(REMOVE_ADS_SKU)) {
                         Purchase.PurchasesResult purchaseResult = purchaseHandler.getQueriedPurchases();
                         if (purchaseResult != null) {
@@ -240,6 +242,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
 
         // Info Preferences
         creditsPref = manager.findPreference(getString(R.string.key_credits));
+        feedbackPref = manager.findPreference(getString(R.string.key_feedback));
 
         // Set up the preset functionality
         presetPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
@@ -329,6 +332,28 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
                 FragmentManager fm = getChildFragmentManager();
                 CreditsFragment.newInstance().show(fm, "CreditsDialog");
                 return false; // Never have anything actually CHANGE...
+            }
+        });
+
+        feedbackPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                // Send me an email <3
+                String [] emailAddress = {getString(R.string.dev_address)};
+                String emailSubject = getString(R.string.feedback_subject);
+
+                Intent emailIntent = new Intent(Intent.ACTION_SENDTO);
+                emailIntent.setData(Uri.parse("mailto:")); // Only pull up email apps
+                emailIntent.putExtra(Intent.EXTRA_EMAIL, emailAddress);
+                emailIntent.putExtra(Intent.EXTRA_SUBJECT, emailSubject);
+
+                if (emailIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+                    startActivity(emailIntent);
+                } else {
+                    Log.e(SETTINGS_TAG, "Could not resolve Activity for email intent.");
+                }
+
+                return false;
             }
         });
     }

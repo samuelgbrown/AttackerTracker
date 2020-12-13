@@ -55,7 +55,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     private ReceiveAddedCombatant combatantDestination = null; // The Activity/Fragment that will receive the selected Combatant
 
     private ListCombatantRecyclerAdapter adapter;
-    private TextView emptyCombatants;
+    private View emptyCombatants;
     private ImageButton multiSelectConfirm;
     private ImageButton multiSelectCancel;
 

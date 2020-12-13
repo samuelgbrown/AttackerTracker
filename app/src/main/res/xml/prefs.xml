@@ -9,7 +9,7 @@
         app:initialExpandedChildrenCount="4">
 
         <DropDownPreference
-            android:defaultValue="@string/rpg_ver_entry_adnd2"
+            android:defaultValue="@string/rpg_ver_entry_dnd3"
             android:entries="@array/rpg_ver_vals"
             android:entryValues="@array/rpg_ver_entry_vals"
             android:key="@string/key_preset"
@@ -107,6 +107,11 @@
         <Preference
             android:title="@string/credits_string"
             android:key="@string/key_credits" />
+
+        <Preference
+            android:title="@string/feedback_title"
+            android:key="@string/key_feedback"
+            android:summary="@string/feedback_string" />
     </PreferenceCategory>
 
 </PreferenceScreen>
