@@ -18,6 +18,7 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -485,6 +486,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             int currentRoll = combatantList.get(combatantInd).getRoll(); // The current roll for this Combatant
             int newRollVal = currentRoll; // Initial value never used, but at least the IDE won't yell at me...
             boolean newValIsValid = false;
+            boolean notifyUser = false;
             try {
                 newRollVal = Integer.parseInt(newRollValString); // Get the value that was entered into the text box
 
@@ -492,6 +494,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                 if (0 < newRollVal && newRollVal <= PrefsHelper.getDiceSize(RollView.getContext())) { // The new roll may be valid if it is within the range of the defined dice size
                     // If the roll value is within range, make sure that it is different than the current roll.  If so, then set the new value is valid
                     newValIsValid = currentRoll != newRollVal;
+                } else {
+                    notifyUser = true; // We must let the user know why it failed (out of bounds)
                 }
             } catch (NumberFormatException e) {
 //                newValIsValid = false;
@@ -500,6 +504,10 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             // If the roll is NOT valid, then just revert the EditText and return
             if (!newValIsValid) {
                 RollViewEdit.setText(String.valueOf(currentRoll)); // Revert to the current roll value
+                if (notifyUser) {
+                    // If the dice value is out of bounds, tell the user why their change got bounced back
+                    Toast.makeText(RollViewEdit.getContext(), RollViewEdit.getContext().getString(R.string.dice_out_of_bounds_message, PrefsHelper.getDiceSize(RollView.getContext())), Toast.LENGTH_SHORT).show();
+                }
                 return;
             }
 

@@ -31,6 +31,8 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.google.android.gms.common.util.NumberUtils;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -260,8 +262,12 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
 
             @Override
             public void afterTextChanged(Editable editable) {
-                int newMod = Integer.parseInt(editable.toString());
-                currentCombatant.setModifier(newMod);
+                try {
+                    int newMod = Integer.parseInt(editable.toString());
+                    currentCombatant.setModifier(newMod);
+                } catch (NumberFormatException e) {
+                    // Do nothing
+                }
             }
         });
         defaultModifier.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -495,7 +501,14 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         return new Dialog(getActivity(), getTheme()) {
             @Override
             public void onBackPressed() {
-                attemptToClose();
+                View focusedView = getCurrentFocus();
+                if (focusedView instanceof EditText) {
+                    // If we are currently focused on an EditView, then back just means "lose the current focus"...
+                    focusedView.clearFocus();
+                } else {
+                    // ...otherwise, it means attempt to close
+                    attemptToClose();
+                }
             }
         };
     }

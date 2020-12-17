@@ -544,6 +544,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
         if (returnBundle.containsKey(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION)) {
             boolean addNewCombatant = true;
+//            boolean doNotModOtherCombatants = false;
             int modCombatantLocation = returnBundle.getInt(CreateOrModCombatant.MODIFY_COMBATANT_LOCATION); // Get the location of the Combatant being modified
             // NOTE: This location is relative to combatantList_Master(combatantFilteredIndices).
 
@@ -559,7 +560,10 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
                     newCombatant.setName(originalCombatant.getName()); // Set the Combatant's name to its old name
 
                     // Let the user know that they screwed up
-                    Toast.makeText(parent.getContext(), "The name \"" + existingCombatantWithNewName.getName() + "\" is already being used.  Any other modifications were saved", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(parent.getContext(), parent.getContext().getString(R.string.name_already_used, existingCombatantWithNewName.getName()), Toast.LENGTH_SHORT).show();
+//
+//                    // Don't modify the names of the other Combatants, only rename this one
+//                    doNotModOtherCombatants = true; // This should probably *always* be true in this situation, but I don't want to break things if I'm wrong...
                 } else {
                     // If the Combatant that this modification would be replacing is invisible, then things...get a bit complicated
                     // existingCombatantWithName existed before, and we're trying to add it back again, and this is basically a way to do that
@@ -573,7 +577,7 @@ public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListComba
 
             // If everything checks out, add the newly modified Combatant back in
             if (addNewCombatant) {
-                combatantList_Master.addCombatant(newCombatant, true);
+                combatantList_Master.addCombatant(newCombatant, true, true); // A modified Combatant will always be "correct" and won't force a rename of other Combatants, unless the new name is an *exact* match to an existing Combatant (visible or invisible)
             }
 
             // Let the Adapter know that we have modified the Combatant list

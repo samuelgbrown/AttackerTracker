@@ -110,7 +110,7 @@ public class AllFactionCombatantLists implements Serializable {
                 }
             }
 
-            // If force is set, then add the Combatant without modification (we are probably getting it back from the Encounter, so no renaming should occur)
+            // If force is set, then add the Combatant without modification (we are probably getting it back from the Encounter or after a name modification, so no renaming should occur)
             // If there is no exact match to an invisible Combatant, then the names must be changed somehow...
             if (highestExistingOrdinal == Combatant.NO_ORDINAL) {
                 if (!force) {

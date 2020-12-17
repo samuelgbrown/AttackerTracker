@@ -240,6 +240,9 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         // Update the ad location, if needed (based on if we THINK the user bought ads)
         displayAd(!purchaseHandler.wasPurchased(REMOVE_ADS_SKU));
         purchaseHandler.queryPurchases(); // Check to see if anything has changed on the Purchases front...
+
+        // Update the GUI
+        updateGUIState();
     }
 
     @Override
@@ -279,7 +282,11 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 
         if (currentlyActiveCombatant == EncounterCombatantRecyclerAdapter.PREP_PHASE) {
             // If the currently active Combatant is unset, then we are currently between rounds, waiting to roll initiative
-            nextButtonText = R.string.encounter_roll_initiative;
+            if (PrefsHelper.getReRollInit(getContext())) {
+                nextButtonText = R.string.encounter_roll_initiative;
+            } else {
+                nextButtonText = R.string.encounter_begin_round;
+            }
             prepBannerVisibility = masterCombatantList.isVisiblyEmpty() ? View.GONE : View.VISIBLE; // Don't display the banner if the Combatant list is empty, that'd be just a little sad...
             if (roundNumber == 1) {
                 // If this is the 1st round prepare phase, then don't display the previous button
@@ -291,7 +298,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
             endOfRoundVisibility = View.VISIBLE;
         } else {
             // Check if we just moved into Combat
-            if (currentlyActiveCombatant == 0 && roundNumber > maxRoundRolled && nextButton.getText().equals(getResources().getString(R.string.encounter_roll_initiative))) {
+            String curText = nextButton.getText().toString();
+            if (currentlyActiveCombatant == 0 && roundNumber > maxRoundRolled && (curText.equals(getResources().getString(R.string.encounter_roll_initiative)) || curText.equals(getResources().getString(R.string.encounter_begin_round)))) {
                 maxRoundRolled = roundNumber; // Remember that we already did the fun animation for this round
 
                 if (PrefsHelper.doingInitButtonAnim(getContext())) {

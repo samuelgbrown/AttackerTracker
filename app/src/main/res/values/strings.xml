@@ -59,11 +59,15 @@ TIP: Save a combatant\'s default initiative modifier here.  It can be changed du
 
     <string name="encounter_next_combatant">Next Combatant!</string>
     <string name="encounter_roll_initiative">Roll Initiative!</string>
+    <string name="encounter_begin_round">Begin Round!</string>
     <string name="encounter_prepare_next_round">Next Round!</string>
     <string name="encounter_end_of_round">End Of Round!</string>
     <string name="prepare_message">Adjust %1$s!</string>
     <string name="end_of_round_message">Perform End of Round Actions!</string>
     <string name="end_of_round_disable_message">(This can be disabled in settings)</string>
+    
+    <string name="dice_out_of_bounds_message">The dice value must be between 0 and %1$d</string>
+    <string name="name_already_used">The name \"%1$s\" is already being used.  Any other modifications were saved.</string>
 
     <string name="encounter_round_number">Round:</string>
 
