@@ -62,6 +62,7 @@ TIP: Save a combatant\'s default initiative modifier here.  It can be changed du
     <string name="encounter_begin_round">Begin Round!</string>
     <string name="encounter_prepare_next_round">Next Round!</string>
     <string name="encounter_end_of_round">End Of Round!</string>
+    <string name="encounter_computer_rolled_symbol">"?"</string>
     <string name="prepare_message">Adjust %1$s!</string>
     <string name="end_of_round_message">Perform End of Round Actions!</string>
     <string name="end_of_round_disable_message">(This can be disabled in settings)</string>
@@ -117,7 +118,8 @@ TIP: Save a combatant\'s default initiative modifier here.  It can be changed du
 
     <!-- Preference Titles -->
     <string name="key_screen">KeyPreferenceScreen</string>
-    <string name="dnd_header">Initiative Calculation</string>
+    <string name="init_calc_header">Initiative Calculation</string>
+    <string name="combat_flow_header">Combat Flow</string>
     <string name="display_header">Display</string>
     <string name="ad_header">Ad Settings</string>
     <string name="info_header">Info</string>
@@ -136,6 +138,7 @@ TIP: Save a combatant\'s default initiative modifier here.  It can be changed du
     <string name="key_sort_order">KeySort</string>
     <string name="key_tie_breaker">KeyTie</string>
     <string name="key_mod_used">KeyMod</string>
+    <string name="key_player_roll">KeyPlayerRoll</string>
     <string name="key_re_roll">KeyReRoll</string>
     <string name="key_end_of_round">KeyEndOfRound</string>
     <string name="key_individual_initiative">KeyGroupInitiative</string>
@@ -236,6 +239,9 @@ TIP: Save a combatant\'s default initiative modifier here.  It can be changed du
     <string name="individual_initiative_string">Initiative Per Combatant</string>
     <string name="individual_initiative_summary">Roll initiative for each combatant, or for each faction</string>
 
+    <string name="player_roll_title">Roll Your Own Initiative</string>
+    <string name="player_roll_summary">Let the players roll their own initiative by default</string>
+
     <!-- Display Preferences -->
     <string name="key_dark_mode">KeyDarkMode</string>
     <string name="key_button_anim">KeyButtonAnim</string>
@@ -304,5 +310,6 @@ https://thenounproject.com/atifarshad"
     <string name="key_feedback">KeyFeedback</string>
     <string name="feedback_title">Email Developer…</string>
     <string name="feedback_string">Suggestions? Questions? Email me!</string>
+    <string name="warning_initiative_rolled">Initiative has already been rolled this round.</string>
 
 </resources>

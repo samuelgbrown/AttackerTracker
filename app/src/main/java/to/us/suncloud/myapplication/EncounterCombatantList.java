@@ -138,7 +138,7 @@ public class EncounterCombatantList implements Serializable {
 
         initializeCombatants();
         doSorting();
-        updateDuplicateInitiatives();
+//        updateDuplicateInitiatives();
     }
 
     public boolean haveHadPrepPhase() {
@@ -219,7 +219,7 @@ public class EncounterCombatantList implements Serializable {
         // Finally, perform any post-processing (sorting, etc)
         doSorting();
 
-        updateDuplicateInitiatives();
+//        updateDuplicateInitiatives();
     }
 
     private boolean idExists(UUID id) {
@@ -370,6 +370,8 @@ public class EncounterCombatantList implements Serializable {
             case ALPHABETICALLY_BY_FACTION:
                 Collections.sort(combatantArrayList, new CombatantSorter.SortAlphabeticallyByFaction()); // Sort the combatantArrayList alphabetically by faction
         }
+
+        updateDuplicateInitiatives();
     }
 
     public void setRoundNumber(int roundNumber) {
@@ -504,7 +506,24 @@ public class EncounterCombatantList implements Serializable {
 
         // Update the duplicateInitiatives list
         doSorting(); // Sort the list now that the rolls/modifiers have likely changed
-        updateDuplicateInitiatives(); // See if any Combatants have duplicate initiatives, so we can display an indicator on screen
+//        updateDuplicateInitiatives(); // See if any Combatants have duplicate initiatives, so we can display an indicator on screen
+    }
+
+    public void reRollCombatant(HashSet<UUID> setToReRoll) {
+        boolean didReRoll = false;
+        for (Combatant c : combatantArrayList) {
+            // Check if each Combatant is in the set
+            if (setToReRoll.contains(c.getId())) {
+                // TODO START HERE: Check if this value needs to be saved in the diceRollMap.  I don't think so...?
+                c.setRoll(getInitiativeRoll());
+                didReRoll = true;
+            }
+        }
+
+        if (didReRoll) {
+            doSorting();
+//            updateDuplicateInitiatives();
+        }
     }
 
     private HashMap<UUID, Integer> rollAllInitiative() {
@@ -549,6 +568,7 @@ public class EncounterCombatantList implements Serializable {
     }
 
     public void updateDuplicateInitiatives() {
+        // TODO: Should this be included in the doSorting() function?
         // Update the duplicateInitiative array
         HashSet<Integer> existingInitiativeValues = new HashSet<>(); // Keep track of which values have already been found as initiatives in the Combatant List
         duplicateInitiatives = new ArrayList<>();

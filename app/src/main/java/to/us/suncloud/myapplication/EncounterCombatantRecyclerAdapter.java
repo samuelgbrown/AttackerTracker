@@ -1,6 +1,5 @@
 package to.us.suncloud.myapplication;
 
-import android.animation.Animator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -26,8 +25,10 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 // To display combatants in a list for the encounter.  Supports reordering and tracking who has gone already.
 public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<EncounterCombatantRecyclerAdapter.CombatantViewHolder> {
@@ -38,36 +39,41 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
     View focusView = null;
 
+    HashSet<UUID> changedBack = new HashSet<>(); // Keep track of which Combatants were set to be computer-rolled by the user
+    HashSet<UUID> rollsSet = new HashSet<>(); // Keep track of which Combatants had their rolls manually set
+
     //    private static final String PAYLOAD_CHECK = "payloadCheck"; // Used to indicate that a Combatant should become checked or unchecked (infers an update progress call as well)
 //    private static final String PAYLOAD_UPDATE_PROGRESS = "payloadUpdateProgress"; // Used any time a Combatant becomes checked/unchecked (this may happen by the user, or programmatically)
-    private static final String PAYLOAD_DICE_CHEAT = "payloadDiceCheat"; // Used any time dice cheat mode is turned on/off
+    public static final String PAYLOAD_DICE_VIEW_VIS = "payloadDiceViewVis"; // Used any time dice cheat mode is turned on/off
 //    private static final String PAYLOAD_DUPLICATE_INDICATOR = "payloadDuplicateIndicator"; // Used any time the color of the duplicate indicator may be changed (if initiative is re-rolled, or if the combatantList is modified by addition/removal)
 
     RecyclerView combatantRecyclerView;
     combatProgressInterface parent;
 
     private final EncounterCombatantList combatantList;
-    private EncounterCombatantList combatantList_Memory; // A memory version of the list, to see what changes have occurred
+    private CombatStateStruct combatState_Memory; // A memory version of the combat state, to see what changes have occurred
     //    private ArrayList<Boolean> isCheckedList;
 //    private HashMap<String, Boolean> isCheckedMap; // A Map to keep track of which Combatants have been checked off
 
     ArrayList<Integer> iconResourceIds; // A list of resource ID's of the icons that will be used for each Combatant
 
     boolean diceCheatModeOn = false; // Are we currently in the dice cheat mode?
+    boolean playerDefinedRolls = false; // Is the player defining the rolls (as opposed to the computer)?
 
     boolean doingEndOfRoundActions; // Should we be doing the end-of-round actions?
 
 
     //    private int curActiveCombatant = PREP_PHASE; // The currently active Combatant, as an index in combatantList (if -1, there is no active Combatant)
 //    private int prevActiveCombatant = PREP_PHASE; // The currently active Combatant, as an index in combatantList (if -1, there is no active Combatant)
-    private int curRoundNumber = 1; // The current round number (iterated each time the active Combatant loops around)
+    private int roundNumber = 1; // The current round number (iterated each time the active Combatant loops around)
+    private int maxRoundRolled = 0; // The maximum round for which initiative has been rolled
     private EncounterCombatantList.SortMethod curSortMethod; // The current method by which the Combatants should be sorted (when possible, i.e. not in Prep-phase)
 
     EncounterCombatantRecyclerAdapter(combatProgressInterface parent, EncounterCombatantList combatantList, int curRoundNumber) {
         // Turn the AllFactionCombatantList into an EncounterCombatantList
         this.combatantList = combatantList; // Hold onto the Combatant list (copy reference)
         this.parent = parent;
-        this.curRoundNumber = curRoundNumber;
+        this.roundNumber = curRoundNumber;
         Context context = parent.getContext();
 
 //        isCheckedList = new ArrayList<>(Collections.nCopies(this.combatantList.size(), false));
@@ -106,7 +112,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         curSortMethod = EncounterCombatantList.SortMethod.INITIATIVE; // Always initialize to initiative sorting
 
         this.combatantList.setRoundNumber(curRoundNumber);
-        this.combatantList_Memory = this.combatantList.clone(); // Keep a second copy, for memory (a clone)
+        this.combatState_Memory = getCurrentCombatState(); // Keep a second copy, for memory (a clone)
     }
 
     @Override
@@ -207,7 +213,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
                         // Update the round number, if needed (done here, so it can be used in updateCombatProgress)
                         if (curActiveCombatant == PREP_PHASE) {
-                            curRoundNumber++;
+                            roundNumber++;
                         }
 
                         // Update the combatantList based on the new active Combatant
@@ -342,112 +348,12 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                     return false; // Pass on to other listeners.
                 }
             });
-
-//            SpeedFactorView.addTextChangedListener(new TextWatcher() {
-//                @Override
-//                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//
-//                }
-//
-//                @Override
-//                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//
-//                }
-//
-//                @Override
-//                public void afterTextChanged(Editable editable) {
-//                    // If this is being called due to a programmatic change, ignore it
-//                    if (modifyingSelf) {
-//                        return;
-//                    }
-//
-//                    // First, make sure the value here is valid
-//                    int currentSpeedFactor = combatantList.get(getAdapterPosition()).getSpeedFactor(); // The current roll for this Combatant
-//                    int newSpeedFactor = currentSpeedFactor; // Initial value never used, but at least the IDE won't yell at me...
-//                    boolean needToRevert;
-//                    try {
-//                        newSpeedFactor = Integer.parseInt(editable.toString()); // Get the value that was entered into the text box
-//
-//                        // If the new entered roll value is not in the d20 range, then reject it
-//                        needToRevert = newSpeedFactor < 0; // needToRevert becomes false (we accept the input) if newSpeedFactor is 0 or greater
-//                    } catch (NumberFormatException e) {
-//                        needToRevert = true;
-//                    }
-//
-//                    // Update the value of the EditText, if needed
-//                    if (needToRevert) {
-//                        // The entered text was not valid, so reset it and finish
-//                        modifyingSelf = true;
-//                        RollViewEdit.setText(String.valueOf(currentSpeedFactor));
-//                        modifyingSelf = false;
-//                        return;
-//                    } else if (newSpeedFactor == currentSpeedFactor) {
-//                        // If the new modifier value is the same as the current modifier, then don't do anything
-//                        return;
-//                    }
-//
-//                    // If the entered text was valid and different than the current modifier, then change this Combatant, resort the list, and update the GUI
-//                    setSpeedFactor(getAdapterPosition(), newSpeedFactor);
-//                }
-//            });
-//            RollViewEdit.addTextChangedListener(new TextWatcher() {
-//
-//                @Override
-//                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//
-//                }
-//
-//                @Override
-//                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//
-//                }
-//
-//                @Override
-//                public void afterTextChanged(Editable editable) {
-//
-//                    // If this is being called due to a programmatic change, ignore it
-//                    if (modifyingSelf) {
-//                        return;
-//                    }
-//
-//                    // First, make sure the value here is valid
-//                    int combatantInd = getAdapterPosition();
-//                    int currentRoll = combatantList.get(combatantInd).getRoll(); // The current roll for this Combatant
-//                    int newRollVal = currentRoll; // Initial value never used, but at least the IDE won't yell at me...
-//                    boolean needToRevert;
-//                    try {
-//                        newRollVal = Integer.parseInt(editable.toString()); // Get the value that was entered into the text box
-//
-//                        // If the new entered roll value is not in the d20 range, then reject it
-//                        needToRevert = newRollVal <= 0 || 20 < newRollVal; // needToRevert becomes false (we accept the input) if newRollVal is between [1 20]
-//                    } catch (NumberFormatException e) {
-//                        needToRevert = true;
-//                    }
-//
-//                    // Update the value of the EditText, if needed
-//                    if (needToRevert) {
-//                        // The entered text was not valid, so reset it and finish
-//                        modifyingSelf = true;
-//                        RollViewEdit.setText(String.valueOf(currentRoll));
-//                        modifyingSelf = false;
-//                        return;
-//                    } else if (newRollVal == currentRoll) {
-//                        // If the new roll value is the same as the current roll, then don't do anything
-//                        return;
-//                    }
-//
-//                    // If the entered text was valid and different than the current roll, then change this Combatant, resort the list, and update the GUI
-//                    RollView.setText(String.valueOf(newRollVal)); // Set this value in the TextView
-//
-//                }
-//            });
         }
 
         public void bind(int combatant_ind) {
             Combatant thisCombatant = combatantList.get(combatant_ind);
 
             NameView.setText(thisCombatant.getName());
-
 
             // Load the icon image
             int iconIndex = thisCombatant.getIconIndex();
@@ -483,17 +389,33 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         public void setRollValueIfValid(String newRollValString) {
             // This method will be used any time the user confirms a text string in the roll view EditText
             int combatantInd = getAdapterPosition();
-            int currentRoll = combatantList.get(combatantInd).getRoll(); // The current roll for this Combatant
+            Combatant thisCombatant = combatantList.get(combatantInd);
+            int currentRoll = thisCombatant.getRoll(); // The current roll for this Combatant
             int newRollVal = currentRoll; // Initial value never used, but at least the IDE won't yell at me...
+            int curActiveCombatant = combatantList.calcActiveCombatant();
             boolean newValIsValid = false;
             boolean notifyUser = false;
             try {
+                if (curActiveCombatant == PREP_PHASE) {
+                    // If we are in prep-phase, handle things a little differently
+                    if (newRollValString.isEmpty() || newRollValString.equals(parent.getContext().getString(R.string.encounter_computer_rolled_symbol))) {
+                        // First, let the Activity know that this Combatant has been set to computer-controlled dice roll
+                        setCombatantManualRoll(combatantList.get(combatantInd).getId(), -1);
+
+                        // Let the adapter know that the display may have changed
+                        notifyCombatantsChanged(); // TODO Check this!!!
+//                        // If the new roll is empty, update the mystery display, and return from the function
+//                        updateRollMysteryDisplay(thisCombatant);
+                        return;
+                    }
+                }
                 newRollVal = Integer.parseInt(newRollValString); // Get the value that was entered into the text box
 
                 // If the new entered roll value is not in the d20 range, then reject it
                 if (0 < newRollVal && newRollVal <= PrefsHelper.getDiceSize(RollView.getContext())) { // The new roll may be valid if it is within the range of the defined dice size
-                    // If the roll value is within range, make sure that it is different than the current roll.  If so, then set the new value is valid
-                    newValIsValid = currentRoll != newRollVal;
+                    // If the roll value is within range.  If so, then set the new value is valid
+                    newValIsValid = true;
+//                    newValIsValid = currentRoll != newRollVal; // Make sure that it is different than the current roll
                 } else {
                     notifyUser = true; // We must let the user know why it failed (out of bounds)
                 }
@@ -512,8 +434,13 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             }
 
             // If the roll IS valid, then set the Combatant's roll to the new value
-            combatantList.get(combatantInd).setRoll(newRollVal);
+            thisCombatant.setRoll(newRollVal);
             reSortInitiative(); // Resort the combatantList (also update the duplicate indices List), and update the Adapter  display
+
+            // If this is the Prep phase, then let the Activity know that this Combatant's roll has been set by the player
+            if (curActiveCombatant == PREP_PHASE) {
+                setCombatantManualRoll(thisCombatant.getId(), newRollVal);
+            }
         }
 
         public void setModifierValueIfValid(String newModifierValString) {
@@ -548,35 +475,68 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         }
 
         // Single method to initialize the ViewHolder to its most up-to-date status
+
         public void initializeState() {
             // Update the full state of the Combatant
-            setDiceCheatGUI();
+//            setDiceViewVisibility();
 
             int curActiveCombatant = activeCombatant();
-            setInitValues();
             int pos = getAdapterPosition();
+
+            setInitValues(getCurrentDisplayedRolledInit(getCurrentCombatState(), pos, curActiveCombatant));
             setDuplicateColor(getDuplicateColor(combatantList, pos, curActiveCombatant));
             setStatus(getStatus(combatantList, pos, curActiveCombatant));
             setChecked(isCheckedState(combatantList, pos, curActiveCombatant));
         }
-
         // Methods to update individual aspects of the ViewHolder
-        public void setInitValues() {
-            // Update the values of the initiative counters
-            Combatant thisCombatant = combatantList.get(getAdapterPosition());
-            int  totalInit = thisCombatant.getTotalInitiative();
-            if (totalInit <= 99) {
-                // If we can display this value easily, then do so
-                TotalInitiativeView.setText(String.valueOf(totalInit));
-            } else {
-                // Uh oh...we can't display more than 2 digits...
-                TotalInitiativeView.setText(R.string.explode_head);
-            }
-            RollView.setText(String.valueOf(thisCombatant.getRoll()));
 
+        public void setInitValues(int[] rolledInitVals) {
+            // Update the values of the initiative counters
+//            Combatant thisCombatant = combatantList.get(getAdapterPosition());
+//            int totalInit = thisCombatant.getTotalInitiative();
+
+            // Extract inputs
+            int modVal = rolledInitVals[0];
+            int rollVal = rolledInitVals[1];
+            int totalInitVal = rolledInitVals[2];
+
+            // Prepare outputs
+            String modText = String.valueOf(modVal); // We know the modified value
+            String rollText;
+            String totalInitText;
+
+            // Check the roll value
+            if (rollVal < 0) {
+                // If the value is still a mystery...
+                rollText = parent.getContext().getString(R.string.encounter_computer_rolled_symbol);
+            } else {
+                // This Combatant's roll is known
+                rollText = String.valueOf(rollVal);
+            }
+
+            // Check the total initiative value
+            if (totalInitVal < 0) {
+                // If the value is still a mystery...
+                totalInitText = parent.getContext().getString(R.string.encounter_computer_rolled_symbol);
+            } else {
+                // This Combatant's total initiative is known
+                if (totalInitVal <= 99) {
+                    // If we can display this value easily, then do so
+                    totalInitText = String.valueOf(totalInitVal);
+                } else {
+                    // Uh oh...we can't display more than 2 digits...
+                    totalInitText = TotalInitiativeView.getContext().getString(R.string.explode_head);
+                }
+            }
+
+            // Set all of the display values
             modifyingSelf = true;
-            ModifierView.setText(String.valueOf(thisCombatant.getModifier()));
-            RollViewEdit.setText(String.valueOf(thisCombatant.getRoll()));
+
+            ModifierView.setText(modText);
+            RollViewEdit.setText(rollText);
+            RollView.setText(rollText);
+            TotalInitiativeView.setText(totalInitText);
+
             modifyingSelf = false;
         }
 
@@ -607,7 +567,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         public void setStatus(EncounterCombatantRecyclerAdapter.initStatus status) {
             // Set up variables for everything that may change (initialize to the "normal" case)
             int borderColor = 0; // Initialize to a "blank" border
-            int initiativeRollVisibility = View.VISIBLE;
+//            int initiativeRollVisibility = View.VISIBLE;
             int checkLayoutVisibility = View.VISIBLE;
 
             switch (status) {
@@ -618,9 +578,16 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                     borderColor = R.color.returnToCombatant;
                     break;
                 case Prep:
-                    initiativeRollVisibility = View.INVISIBLE;
+                    // TODO PLAYER ROLL: If we are in the prep phase, we want:
+                    //  If a definite roll exists (player-set, or we have already been past the prep phase), use that
+                    //  Otherwise, display the unknown roll icon
+//                    initiativeRollVisibility = View.INVISIBLE;
                     checkLayoutVisibility = View.GONE;
             }
+
+//            //  Any time the status changes (in particular we care about going into and out-of Prep phase), check if the current roll is a mystery
+//            updateRollMysteryDisplay(combatantList.get(getAdapterPosition())); // Check if the user knows the dice roll here yet
+//            setDiceViewVisibility(); // Also check if we need to update the visibility of the two roll views
 
             // Set the Combatant's ViewHolder border color
             int borderColorVal; // The int value of the new color itself (not the resource ID)
@@ -634,8 +601,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             CombatantStatusBorder.setBackgroundColor(borderColorVal);
 
             // Set the visibility of the roll, total initiative, and checkbox views
-            RollLayout.setVisibility(initiativeRollVisibility);
-            TotalInitiativeView.setVisibility(initiativeRollVisibility);
+//            RollLayout.setVisibility(initiativeRollVisibility);
+//            TotalInitiativeView.setVisibility(initiativeRollVisibility);
             CombatantCompletedCheck.setVisibility(checkLayoutVisibility);
         }
 
@@ -666,9 +633,13 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             }
         }
 
-        public void setDiceCheatGUI() {
+        public void setDiceViewVisibility(boolean setRollEditing) {
+            // TODO: This should just accept a boolean to set the dice view visibility
             // Use the current setting of diceCheatModeOn to see which View should be seen for the viewHolder
-            if (diceCheatModeOn) {
+            if (setRollEditing) {
+                // TODO START HERE: The calcActiveCombatant operation is probably slow, see if we can replace it?  Figure out if we're in Prep phase a different way...
+                //  I think the only way that we can change active Combatant is via the main button, the previous button, checking/un-checking a Combatant, or modifying a Combatant's modifier/roll.  Track a local variable, and just use that every time...?
+                //  Just search for every use of calcActiveCombatant when it's expected to be changed
                 // If we are in dice cheat mode, make sure that the EditText is visible and the TextView is hidden
                 RollViewEdit.setVisibility(View.VISIBLE);
                 RollView.setVisibility(View.GONE);
@@ -829,14 +800,13 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                     holder.setDuplicateColor(args.getInt(key, -1));
                 }
                 if (key.equals("InitValues")) {
-                    holder.setInitValues(); // Update the initiative values from the ArrayList
+                    holder.setInitValues(args.getIntArray("InitValues")); // Update the initiative values from the ArrayList
                 }
                 if (key.equals("Checked")) {
                     holder.setChecked(args.getInt(key, 0));
                 }
-                if (key.equals(PAYLOAD_DICE_CHEAT)) {
-                    // Update only the dice-cheat indicators
-                    holder.setDiceCheatGUI();
+                if (key.equals(PAYLOAD_DICE_VIEW_VIS)) {
+                    holder.setDiceViewVisibility(args.getBoolean(PAYLOAD_DICE_VIEW_VIS));
                 }
             }
         } else {
@@ -854,18 +824,55 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         return combatantList;
     }
 
+    public class CombatStateStruct {
+        public EncounterCombatantList combatantList;
+        public boolean notReRolling;
+        public boolean thisRoundRolled;
+        public HashSet<UUID> rollsSet;
+        public HashSet<UUID> changedBack;
+        public boolean diceCheatModeOn;
+        public boolean playerDefinedRolls;
+
+        CombatStateStruct(EncounterCombatantList combatantList, boolean notReRolling, boolean thisRoundRolled, HashSet<UUID> rollsSet, HashSet<UUID> changedBack, boolean diceCheatModeOn, boolean playerDefinedRolls) {
+            this.combatantList = combatantList;
+            this.notReRolling = notReRolling;
+            this.thisRoundRolled = thisRoundRolled;
+            this.rollsSet = rollsSet;
+            this.changedBack = changedBack;
+            this.diceCheatModeOn = diceCheatModeOn;
+            this.playerDefinedRolls = playerDefinedRolls;
+        }
+
+        CombatStateStruct(CombatStateStruct c) {
+            this.combatantList = c.combatantList.clone();
+            this.notReRolling = c.notReRolling;
+            this.thisRoundRolled = c.thisRoundRolled;
+            this.rollsSet = c.rollsSet;
+            this.changedBack = c.changedBack;
+            this.diceCheatModeOn = c.diceCheatModeOn;
+            this.playerDefinedRolls = c.playerDefinedRolls;
+        }
+
+        public CombatStateStruct clone() {
+            return new CombatStateStruct(this);
+        }
+    }
+
     public void notifyCombatantsChanged() {
         // If anything about the combatants has changed, see if we need to rearrange the list
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantDiffUtil(combatantList_Memory, combatantList));
+        CombatStateStruct stateStruct = getCurrentCombatState();
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantDiffUtil(combatState_Memory, stateStruct));
         diffResult.dispatchUpdatesTo(this); // If anything has changed, move the list items around
 
         // Update the combatantList
-        combatantList_Memory = combatantList.clone();
+        combatState_Memory = stateStruct.clone();
 
         // Let the parent know that the display may have been updated
         parent.updateGUIState();
+    }
 
-
+    private CombatStateStruct getCurrentCombatState() {
+        return new CombatStateStruct(combatantList, !(!PrefsHelper.getReRollInit(parent.getContext()) && roundNumber > 1), roundNumber <= maxRoundRolled, rollsSet, changedBack, diceCheatModeOn, playerDefinedRolls);
     }
 
     public void sort(EncounterCombatantList.SortMethod sortMethod) {
@@ -877,12 +884,20 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         }
     }
 
-    public int getCurRoundNumber() {
-        return curRoundNumber;
+    public int getRoundNumber() {
+        return roundNumber;
+    }
+
+    public int getMaxRoundRolled() {
+        return maxRoundRolled;
+    }
+
+    public void setMaxRoundRolled(int maxRoundRolled) {
+        this.maxRoundRolled = maxRoundRolled;
     }
 
     public void setRoundNumber(int curRoundNumber) {
-        this.curRoundNumber = curRoundNumber;
+        this.roundNumber = curRoundNumber;
         combatantList.setRoundNumber(curRoundNumber); // Update the round number in the combatantList
     }
 
@@ -902,7 +917,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             // Either the first Combatant is now active, or we are at the last Combatant (this case needed in case the cuActiveCombatant value was decremented and we are coming from the prep phase)
 
             // ROLL INITIATIVE!!!!! (if needed...)
-            combatantList.setRoundNumber(curRoundNumber);
+            combatantList.setRoundNumber(roundNumber);
         }
 
         // Sort the combatantList as needed
@@ -934,6 +949,14 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         if (curActiveCombatant == PREP_PHASE) {
             // In the special case that we are in the prep phase, moving to start combat, uncheck all Combatants to start combat again
             setAllIsChecked(false);
+
+            // Record that this round has been rolled (at least this far)
+            maxRoundRolled = Math.max(roundNumber, maxRoundRolled);
+
+            // Re-roll any Combatant in the changedBack Set
+            combatantList.reRollCombatant(changedBack);
+            rollsSet.clear();
+            changedBack.clear();
         } else {
             if (curActiveCombatant == END_OF_ROUND_ACTIONS) {
                 // In the special case that we are in the end-of-round action phase, let the list know that we can move on
@@ -949,79 +972,19 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
         // Update the round number, if needed (done here so that the new round number can be used in updateCombatProgress)
         if (curActiveCombatant == PREP_PHASE) {
-            curRoundNumber++;
+            roundNumber++;
             combatantList.initializeCombatants(); // Ensure that all Combatants are selected (done here to ensure that even invisible Combatants are selected, so the full list can be in the Prep-phase state)
-            combatantList.setRoundNumber(curRoundNumber);
+            combatantList.setRoundNumber(roundNumber);
         }
 
         // Set the currently active Combatant to the new value
         updateCombatProgress(curActiveCombatant);
 
-//        // Sort the Combatant list, if needed
-//        if (curActiveCombatant == 0) {
-//            combatantList.sort(curSortMethod); // We are starting combat again, so go back to the user's preferred sorting method
-//            scrollTo(getViewInd(curActiveCombatant)); // Scroll to the new currently active Combatant
-//        }
-
         // Finally, update all GUI states
         notifyCombatantsChanged();
-
-//        // Depending on where we are in the combat cycle, iterate the curActiveCombatant value differently
-//        if (curActiveCombatant == UNSET) {
-//            // Going from the prepare phase to combat
-//            curActiveCombatant = 0; // Initialize the currently active Combatant to the first Combatant
-//
-//            // Also, ROLL INITIATIVE!!!!!
-//            combatantList.setRoundNumber(curRoundNumber);
-//            combatantList.sort(EncounterCombatantList.SortMethod.INITIATIVE); // Sort by initiative, now that we have calculated it
-//            combatantRecyclerView.getLayoutManager().scrollToPosition(0); // Zoom us up to the top of the RecyclerView (could maybe be an advanced option to disable...?)
-//        } else if (curActiveCombatant == (combatantList.size() - 1)) {
-//            // Going from the last Combatant to the prepare phase
-//            curActiveCombatant = UNSET; // If we are at the end of the Combatant list, start preparing for the next round
-//
-//            // Let the adapter know to change the Views
-//            setAllViewIsChecked(false); // Deselect all Combatants
-//            combatantList.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION); // Go back to sorting by alphabet/faction, for pre-round prep
-//        } else {
-//            // Staying in combat
-//            curActiveCombatant++; // Otherwise, just increment the Combatant number
-//        }
-
-//        // Finally, update all GUI states
-//        notifyCombatantsChanged();
     }
 
     public void decrementCombatStep() {
-//        // Move backwards along the active Combatant in the list
-//        if (curActiveCombatant == PREP_PHASE) {
-//            // Going from the prepare phase back to the last Combatant of the last round
-//            curActiveCombatant = combatantList.size() - 1; // If the currently active Combatant is unset, go back to the end of the list
-//
-//            // Let the adapter know to change the Views
-//            combatantList.sort(EncounterCombatantList.SortMethod.INITIATIVE); // Sort by initiative, now that we are back in the previous round
-//            setAllIsChecked(true);
-//            setIsChecked(getViewInd(combatantList.size() - 1), false); // Uncheck the last Combatant
-//
-//            notifyCombatantsChanged(); // Let the adapter know that the views will likely need to rearrange
-//        } else if (curActiveCombatant == 0) {
-//            // Going from first Combatant back to the prepare phase
-//            curActiveCombatant = PREP_PHASE; // If we are at the beginning of the list, go to "UNSET" for now
-//
-//            combatantList.sort(EncounterCombatantList.SortMethod.ALPHABETICALLY_BY_FACTION); // Go back to sorting by alphabet/faction, for pre-round prep
-//        } else {
-//            // Staying in combat
-//            curActiveCombatant--; // Otherwise, just decrement
-//        }
-
-//        int newCurActiveCombatant = (curActiveCombatant == PREP_PHASE) ? (combatantList.size() - 1) : curActiveCombatant - 1;
-
-
-        // Now selected is UNSET - nothing (no one was checked anyway)
-        // Now selected is last Combatant - everyone except final becomes checked
-        // Now selected is not UNSET and not last Combatant - the current Combatant becomes unchecked
-
-        // Decrement the currently active Combatant (if we are in the prep phase, go back to the last Combatant)
-
         // Get the currently active Combatant
         int curActiveCombatant = activeCombatant();
 
@@ -1029,14 +992,14 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         switch (curActiveCombatant) {
             case PREP_PHASE:
                 // In the special case that we are in the prep phase, we just went back into the previous round of Combat
-                if (curRoundNumber == 1) {
+                if (roundNumber == 1) {
                     // If this is the first round, don't do anything! The combat step was decremented in error
                     return;
                 }
 
                 // Decrement the round number, and retrieve the previous rolls
-                curRoundNumber--;
-                combatantList.setRoundNumber(curRoundNumber);
+                roundNumber--;
+                combatantList.setRoundNumber(roundNumber);
 
                 if (doingEndOfRoundActions) {
                     combatantList.setHaveHadPrepPhase(true); // If we are going back to the end of round actions phase, make sure the Combatant list knows that we have already completed the prep-phase for the round
@@ -1068,12 +1031,6 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
         // Set the currently active Combatant to the new value
         updateCombatProgress(curActiveCombatant);
-
-//        // Sort the Combatant list, if needed
-//        if (curActiveCombatant == (combatantList.size() - 1)) {
-//            combatantList.sort(curSortMethod); // We are going back to the end of combat again, go back to the user's preferred sorting method
-//            scrollTo(getViewInd(curActiveCombatant)); // Scroll to the new currently active Combatant
-//        }
 
         // Finally, update all GUI states
         notifyCombatantsChanged();
@@ -1107,9 +1064,22 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
         // Let each Combatant know that it should update its dice cheat mode status
         Bundle payload = new Bundle();
-        payload.putBoolean(PAYLOAD_DICE_CHEAT, diceCheatModeOn);
+        payload.putBoolean(PAYLOAD_DICE_VIEW_VIS, diceCheatModeOn);
 
         notifyItemRangeChanged(0, getItemCount(), payload); // Send the payload to every Combatant
+    }
+
+    public void setPlayerDefinedRolls(boolean newVal) {
+        boolean oldVal = playerDefinedRolls;
+        playerDefinedRolls = newVal;
+
+        if (playerDefinedRolls != oldVal) {
+            // If something has changed, let each Combatant know that it should update its dice view visibility status
+            Bundle payload = new Bundle();
+            payload.putBoolean(PAYLOAD_DICE_VIEW_VIS, playerDefinedRolls);
+
+            notifyItemRangeChanged(0, getItemCount(), payload); // Send the payload to every Combatant
+        }
     }
 
     public void updatePrefs(Context context) {
@@ -1120,11 +1090,12 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         // If the Combatant List got reset because of the new preferences, update the round number, and let the Activity know what happened
         if (!combatantList.isMidCombat()) {
             // combatantList will already be reset back to the first round prep-phase
-            curRoundNumber = 1; // Move back to the first round
+            roundNumber = 1; // Move back to the first round
         }
 
         // Update the settings that this adapter needs to know about
         doingEndOfRoundActions = PrefsHelper.doingEndOfRound(context);
+        setPlayerDefinedRolls(PrefsHelper.playerRollingInitiative(context));
 
         notifyCombatantsChanged();
         parent.updateGUIState();
@@ -1132,7 +1103,8 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
     public void restartCombat() {
         combatantList.restartCombat();
-        curRoundNumber = 1;
+        roundNumber = 1;
+        maxRoundRolled = 0;
         notifyCombatantsChanged();
         parent.updateGUIState();
     }
@@ -1188,9 +1160,45 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         }
     }
 
+    public static int[] getCurrentDisplayedRolledInit(CombatStateStruct state, int curPosition, int curActiveCombatant) {
+        // Return an Integer array of the Combatant's roll and its total initiative
+        boolean isMystery = false;
+        if (curActiveCombatant == PREP_PHASE) {
+            // If this is the prep phase, then it's possible that the combatant roll is a mystery
+            UUID thisID = state.combatantList.get(curPosition).getId();
+            boolean willBeComputerRolled = state.changedBack.contains(thisID) || (!state.thisRoundRolled && !state.rollsSet.contains(thisID));
+            isMystery = state.notReRolling && willBeComputerRolled;
+        }
+
+        int modVal = state.combatantList.get(curPosition).getModifier();
+        if (isMystery) {
+            // Indicate that the rolled initiative is unknown
+            return new int[] {modVal, -1, -1};
+        } else {
+            // Return the total initiative for this Combatant
+            return new int[] {modVal, state.combatantList.get(curPosition).getRoll(), state.combatantList.get(curPosition).getTotalInitiative()};
+        }
+    }
+
     private static int getInitiativeInd(EncounterCombatantList list, int position) {
         // Given a Combatant index in combatantList, get that Combatant's index in the initiative order
         return list.getInitiativeIndexOf(position);
+    }
+
+    public void setCombatantManualRoll(UUID combatantID, int rollVal) {
+        // TODO START HERE:  Should handle this a bit differently if "re-roll initiative" is left unchecked!!!
+//        if (roundNumber > maxRoundRolled) {
+        // Will allow players to re-roll initiative of Combatants, even if this round has already been rolled
+        if (rollVal == -1) {
+            // If the roll value is -1 (indicating this is an empty string or the computer_rolled symbol), then the user wants this Combatant to be rolled by the computer.  Indicate as such.
+            changedBack.add(combatantID);
+        } else {
+            // If the roll is a valid roll value, record that the user set it manually
+            rollsSet.add(combatantID);
+        }
+//        } else {
+//            Toast.makeText(getContext(), getString(R.string.warning_initiative_rolled), Toast.LENGTH_SHORT).show();
+//        }
     }
 
     public interface combatProgressInterface {

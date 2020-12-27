@@ -5,8 +5,8 @@
 
     <PreferenceCategory
         android:key="dnd_category"
-        android:title="@string/dnd_header"
-        app:initialExpandedChildrenCount="4">
+        android:title="@string/init_calc_header"
+        app:initialExpandedChildrenCount="1">
 
         <DropDownPreference
             android:defaultValue="@string/rpg_ver_entry_dnd3"
@@ -16,27 +16,9 @@
             android:title="@string/preset_select"
             app:useSimpleSummaryProvider="true" />
 
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="@string/key_re_roll"
-            android:summary="@string/re_roll_summary"
-            android:title="@string/re_roll_string" />
-
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="@string/key_individual_initiative"
-            android:title="@string/individual_initiative_string"
-            android:summary="@string/individual_initiative_summary"/>
-
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:key="@string/key_end_of_round"
-            android:title="@string/end_of_round_action_string"
-            android:summary="@string/end_of_round_summary"/>
-
         <EditTextPreference
-            android:key="@string/key_dice_size"
             android:defaultValue="10"
+            android:key="@string/key_dice_size"
             android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="@string/dice_size"
@@ -68,6 +50,34 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="combat_flow_category"
+        android:title="@string/combat_flow_header">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/key_player_roll"
+            android:summary="@string/player_roll_summary"
+            android:title="@string/player_roll_title" />
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="@string/key_re_roll"
+            android:summary="@string/re_roll_summary"
+            android:title="@string/re_roll_string" />
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="@string/key_individual_initiative"
+            android:summary="@string/individual_initiative_summary"
+            android:title="@string/individual_initiative_string" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/key_end_of_round"
+            android:summary="@string/end_of_round_summary"
+            android:title="@string/end_of_round_action_string" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="display_category"
         android:title="@string/display_header">
 
@@ -87,17 +97,16 @@
         android:title="@string/ad_header">
 
         <DropDownPreference
+            android:defaultValue="@string/ad_loc_bottom_below"
             android:entries="@array/ad_loc_vals"
             android:entryValues="@array/ad_loc_entry_vals"
-            android:defaultValue="@string/ad_loc_bottom_below"
             android:key="@string/key_ad_location"
             android:title="@string/ad_location_string"
-            app:useSimpleSummaryProvider="true"/>
+            app:useSimpleSummaryProvider="true" />
 
         <Preference
             android:key="@string/key_purchase"
-            android:title="@string/purchase_string"
-            />
+            android:title="@string/purchase_string" />
     </PreferenceCategory>
 
     <PreferenceCategory
@@ -105,13 +114,13 @@
         android:title="@string/info_header">
 
         <Preference
-            android:title="@string/credits_string"
-            android:key="@string/key_credits" />
+            android:key="@string/key_credits"
+            android:title="@string/credits_string" />
 
         <Preference
-            android:title="@string/feedback_title"
             android:key="@string/key_feedback"
-            android:summary="@string/feedback_string" />
+            android:summary="@string/feedback_string"
+            android:title="@string/feedback_title" />
     </PreferenceCategory>
 
 </PreferenceScreen>

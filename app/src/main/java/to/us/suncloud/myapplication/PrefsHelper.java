@@ -114,6 +114,13 @@ public class PrefsHelper {
         return prefs.getBoolean(context.getString(R.string.key_end_of_round), false);
     }
 
+    public static boolean playerRollingInitiative(Context context) {
+        // Determine whether or not we do a pause after the end of each round
+        // Get the preferences, and find the value that corresponds to the boolean we want
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        return prefs.getBoolean(context.getString(R.string.key_player_roll), false);
+    }
+
     public static boolean doingIndividualInitiative(Context context) {
         // Determine whether or not we Initiative is rolled individually, or by Faction
         // Get the preferences, and find the value that corresponds to the boolean we want

@@ -43,8 +43,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     MenuItem sortInit;
     MenuItem sortAlpha;
 
-    int roundNumber = 1;
-    int maxRoundRolled = 0;
+//    int roundNumber = 1;
+//    int maxRoundRolled = 0; // TODO: Will also use this in the Player Roll feature
 
     int curTheme; // The current theme of this Activity
 
@@ -92,6 +92,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 
         // Initialize some parameters, if needed
         masterCombatantList = new EncounterCombatantList(getApplicationContext());
+        int roundNumber = 0;
+        int maxRoundRolled = 0;
 
         if (savedInstanceState != null) {
             // If there is a saved state, then there was probably just a configuration change, so savedInstanceState is the most up-to-date information we have
@@ -157,6 +159,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         encounterRecyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
 
         // Initialize the adapter as needed
+        adapter.setMaxRoundRolled(maxRoundRolled);
         adapter.updateCombatProgress();
         adapter.notifyCombatantsChanged(); // Let the adapter know that this is the initial state (update all "memory" parameters for the Combatant list and the currently active Combatant)
 
@@ -248,7 +251,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         // Save a few useful things (don't let Google see this, they'll get pissed off at how much data I'm saving in outState...whoops...)
-        outState.putInt(ConfigureCombatantListActivity.ROUND_NUMBER, roundNumber);
+        outState.putInt(ConfigureCombatantListActivity.ROUND_NUMBER, adapter.getRoundNumber());
         outState.putSerializable(ConfigureCombatantListActivity.COMBATANT_LIST, masterCombatantList);
 
         // Save the instance data
@@ -264,15 +267,11 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         int prepBannerVisibility = View.GONE; // Should the Prepare Battle message be visible?
         int endOfRoundVisibility = View.GONE; // Should the End Of Round message be visible?
 
-        // Check if combat happened to get restarted
-        if (!masterCombatantList.isMidCombat()) {
-            maxRoundRolled = 0;
-        }
-
         // Next, get the current active Combatant and current round
 //        int currentlyActiveCombatant = adapter.getCurActiveCombatant();
         int currentlyActiveCombatant = masterCombatantList.calcActiveCombatant();
-        roundNumber = adapter.getCurRoundNumber();
+        int roundNumber = adapter.getRoundNumber();
+        int maxRoundRolled = adapter.getMaxRoundRolled();
 
         // Change GUI elements based on the current state
         if (adapter.getCombatantList().isVisiblyEmpty()) {
@@ -297,21 +296,24 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
             nextButtonText = R.string.encounter_prepare_next_round;
             endOfRoundVisibility = View.VISIBLE;
         } else {
-            // Check if we just moved into Combat
+            // Check if we just moved into combat
             String curText = nextButton.getText().toString();
-            if (currentlyActiveCombatant == 0 && roundNumber > maxRoundRolled && (curText.equals(getResources().getString(R.string.encounter_roll_initiative)) || curText.equals(getResources().getString(R.string.encounter_begin_round)))) {
-                maxRoundRolled = roundNumber; // Remember that we already did the fun animation for this round
+            if (currentlyActiveCombatant == 0 && (curText.equals(getResources().getString(R.string.encounter_roll_initiative)) || curText.equals(getResources().getString(R.string.encounter_begin_round)))) {
+                // We just finished the prep phase, starting combat now
 
-                if (PrefsHelper.doingInitButtonAnim(getContext())) {
-                    // If we just started the round, then emphasize the Roll Initiative button (for fun)!
+                if (roundNumber > maxRoundRolled) {
+                    // We just started combat for this round for the first time
+                    if (PrefsHelper.doingInitButtonAnim(getContext())) {
+                        // If we just started the round, then emphasize the Roll Initiative button (for fun)!
 
-                    doAnim = true;
-                    nextButton.setEnabled(false); // Disable the button momentarily while the animation plays out
-                    nextButton.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.emphize_wobble));
+                        doAnim = true;
+                        nextButton.setEnabled(false); // Disable the button momentarily while the animation plays out
+                        nextButton.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.emphize_wobble));
+                    }
                 }
             }
 
-            // The next button's test depends on what happens if the currently selected Combatant gets checked off
+            // The next button's text depends on what happens if the currently selected Combatant gets checked off
             EncounterCombatantList testList = masterCombatantList.clone();
             testList.get(testList.getViewIndexOf(currentlyActiveCombatant)).setSelected(true); // Simulate the user checking off the current Combatant
             int nextActiveCombatant = testList.calcActiveCombatant();
@@ -470,11 +472,6 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         return this;
     }
 
-    @Override
-    public void handlePurchases(HashSet<String> purchases) {
-        displayAd(!purchases.contains(REMOVE_ADS_SKU)); // If the user purchased the remove_ads entitlement, do not display ads
-    }
-
     public void displayAd(boolean isVisible) {
         // Display an ad if required, or remove it
         if (isVisible) {
@@ -482,6 +479,11 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         } else {
             removeAd(); // Remove the ads from the screen (if the screen is displayed right now)
         }
+    }
+
+    @Override
+    public void handlePurchases(HashSet<String> purchases) {
+        displayAd(!purchases.contains(REMOVE_ADS_SKU)); // If the user purchased the remove_ads entitlement, do not display ads
     }
 
     private void setupAd() {
@@ -580,8 +582,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         // Go back to the Configure Combatants screen
         Intent returnIntent = new Intent();
         returnIntent.putExtra(ConfigureCombatantListActivity.COMBATANT_LIST, adapter.getCombatantList()); // Create an Intent that has the current Combatant List (complete with rolls, modifiers, etc)
-        returnIntent.putExtra(ConfigureCombatantListActivity.ROUND_NUMBER, roundNumber); // Add the round number to the intent
-        returnIntent.putExtra(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, maxRoundRolled); // Add the maximum round rolled to the intent
+        returnIntent.putExtra(ConfigureCombatantListActivity.ROUND_NUMBER, adapter.getRoundNumber()); // Add the round number to the intent
+        returnIntent.putExtra(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, adapter.getMaxRoundRolled()); // Add the maximum round rolled to the intent
         setResult(RESULT_OK, returnIntent);
         finish();
     }
