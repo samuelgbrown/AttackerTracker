@@ -34,7 +34,6 @@ import java.util.Locale;
 import static android.graphics.Typeface.BOLD;
 
 public class ListCombatantRecyclerAdapter extends RecyclerView.Adapter<ListCombatantRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface {
-    // TODO TEST: ListCombatantRecyclerAdapter is no longer Serializable (because it shouldn't be), but this will probably break something...question is, what?
     private static final int UNSET = -1;
 
     public static final int COMBATANT_VIEW = 0;

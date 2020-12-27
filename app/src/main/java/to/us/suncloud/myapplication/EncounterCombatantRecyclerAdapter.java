@@ -403,7 +403,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                         setCombatantManualRoll(combatantList.get(combatantInd).getId(), -1);
 
                         // Let the adapter know that the display may have changed
-                        notifyCombatantsChanged(); // TODO Check this!!!
+                        notifyCombatantsChanged();
 //                        // If the new roll is empty, update the mystery display, and return from the function
 //                        updateRollMysteryDisplay(thisCombatant);
                         return;
@@ -435,12 +435,13 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
 
             // If the roll IS valid, then set the Combatant's roll to the new value
             thisCombatant.setRoll(newRollVal);
-            reSortInitiative(); // Resort the combatantList (also update the duplicate indices List), and update the Adapter  display
 
             // If this is the Prep phase, then let the Activity know that this Combatant's roll has been set by the player
             if (curActiveCombatant == PREP_PHASE) {
                 setCombatantManualRoll(thisCombatant.getId(), newRollVal);
             }
+
+            reSortInitiative(); // Resort the combatantList (also update the duplicate indices List), and update the Adapter  display
         }
 
         public void setModifierValueIfValid(String newModifierValString) {
@@ -487,6 +488,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             setDuplicateColor(getDuplicateColor(combatantList, pos, curActiveCombatant));
             setStatus(getStatus(combatantList, pos, curActiveCombatant));
             setChecked(isCheckedState(combatantList, pos, curActiveCombatant));
+            setDiceViewVisibility(diceCheatModeOn || (playerDefinedRolls && curActiveCombatant == PREP_PHASE));
         }
         // Methods to update individual aspects of the ViewHolder
 
@@ -578,16 +580,9 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
                     borderColor = R.color.returnToCombatant;
                     break;
                 case Prep:
-                    // TODO PLAYER ROLL: If we are in the prep phase, we want:
-                    //  If a definite roll exists (player-set, or we have already been past the prep phase), use that
-                    //  Otherwise, display the unknown roll icon
 //                    initiativeRollVisibility = View.INVISIBLE;
                     checkLayoutVisibility = View.GONE;
             }
-
-//            //  Any time the status changes (in particular we care about going into and out-of Prep phase), check if the current roll is a mystery
-//            updateRollMysteryDisplay(combatantList.get(getAdapterPosition())); // Check if the user knows the dice roll here yet
-//            setDiceViewVisibility(); // Also check if we need to update the visibility of the two roll views
 
             // Set the Combatant's ViewHolder border color
             int borderColorVal; // The int value of the new color itself (not the resource ID)
@@ -634,7 +629,6 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         }
 
         public void setDiceViewVisibility(boolean setRollEditing) {
-            // TODO: This should just accept a boolean to set the dice view visibility
             // Use the current setting of diceCheatModeOn to see which View should be seen for the viewHolder
             if (setRollEditing) {
                 // TODO START HERE: The calcActiveCombatant operation is probably slow, see if we can replace it?  Figure out if we're in Prep phase a different way...
@@ -1186,15 +1180,16 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
     }
 
     public void setCombatantManualRoll(UUID combatantID, int rollVal) {
-        // TODO START HERE:  Should handle this a bit differently if "re-roll initiative" is left unchecked!!!
 //        if (roundNumber > maxRoundRolled) {
         // Will allow players to re-roll initiative of Combatants, even if this round has already been rolled
         if (rollVal == -1) {
             // If the roll value is -1 (indicating this is an empty string or the computer_rolled symbol), then the user wants this Combatant to be rolled by the computer.  Indicate as such.
             changedBack.add(combatantID);
+            rollsSet.remove(combatantID);
         } else {
             // If the roll is a valid roll value, record that the user set it manually
             rollsSet.add(combatantID);
+            changedBack.remove(combatantID);
         }
 //        } else {
 //            Toast.makeText(getContext(), getString(R.string.warning_initiative_rolled), Toast.LENGTH_SHORT).show();

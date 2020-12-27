@@ -43,9 +43,6 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     MenuItem sortInit;
     MenuItem sortAlpha;
 
-//    int roundNumber = 1;
-//    int maxRoundRolled = 0; // TODO: Will also use this in the Player Roll feature
-
     int curTheme; // The current theme of this Activity
 
     // Parameters related to display ads
@@ -64,6 +61,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     Button nextButton;
     ImageButton previousButton;
     TextView roundCounter;
+
+    int maxRoundMainButtonAnim = 0; // Records which rounds have had the main button's Roll Initiative animation (because the Adapter's maxRoundRolled is changed before I can check it in updateGUI...)
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,7 +92,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         // Initialize some parameters, if needed
         masterCombatantList = new EncounterCombatantList(getApplicationContext());
         int roundNumber = 0;
-        int maxRoundRolled = 0;
+        maxRoundMainButtonAnim = 0;
 
         if (savedInstanceState != null) {
             // If there is a saved state, then there was probably just a configuration change, so savedInstanceState is the most up-to-date information we have
@@ -103,7 +102,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
             }
 
             if (savedInstanceState.containsKey(ConfigureCombatantListActivity.MAX_ROUND_ROLLED)) {
-                maxRoundRolled = savedInstanceState.getInt(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, 0);
+                maxRoundMainButtonAnim = savedInstanceState.getInt(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, 0);
             }
 
             // Get the master Combatant list
@@ -121,7 +120,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
             }
 
             if (thisBundleData.containsKey(ConfigureCombatantListActivity.MAX_ROUND_ROLLED)) {
-                maxRoundRolled = thisBundleData.getInt(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, 0);
+                maxRoundMainButtonAnim = thisBundleData.getInt(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, 0);
             }
 
             // Get the Combatant List
@@ -159,7 +158,7 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         encounterRecyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
 
         // Initialize the adapter as needed
-        adapter.setMaxRoundRolled(maxRoundRolled);
+        adapter.setMaxRoundRolled(maxRoundMainButtonAnim);
         adapter.updateCombatProgress();
         adapter.notifyCombatantsChanged(); // Let the adapter know that this is the initial state (update all "memory" parameters for the Combatant list and the currently active Combatant)
 
@@ -271,7 +270,6 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 //        int currentlyActiveCombatant = adapter.getCurActiveCombatant();
         int currentlyActiveCombatant = masterCombatantList.calcActiveCombatant();
         int roundNumber = adapter.getRoundNumber();
-        int maxRoundRolled = adapter.getMaxRoundRolled();
 
         // Change GUI elements based on the current state
         if (adapter.getCombatantList().isVisiblyEmpty()) {
@@ -301,7 +299,9 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
             if (currentlyActiveCombatant == 0 && (curText.equals(getResources().getString(R.string.encounter_roll_initiative)) || curText.equals(getResources().getString(R.string.encounter_begin_round)))) {
                 // We just finished the prep phase, starting combat now
 
-                if (roundNumber > maxRoundRolled) {
+                if (roundNumber > maxRoundMainButtonAnim) {
+                    maxRoundMainButtonAnim = roundNumber; // Update the max round that has had the animation
+
                     // We just started combat for this round for the first time
                     if (PrefsHelper.doingInitButtonAnim(getContext())) {
                         // If we just started the round, then emphasize the Roll Initiative button (for fun)!

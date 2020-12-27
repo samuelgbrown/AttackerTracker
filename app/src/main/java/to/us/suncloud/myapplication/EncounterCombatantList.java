@@ -371,6 +371,7 @@ public class EncounterCombatantList implements Serializable {
                 Collections.sort(combatantArrayList, new CombatantSorter.SortAlphabeticallyByFaction()); // Sort the combatantArrayList alphabetically by faction
         }
 
+        // After sorting the Combatant, update our list of duplicate initiatives
         updateDuplicateInitiatives();
     }
 
@@ -514,7 +515,6 @@ public class EncounterCombatantList implements Serializable {
         for (Combatant c : combatantArrayList) {
             // Check if each Combatant is in the set
             if (setToReRoll.contains(c.getId())) {
-                // TODO START HERE: Check if this value needs to be saved in the diceRollMap.  I don't think so...?
                 c.setRoll(getInitiativeRoll());
                 didReRoll = true;
             }
@@ -568,7 +568,6 @@ public class EncounterCombatantList implements Serializable {
     }
 
     public void updateDuplicateInitiatives() {
-        // TODO: Should this be included in the doSorting() function?
         // Update the duplicateInitiative array
         HashSet<Integer> existingInitiativeValues = new HashSet<>(); // Keep track of which values have already been found as initiatives in the Combatant List
         duplicateInitiatives = new ArrayList<>();

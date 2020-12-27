@@ -386,9 +386,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Purcha
 //    }
 
     private void setAdCategoryVisible(boolean isVisible) {
-        // TODO CHECK THIS!!!
         try {
-            PreferenceCategory adCat = findPreference(getString(R.string.key_ads_category)); // TODO: Getting Fragment not attached to context error
+            PreferenceCategory adCat = findPreference(getString(R.string.key_ads_category));
             adCat.setVisible(isVisible);
         } catch (Exception e) {
             // Do nothing...the visibility being wrong can't really hurt us, because the purchase flow won't start if the remove-ads entitlement has been bought already
