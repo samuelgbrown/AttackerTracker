@@ -368,6 +368,9 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
             // Set the color of the icon and the icon's border
             int colorId = -1;
             switch (thisCombatant.getFaction()) {
+                case Group:
+                    colorId = CombatantIcon.getContext().getResources().getColor(R.color.colorGroup);
+                    break;
                 case Party:
                     colorId = CombatantIcon.getContext().getResources().getColor(R.color.colorParty);
                     break;

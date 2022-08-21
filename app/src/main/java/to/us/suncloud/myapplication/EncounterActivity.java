@@ -36,6 +36,8 @@ import java.util.HashSet;
 import java.util.List;
 
 public class EncounterActivity extends AppCompatActivity implements EncounterCombatantRecyclerAdapter.combatProgressInterface, PurchaseHandler.purchaseHandlerInterface {
+    // TODO GROUP UPDATE: Save encounter details by default?  Allow user to save or not when quitting?
+
     EncounterCombatantList masterCombatantList;
     EncounterCombatantRecyclerAdapter adapter; // The adapter for the main Combatant list
 
@@ -97,17 +99,17 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         if (savedInstanceState != null) {
             // If there is a saved state, then there was probably just a configuration change, so savedInstanceState is the most up-to-date information we have
             // Get the current and max round numbers
-            if (savedInstanceState.containsKey(ConfigureCombatantListActivity.ROUND_NUMBER)) {
-                roundNumber = savedInstanceState.getInt(ConfigureCombatantListActivity.ROUND_NUMBER, 1);
+            if (savedInstanceState.containsKey(ConfigureFightableListActivity.ROUND_NUMBER)) {
+                roundNumber = savedInstanceState.getInt(ConfigureFightableListActivity.ROUND_NUMBER, 1);
             }
 
-            if (savedInstanceState.containsKey(ConfigureCombatantListActivity.MAX_ROUND_ROLLED)) {
-                maxRoundMainButtonAnim = savedInstanceState.getInt(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, 0);
+            if (savedInstanceState.containsKey(ConfigureFightableListActivity.MAX_ROUND_ROLLED)) {
+                maxRoundMainButtonAnim = savedInstanceState.getInt(ConfigureFightableListActivity.MAX_ROUND_ROLLED, 0);
             }
 
             // Get the master Combatant list
-            if (savedInstanceState.containsKey(ConfigureCombatantListActivity.COMBATANT_LIST)) {
-                EncounterCombatantList newList = (EncounterCombatantList) savedInstanceState.getSerializable(ConfigureCombatantListActivity.COMBATANT_LIST);
+            if (savedInstanceState.containsKey(ConfigureFightableListActivity.COMBATANT_LIST)) {
+                EncounterCombatantList newList = (EncounterCombatantList) savedInstanceState.getSerializable(ConfigureFightableListActivity.COMBATANT_LIST);
                 if (newList != null) {
                     masterCombatantList = newList;
                 }
@@ -115,17 +117,17 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         } else {
             // If there is no saved state, then load in the data from the previous activity
             // Get the current round number
-            if (thisBundleData.containsKey(ConfigureCombatantListActivity.ROUND_NUMBER)) {
-                roundNumber = thisBundleData.getInt(ConfigureCombatantListActivity.ROUND_NUMBER);
+            if (thisBundleData.containsKey(ConfigureFightableListActivity.ROUND_NUMBER)) {
+                roundNumber = thisBundleData.getInt(ConfigureFightableListActivity.ROUND_NUMBER);
             }
 
-            if (thisBundleData.containsKey(ConfigureCombatantListActivity.MAX_ROUND_ROLLED)) {
-                maxRoundMainButtonAnim = thisBundleData.getInt(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, 0);
+            if (thisBundleData.containsKey(ConfigureFightableListActivity.MAX_ROUND_ROLLED)) {
+                maxRoundMainButtonAnim = thisBundleData.getInt(ConfigureFightableListActivity.MAX_ROUND_ROLLED, 0);
             }
 
             // Get the Combatant List
-            if (thisBundleData.containsKey(ConfigureCombatantListActivity.COMBATANT_LIST)) {
-                EncounterCombatantList newList = (EncounterCombatantList) thisBundleData.getSerializable(ConfigureCombatantListActivity.COMBATANT_LIST);
+            if (thisBundleData.containsKey(ConfigureFightableListActivity.COMBATANT_LIST)) {
+                EncounterCombatantList newList = (EncounterCombatantList) thisBundleData.getSerializable(ConfigureFightableListActivity.COMBATANT_LIST);
                 if (newList != null) {
                     masterCombatantList = newList;
                 }
@@ -134,8 +136,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 
 //        // Get the currently active Combatant
 //        int curActiveCombatantIn = 1;
-//        if (thisBundleData.containsKey(ConfigureCombatantListActivity.ACTIVE_COMBATANT_NUMBER)) {
-//            curActiveCombatantIn = thisBundleData.getInt(ConfigureCombatantListActivity.ACTIVE_COMBATANT_NUMBER);
+//        if (thisBundleData.containsKey(ConfigureFightableListActivity.ACTIVE_COMBATANT_NUMBER)) {
+//            curActiveCombatantIn = thisBundleData.getInt(ConfigureFightableListActivity.ACTIVE_COMBATANT_NUMBER);
 //        }
 
         // Retrieve all Views
@@ -250,8 +252,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         // Save a few useful things (don't let Google see this, they'll get pissed off at how much data I'm saving in outState...whoops...)
-        outState.putInt(ConfigureCombatantListActivity.ROUND_NUMBER, adapter.getRoundNumber());
-        outState.putSerializable(ConfigureCombatantListActivity.COMBATANT_LIST, masterCombatantList);
+        outState.putInt(ConfigureFightableListActivity.ROUND_NUMBER, adapter.getRoundNumber());
+        outState.putSerializable(ConfigureFightableListActivity.COMBATANT_LIST, masterCombatantList);
 
         // Save the instance data
         super.onSaveInstanceState(outState);
@@ -581,9 +583,9 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
     private void returnFromActivity() {
         // Go back to the Configure Combatants screen
         Intent returnIntent = new Intent();
-        returnIntent.putExtra(ConfigureCombatantListActivity.COMBATANT_LIST, adapter.getCombatantList()); // Create an Intent that has the current Combatant List (complete with rolls, modifiers, etc)
-        returnIntent.putExtra(ConfigureCombatantListActivity.ROUND_NUMBER, adapter.getRoundNumber()); // Add the round number to the intent
-        returnIntent.putExtra(ConfigureCombatantListActivity.MAX_ROUND_ROLLED, adapter.getMaxRoundRolled()); // Add the maximum round rolled to the intent
+        returnIntent.putExtra(ConfigureFightableListActivity.COMBATANT_LIST, adapter.getCombatantList()); // Create an Intent that has the current Combatant List (complete with rolls, modifiers, etc)
+        returnIntent.putExtra(ConfigureFightableListActivity.ROUND_NUMBER, adapter.getRoundNumber()); // Add the round number to the intent
+        returnIntent.putExtra(ConfigureFightableListActivity.MAX_ROUND_ROLLED, adapter.getMaxRoundRolled()); // Add the maximum round rolled to the intent
         setResult(RESULT_OK, returnIntent);
         finish();
     }

@@ -47,7 +47,7 @@ public class EncounterCombatantList implements Serializable {
         updateDuplicateInitiatives();
     }
 
-    public EncounterCombatantList(AllFactionCombatantLists factionList, Context context) {
+    public EncounterCombatantList(AllFactionFightableLists factionList, Context context) {
         setPrefs(context);
         setCombatantArrayList(factionList);
     }
@@ -128,8 +128,8 @@ public class EncounterCombatantList implements Serializable {
         return false; // Could not find this Combatant
     }
 
-    public void setCombatantArrayList(AllFactionCombatantLists factionList) {
-        AllFactionCombatantLists clonedList = factionList.clone(); // First, make a cloned version of the list, so we don't affect any of the "real" copies of the Combatants
+    public void setCombatantArrayList(AllFactionFightableLists factionList) {
+        AllFactionFightableLists clonedList = factionList.clone(); // First, make a cloned version of the list, so we don't affect any of the "real" copies of the Combatants
         combatantArrayList = new ArrayList<>(); // Clear the current list of Combatants
         for (int i = 0; i < clonedList.getAllFactionLists().size(); i++) {
             // For each faction, add all of the Combatants to this object's ArrayList
@@ -149,7 +149,7 @@ public class EncounterCombatantList implements Serializable {
         this.haveHadPrepPhase = haveHadPrepPhase;
     }
 
-    public void updateCombatants(AllFactionCombatantLists factionList) {
+    public void updateCombatants(AllFactionFightableLists factionList) {
         // Update this Combatant list according to the incoming list
         //      We should add any new Combatants, remove any that do not appear, and ensure that the meta-data for all matching Combatants is up to date
         // First, figure out what we should initialize the new Combatants to (I really hate this, there HAS to be a better way...I think isSelected may just need to become an enum
@@ -157,17 +157,16 @@ public class EncounterCombatantList implements Serializable {
         final boolean initSelect = (curPhase == EncounterCombatantRecyclerAdapter.PREP_PHASE || curPhase == EncounterCombatantRecyclerAdapter.END_OF_ROUND_ACTIONS); // If we are in the preparation phase, then initialize selected to true (to stay in this phase).  If we are not in the preparatory phase (we are in the middle of a combat round), initialize selected to false, because the Combatant has not gone yet (god, I hate this so much...)
 
         // Assumed to be unique by ID, because the names may have changed (i.e. adding a new second copy of a given Combatant, changing the first's ordinal to 1)
-        AllFactionCombatantLists clonedList = factionList.clone(); // First, make a cloned version of the list, so we don't affect any of the "real" copies of the Combatants
-        ArrayList<FactionCombatantList> factionLists = clonedList.getAllFactionLists();
+        AllFactionFightableLists clonedList = factionList.clone(); // First, make a cloned version of the list, so we don't affect any of the "real" copies of the Combatants
+        ArrayList<FactionFightableList> factionLists = clonedList.getAllFactionLists();
 
         // Go through the incoming Combatant list, Faction by Faction
         HashSet<UUID> combatantsInThisEncounter = new HashSet<>();
         for (int facInd = 0; facInd < factionLists.size(); facInd++) {
             // For each faction, add any Combatants that are not already in this list
-            FactionCombatantList thisFactionList = factionLists.get(facInd);
+            FactionFightableList thisFactionList = factionLists.get(facInd);
             for (Combatant cNew : thisFactionList.getCombatantArrayList()) {
                 // For each Combatant in the faction list
-
                 if (idExists(cNew.getId())) {
                     // If Combatant cNew already exists in this EncounterCombatantList, just update the display values (Name, Faction, Icon, Modifier) in case anything has changed (even if we end up removing it from combat, we still want display to be saved)
                     Combatant existingCombatant = combatantArrayList.get(indByID(cNew.getId())); // A reference to the existing Combatant in this list that matches the one we are checking now from the Faction list
@@ -198,7 +197,7 @@ public class EncounterCombatantList implements Serializable {
             }
         }
 
-        // Finally, go through the current list of Combatants, find any that did not appear in the new AllFactionCombatantLists (or are not visible), and make them invisible from this new round on
+        // Finally, go through the current list of Combatants, find any that did not appear in the new AllFactionFightableLists (or are not visible), and make them invisible from this new round on
         for (Combatant c : combatantArrayList) {
             if (!combatantsInThisEncounter.contains(c.getId())) {
                 // If this Combatant shouldn't be in the current encounter, remove it
@@ -206,7 +205,7 @@ public class EncounterCombatantList implements Serializable {
             }
         }
 
-        // OLD: Finally, go through the current list of Combatants and remove any that did not appear in the new AllFactionCombatantLists
+        // OLD: Finally, go through the current list of Combatants and remove any that did not appear in the new AllFactionFightableLists
 //        Iterator<Combatant> iterator = combatantArrayList.iterator();
 //        while (iterator.hasNext()) {
 //            Combatant c = iterator.next(); // Get the Combatant to test
@@ -531,7 +530,7 @@ public class EncounterCombatantList implements Serializable {
 
         // Create a new Map
         HashMap<UUID, Integer> newDiceMap = new HashMap<>();
-        HashMap<Combatant.Faction, Integer> factionDiceMap = new HashMap<>(); // Create a new HashMap to keep track of rolls by Faction (used iff the Preference key_individual_initiative is set to "false" [meaning that each Faction should get its own initiative roll])
+        HashMap<Fightable.Faction, Integer> factionDiceMap = new HashMap<>(); // Create a new HashMap to keep track of rolls by Faction (used iff the Preference key_individual_initiative is set to "false" [meaning that each Faction should get its own initiative roll])
 
         // For each visible Combatant, roll initiative
         for (Combatant c : combatantArrayList) {

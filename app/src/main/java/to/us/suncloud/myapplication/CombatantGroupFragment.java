@@ -16,11 +16,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class CombatantGroupFragment extends Fragment {
-    final Combatant.Faction thisFaction; // The faction that this fragment represents
+    final Fightable.Faction thisFaction; // The faction that this fragment represents
     RecyclerView combatantRecyclerView;
-    ListCombatantRecyclerAdapter combatantRecyclerAdapter;
+    ListFightableRecyclerAdapter combatantRecyclerAdapter;
 
-    CombatantGroupFragment(ListCombatantRecyclerAdapter combatantRecyclerAdapter, Combatant.Faction thisFaction) {
+    CombatantGroupFragment(ListFightableRecyclerAdapter combatantRecyclerAdapter, Fightable.Faction thisFaction) {
 //        setCombatantList(newCombatantList.getCombatantArrayList());
         this.thisFaction = thisFaction;
 
@@ -47,14 +47,14 @@ public class CombatantGroupFragment extends Fragment {
 
         // Set the text view using the faction type
         ArrayList<String> allFactionNames = new ArrayList<>(Arrays.asList(getResources().getStringArray(R.array.group_names)));
-        ArrayList<Combatant.Faction> allFactionValues = new ArrayList<>(Arrays.asList(Combatant.Faction.values()));
+        ArrayList<Fightable.Faction> allFactionValues = new ArrayList<>(Arrays.asList(Fightable.Faction.values()));
         GroupTextView.setText(allFactionNames.get(allFactionValues.indexOf(thisFaction)));
 
         // Return the inflated fragment
         return fragView;
     }
 
-    public ListCombatantRecyclerAdapter getAdapter() {
+    public ListFightableRecyclerAdapter getAdapter() {
         return combatantRecyclerAdapter;
     }
 
@@ -65,7 +65,7 @@ public class CombatantGroupFragment extends Fragment {
 //        }
 //    }
 
-    public Combatant.Faction getThisFaction() {
+    public Fightable.Faction getThisFaction() {
         return thisFaction;
     }
 }

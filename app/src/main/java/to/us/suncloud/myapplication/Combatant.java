@@ -11,27 +11,22 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 // A simple class to keep track of a Combatant
-public class Combatant implements Serializable {
+public class Combatant extends Fightable implements Serializable {
     // Enforce uniqueness by name (for enemies, should ALWAYS be different, e.g. "Zombie 1", "Zombie 2"...), although the UUID is used for actual unique identification
     private static final String INIT_NAME = "New Combatant";
-    public static final int DOES_NOT_APPEAR = -2; // If, upon a search for highestOrdinalInstance among a list of Combatants, the given base name does not appear
-    public static final int NO_ORDINAL = -1; // If, upon a search for highestOrdinalInstance among a list of Combatants, the given base name does appear, but it has no ordinal (i.e. "Zombie" exists, but not "Zombie 1")
 
-    private Faction faction = Faction.Party;
     private String name; // Name will be initialized on construction
     private int iconIndex = 0; // Initialize with a blank icon
     private int speedFactor = 0;
     private int roll = 0;
     private int totalInitiative = 0;
-    private boolean isSelected = false; // Is the Combatant selected or checked off?
     private boolean isVisible = true; // Is this Combatant visible in the initiative order?
-    private UUID id = UUID.randomUUID();
 
     // Create a regex Pattern for finding the base name of a Combatant
     private static final Pattern ordinalChecker = Pattern.compile("^(.*?)(?:\\W*(\\d++)|$)"); // A pattern that matches the Combatant name into the first group, and the Combatant's ordinal number (if it exists) into the second group
 
     // Constructors
-    public Combatant(AllFactionCombatantLists listOfAllCombatants) {
+    public Combatant(AllFactionFightableLists listOfAllCombatants) {
         // Require all CombatantLists to enforce uniqueness across all lists
 
         // Once we have found a unique name, set it as this Combatant's name
@@ -47,24 +42,20 @@ public class Combatant implements Serializable {
 
     public Combatant(Combatant c) {
         // Copy constructor (used for cloning) - make an EXACT clone of this Combatant (careful about Combatant uniqueness!)
-        faction = c.getFaction();
+        setFaction(c.getFaction());
         name = c.getName();
         iconIndex = c.getIconIndex();
         speedFactor = c.getModifier();
         roll = c.getRoll();
         totalInitiative = c.getTotalInitiative();
-        id = c.getId();
-        isSelected = c.isSelected();
+        setID(c.getId());
+        setSelected(c.isSelected());
         isVisible = c.isVisible();
     }
 
     //
     // Simple Getters
     //
-    public UUID getId() {
-        return id;
-    }
-
     public int getRoll() {
         return roll;
     }
@@ -73,24 +64,12 @@ public class Combatant implements Serializable {
         return totalInitiative;
     }
 
-    public boolean isSelected() {
-        return isSelected;
-    }
-
     public boolean isVisible() {
         return isVisible;
     }
 
     public void setVisible(boolean visible) {
         isVisible = visible;
-    }
-
-    public Faction getFaction() {
-        return faction;
-    }
-
-    public void setFaction(Faction faction) {
-        this.faction = faction;
     }
 
     public void setIconIndex(int iconIndex) {
@@ -173,10 +152,6 @@ public class Combatant implements Serializable {
         calcTotalInitiative();
     }
 
-    public void setSelected(boolean selected) {
-        isSelected = selected;
-    }
-
     private void calcTotalInitiative() {
         // Recalculate the total initiative
         this.totalInitiative = speedFactor + this.roll;
@@ -212,7 +187,7 @@ public class Combatant implements Serializable {
             boolean rollEqual = getRoll() == ((Combatant) obj).getRoll();
             boolean totalEqual = getTotalInitiative() == ((Combatant) obj).getTotalInitiative();
             boolean idEqual = getId() == ((Combatant) obj).getId();
-            boolean selectedEqual = isSelected == ((Combatant) obj).isSelected();
+            boolean selectedEqual = isSelected() == ((Combatant) obj).isSelected();
 
             isEqual = nameEqual && facEqual &&iconEqual && speedEqual && rollEqual && totalEqual && idEqual && selectedEqual;
         }
@@ -238,7 +213,7 @@ public class Combatant implements Serializable {
         // Check if the Combatants are the same, for RecyclerView viewing purpose
         boolean isEqual = false;
         if (obj instanceof Combatant) {
-            boolean selectedEqual = isSelected == ((Combatant) obj).isSelected();
+            boolean selectedEqual = isSelected() == ((Combatant) obj).isSelected();
 
             isEqual = rawEquals(obj) && selectedEqual;
         }
@@ -246,16 +221,26 @@ public class Combatant implements Serializable {
         return isEqual;
     }
 
-    public void displayCopy(Combatant c) {
-        // Copy the display values from the incoming Combatant (NOT selection)
+    public void displayCopy(Fightable c) {
+        // Copy the display values from the incoming Fightable (NOT selection)
         setName(c.getName());
         setFaction(c.getFaction());
-        setIconIndex(c.getIconIndex());
-        setModifier(c.getModifier());
+        if (c instanceof Combatant) {
+            setIconIndex(((Combatant) c).getIconIndex());
+            setModifier(((Combatant) c).getModifier());
+        }
+    }
+
+    public ArrayList<Combatant> convertToCombatants() {
+        ArrayList<Combatant> returnList = new ArrayList<>();
+        returnList.add(this);
+        return returnList;
     }
 
     public static String factionToString(Faction faction) {
         switch (faction) {
+            case Group  :
+                return "Group";
             case Party:
                 return "Party";
             case Enemy:
@@ -269,23 +254,23 @@ public class Combatant implements Serializable {
 
     public void genUUID() {
         // Generate a new UUID for this Combatant
-        id = UUID.randomUUID();
+        setID(UUID.randomUUID());
     }
 
-    public static boolean isNameUnique(String nameToTest, ArrayList<FactionCombatantList> listOfAllCombatants) {
+    public static boolean isNameUnique(String nameToTest, ArrayList<FactionFightableList> listOfAllCombatants) {
         // First, generate an ArrayList of Strings of all combatants
         ArrayList<String> allCombatantNames = new ArrayList<>();
         for (int fclIndex = 0; fclIndex < listOfAllCombatants.size(); fclIndex++) {
             // For each faction, add the Combatant names list to allCombatantNames
-            allCombatantNames.addAll(listOfAllCombatants.get(fclIndex).getCombatantNamesList());
+            allCombatantNames.addAll(listOfAllCombatants.get(fclIndex).getFightableNamesList());
         }
 
         // Then, see if the supplied name is unique to the supplied list
         return !allCombatantNames.contains(nameToTest);
     }
 
-    public static String generateUniqueName(AllFactionCombatantLists listOfAllCombatants) {
-//        return generateUniqueName(listOfAllCombatants.getCombatantNamesList());
+    public static String generateUniqueName(AllFactionFightableLists listOfAllCombatants) {
+//        return generateUniqueName(listOfAllCombatants.getFightableNamesList());
         int highestOrdinalInstance = listOfAllCombatants.getHighestOrdinalInstance(INIT_NAME);
         switch (highestOrdinalInstance) {
             case DOES_NOT_APPEAR:
@@ -297,7 +282,7 @@ public class Combatant implements Serializable {
                 return INIT_NAME + "  2";
             default:
                 // There is a Combatant with this name already, so add one to the highest ordinal number
-                return INIT_NAME + "" + (highestOrdinalInstance + 1);
+                return INIT_NAME + " " + (highestOrdinalInstance + 1);
         }
     }
 
@@ -332,11 +317,5 @@ public class Combatant implements Serializable {
         newCombatant.clearRoll();
         newCombatant.setSelected(false);
         return newCombatant;
-    }
-
-    enum Faction {
-        Party,
-        Enemy,
-        Neutral
     }
 }

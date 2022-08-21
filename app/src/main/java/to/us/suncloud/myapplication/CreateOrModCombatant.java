@@ -31,8 +31,6 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.google.android.gms.common.util.NumberUtils;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -44,6 +42,7 @@ import java.util.Locale;
  */
 public class CreateOrModCombatant extends DialogFragment implements IconSelectFragment.ReceiveIconSelectionInterface {
 
+    // TODO: GROUP - Decide how to handle this.  Make a separate Dialog to create/mod different kinds of Fightables...?
     private static final String TAG = "CreateOrMod";
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ORIGINAL_COMBATANT = "originalCombatant";
@@ -86,7 +85,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
      *
      * @return A new instance of fragment CreateOrModCombatant.
      */
-    public static CreateOrModCombatant newInstance(receiveNewOrModCombatantInterface receiver, Combatant originalCombatant, AllFactionCombatantLists factionCombatantListToBeAddedTo, Bundle returnBundle) {
+    public static CreateOrModCombatant newInstance(receiveNewOrModCombatantInterface receiver, Combatant originalCombatant, AllFactionFightableLists factionCombatantListToBeAddedTo, Bundle returnBundle) {
         // To modify an existing Combatant
         // Pre-process the faction list to get a list of all Combatant names
 
@@ -94,29 +93,29 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         Bundle args = new Bundle();
         args.putSerializable(ORIGINAL_COMBATANT, originalCombatant.clone()); // Create a clone of the incoming Combatant (even when modifying, the old Combatant will just be removed and the newly modified version re-added to the list.  This is a simple way to deal with issues of name uniqueness during modification)
         args.putSerializable(RECEIVER, receiver);
-        args.putSerializable(COMBATANT_LIST_TO_BE_ADDED_TO, factionCombatantListToBeAddedTo.getCombatantNamesList());
+        args.putSerializable(COMBATANT_LIST_TO_BE_ADDED_TO, factionCombatantListToBeAddedTo.getFightableNamesList());
         args.putBundle(RETURN_BUNDLE, returnBundle);
         fragment.setArguments(args);
         return fragment;
     }
 
-    public static CreateOrModCombatant newInstance(receiveNewOrModCombatantInterface receiver, AllFactionCombatantLists factionCombatantListToBeAddedTo, Bundle returnBundle) {
+    public static CreateOrModCombatant newInstance(receiveNewOrModCombatantInterface receiver, AllFactionFightableLists factionCombatantListToBeAddedTo, Bundle returnBundle) {
         // To create a new Combatant
         CreateOrModCombatant fragment = new CreateOrModCombatant();
         Bundle args = new Bundle();
         args.putSerializable(RECEIVER, receiver);
-        args.putSerializable(COMBATANT_LIST_TO_BE_ADDED_TO, factionCombatantListToBeAddedTo.getCombatantNamesList());
+        args.putSerializable(COMBATANT_LIST_TO_BE_ADDED_TO, factionCombatantListToBeAddedTo.getFightableNamesList());
         args.putBundle(RETURN_BUNDLE, returnBundle);
         fragment.setArguments(args);
         return fragment;
     }
 
     // Same newInstance methods as above, with no included Bundle
-    public static CreateOrModCombatant newInstance(receiveNewOrModCombatantInterface receiver, AllFactionCombatantLists factionCombatantListToBeAddedTo) {
+    public static CreateOrModCombatant newInstance(receiveNewOrModCombatantInterface receiver, AllFactionFightableLists factionCombatantListToBeAddedTo) {
         return newInstance(receiver, factionCombatantListToBeAddedTo, new Bundle());
     }
 
-    public static CreateOrModCombatant newInstance(receiveNewOrModCombatantInterface receiver, Combatant originalCombatant, AllFactionCombatantLists factionCombatantListToBeAddedTo) {
+    public static CreateOrModCombatant newInstance(receiveNewOrModCombatantInterface receiver, Combatant originalCombatant, AllFactionFightableLists factionCombatantListToBeAddedTo) {
         return newInstance(receiver, originalCombatant, factionCombatantListToBeAddedTo, new Bundle());
     }
 
@@ -340,17 +339,17 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 String factionString = adapterView.getItemAtPosition(i).toString(); // Get a string representing the faction that was chosen
 
-                // Based on the string of the item that was selected, set the faction of the combatantw
-                Combatant.Faction thisFaction = Combatant.Faction.Party;
+                // Based on the string of the item that was selected, set the faction of the combatant
+                Fightable.Faction thisFaction = Fightable.Faction.Party;
                 switch (factionString) {
                     case "Party":
-                        thisFaction = Combatant.Faction.Party;
+                        thisFaction = Fightable.Faction.Party;
                         break;
                     case "Enemy":
-                        thisFaction = Combatant.Faction.Enemy;
+                        thisFaction = Fightable.Faction.Enemy;
                         break;
                     case "Neutral":
-                        thisFaction = Combatant.Faction.Neutral;
+                        thisFaction = Fightable.Faction.Neutral;
                 }
 
                 // Once we know the faction that was selected...
@@ -395,17 +394,17 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
 
         if (creatingCombatant) {
             // If we're making a new Combatant, ask for the Combatant's Name field to get focus, and show the keyboard (if we're just modifying a Combatant, we don't KNOW that it's the name that they want to change)
-            combatantName.post(new Runnable() {
+            final InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            combatantName.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     combatantName.setSelectAllOnFocus(true);
                     if (combatantName.requestFocus()) {
-                        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                        imm.showSoftInput(combatantName, InputMethodManager.SHOW_IMPLICIT);
+                        imm.showSoftInput(combatantName, 0);
                     }
                     combatantName.setSelectAllOnFocus(false);
                 }
-            });
+            }, 100);
         }
 
 
@@ -471,11 +470,14 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         TypedValue val = new TypedValue();
         getContext().getTheme().resolveAttribute(R.attr.bannerTextColor, val, true);
         int themeBannerTextColor = val.data;
-        Combatant.Faction faction = currentCombatant.getFaction();
+        Fightable.Faction faction = currentCombatant.getFaction();
         if (banner != null && title != null) {
             int mainColor = getResources().getColor(R.color.colorParty);
             int textColor = themeBannerTextColor;
             switch (faction) {
+                case Group:
+                    mainColor = getResources().getColor(R.color.colorGroup);
+                    break;
                 case Party:
                     mainColor = getResources().getColor(R.color.colorParty);
                     break;
@@ -555,6 +557,7 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
     }
 
     interface receiveNewOrModCombatantInterface extends Serializable {
+        // TODO: Change this interface to reference Fightables, and make it into its own file
         void receiveCombatant(Combatant newCombatant, Bundle returnBundle);
 
         void notifyCombatantChanged(Bundle returnBundle);

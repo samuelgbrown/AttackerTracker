@@ -96,14 +96,16 @@ public class CombatantSorter {
 
     // Sorting Comparator to sort the Combatants first by Faction, then alphabetically
     static public class SortAlphabeticallyByFaction implements Comparator<Combatant> {
-        private int factionToInt(Combatant.Faction f) {
+        private int factionToInt(Fightable.Faction f) {
             switch (f) {
-                case Party:
+                case Group:
                     return 0;
-                case Enemy:
+                case Party:
                     return 1;
-                case Neutral:
+                case Enemy:
                     return 2;
+                case Neutral:
+                    return 3;
                 default:
                     return 10;
             }
@@ -140,9 +142,9 @@ public class CombatantSorter {
         }
     }
 
-    static public class SortFactionList implements Comparator<FactionCombatantList> {
+    static public class SortFactionList implements Comparator<FactionFightableList> {
         @Override
-        public int compare(FactionCombatantList o1, FactionCombatantList o2) {
+        public int compare(FactionFightableList o1, FactionFightableList o2) {
             return o1.faction().compareTo(o2.faction()); // Sort according to the factions
         }
     }

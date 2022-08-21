@@ -5,7 +5,6 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.cardview.widget.CardView;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -33,7 +32,7 @@ import java.util.ArrayList;
  * create an instance of this fragment.
  */
 
-public class ViewSavedCombatantsFragment extends DialogFragment implements ListCombatantRecyclerAdapter.MasterCombatantKeeper, CreateOrModCombatant.receiveNewOrModCombatantInterface {
+public class ViewSavedCombatantsFragment extends DialogFragment implements ListFightableRecyclerAdapter.MasterFightableKeeper, CreateOrModCombatant.receiveNewOrModCombatantInterface {
     private static final String TAG = "ViewSavedCombatants";
     // The fragment initialization parameters
     private static final String CURRENT_COMBATANT_LIST = "currentCombatantList";
@@ -42,19 +41,19 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
     private static final String combatantListSaveFile = "combatantListSaveFile";
 
-//    HashMap<Combatant.Faction, FactionFragmentInfo> factionFragmentMap = new HashMap<>();
+//    HashMap<Fightable.Faction, FactionFragmentInfo> factionFragmentMap = new HashMap<>();
 
 
-    //    private AllFactionCombatantLists eligibleCombatantsList = null; // An list of Combatants that appear in the savedCombatantsList plus any Combatants that have been added
-    private AllFactionCombatantLists savedCombatantsList = null; // An exact copy of the Combatant list from the saved file
-    private AllFactionCombatantLists currentFactionCombatantList = null; // Used to generate a master Combatant list, to send to the CreateOrModCombatant dialogue
+    //    private AllFactionFightableLists eligibleCombatantsList = null; // An list of Combatants that appear in the savedCombatantsList plus any Combatants that have been added
+    private AllFactionFightableLists savedCombatantsList = null; // An exact copy of the Combatant list from the saved file
+    private AllFactionFightableLists currentFactionCombatantList = null; // Used to generate a master Combatant list, to send to the CreateOrModCombatant dialogue
 
     private boolean expectingReturnedCombatant = false;
     private boolean isMultiSelecting = false; // Is the Fragment (or adapter) currently in a multi-selecting state?
 
     private ReceiveAddedCombatant combatantDestination = null; // The Activity/Fragment that will receive the selected Combatant
 
-    private ListCombatantRecyclerAdapter adapter;
+    private ListFightableRecyclerAdapter adapter;
     private View emptyCombatants;
     private ImageButton multiSelectConfirm;
     private ImageButton multiSelectCancel;
@@ -69,8 +68,8 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
      *
      * @return A new instance of fragment AddCombatantFragment.
      */
-//    static ViewSavedCombatantsFragment newAddCombatantToListInstance(ReceiveAddedCombatant combatantDestination, AllFactionCombatantLists currentFactionCombatantList) {
-    static ViewSavedCombatantsFragment newAddCombatantToListInstance(AllFactionCombatantLists currentFactionCombatantList) {
+//    static ViewSavedCombatantsFragment newAddCombatantToListInstance(ReceiveAddedCombatant combatantDestination, AllFactionFightableLists currentFactionCombatantList) {
+    static ViewSavedCombatantsFragment newAddCombatantToListInstance(AllFactionFightableLists currentFactionCombatantList) {
         ViewSavedCombatantsFragment fragment = new ViewSavedCombatantsFragment();
         Bundle args = new Bundle();
         args.putSerializable(CURRENT_COMBATANT_LIST, currentFactionCombatantList);
@@ -91,12 +90,18 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // TODO GROUP UPDATE: Want to allow the user to group combatants together into a group, to be added all together.  Must include ability to:
+        //      1) Create a group of combatants
+        //      2) See this group of combatants in the Combatant list
+        //          a) Must either have useful/descriptive name, display combatants in group when in list, or show contents of group when selected?
+        //      3) Select this group of combatants to add to the party
 
         // Load in combatants from file (process them later)
-        savedCombatantsList = (AllFactionCombatantLists) LocalPersistence.readObjectFromFile(requireContext(), combatantListSaveFile);
+        // TODO: DEBUG GROUP START HERE: Make sure that we're reading the Combatants from the file correctly.  Then make sure we're SAVING the Combatants to the file correctly?
+        savedCombatantsList = (AllFactionFightableLists) LocalPersistence.readObjectFromFile(requireContext(), combatantListSaveFile);
         if (savedCombatantsList == null) {
             // If there aren't any previously saved Combatants (not even a blank AllFactionCombatantList), then make a new empty list to represent them
-            savedCombatantsList = new AllFactionCombatantLists();
+            savedCombatantsList = new AllFactionFightableLists();
         }
 
         if (getArguments() != null) {
@@ -107,11 +112,11 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
                 // If this Fragment is intended to add a new Combatant to the Encounter...
                 if (getArguments().containsKey(CURRENT_COMBATANT_LIST)) {
                     // This list will be null if a) this is the first time this fragment has been used on this device, or b) no combatants have been saved previously
-                    currentFactionCombatantList = ((AllFactionCombatantLists) getArguments().getSerializable(CURRENT_COMBATANT_LIST)).clone(); // Get a "snapshot" clone of the incoming List, because this List may end up being modified over the lifetime of this Fragment (due to adding Combatants)
+                    currentFactionCombatantList = ((AllFactionFightableLists) getArguments().getSerializable(CURRENT_COMBATANT_LIST)).clone(); // Get a "snapshot" clone of the incoming List, because this List may end up being modified over the lifetime of this Fragment (due to adding Combatants)
 //                    eligibleCombatantsList.removeAll(currentFactionCombatantList); // Remove all of the Combatants in the incoming list from the list of Combatants found in the file (the user cannot add anyone that already exists in the party) (REMOVED: They user can add a second "copy" of an existing Combatant, which will be dealt with automatically)
                 } else {
                     Log.e(TAG, "Did not receive Combatant list");
-                    currentFactionCombatantList = new AllFactionCombatantLists(); // No other Combatants need to be considered, aside from those that are saved
+                    currentFactionCombatantList = new AllFactionFightableLists(); // No other Combatants need to be considered, aside from those that are saved
                 }
 
                 // Save the Combatant destination (cannot be passed as Fragment argument, otherwise there will be Serialization errors)
@@ -128,7 +133,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 //                }
             } else {
                 // If this Fragment is intended only to modify the saved Combatant list?
-                currentFactionCombatantList = new AllFactionCombatantLists(); // No other Combatants need to be considered, aside from those that are saved
+                currentFactionCombatantList = new AllFactionFightableLists(); // No other Combatants need to be considered, aside from those that are saved
 
             }
 
@@ -203,10 +208,10 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 //        });
 
         // Create an adapter and give it to the Recycler View
-        ListCombatantRecyclerAdapter.LCRAFlags flags = new ListCombatantRecyclerAdapter.LCRAFlags(); // Create flags
+        ListFightableRecyclerAdapter.LFRAFlags flags = new ListFightableRecyclerAdapter.LFRAFlags(); // Create flags
         flags.adapterCanModify = !expectingReturnedCombatant;
         flags.mustReturnCombatant = expectingReturnedCombatant;
-        adapter = new ListCombatantRecyclerAdapter(this, savedCombatantsList.clone(), flags); // Populate a Recycler view with the saved Combatants
+        adapter = new ListFightableRecyclerAdapter(this, savedCombatantsList.clone(), flags); // Populate a Recycler view with the saved Combatants
         combatantListView.setAdapter(adapter);
         combatantListView.addItemDecoration(new BannerDecoration(getContext()));
         combatantListView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -217,11 +222,15 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
             public void onClick(View v) {
                 // Get the list of Combatants from the adapter, and return the list to whoever called this Fragment
                 if (expectingReturnedCombatant) {
-                    ArrayList<Combatant> returnList = adapter.getAllSelectedCombatants(); // Get a list of all selected Combatants
+                    ArrayList<Fightable> selectedList = adapter.getAllSelectedFightables(); // Get a list of all selected Combatants
 
                     // Go through the entire list, and send each one to the destination, one-by-one
-                    for (int i = 0; i < returnList.size(); i++) {
-                        combatantDestination.receiveAddedCombatant(returnList.get(i).cloneUnique()); // Clone the Combatant and send it
+                    for (int i = 0; i < selectedList.size(); i++) {
+                        Fightable thisFightable = selectedList.get(i);
+                        ArrayList<Combatant> fightableAsCombatantList = thisFightable.convertToCombatants(); // If this is some non-Combatant fightable, convert it to a list of Combatants
+                        for (int j = 0;j < fightableAsCombatantList.size(); j++) {
+                            combatantDestination.receiveAddedCombatant(fightableAsCombatantList.get(j).cloneUnique()); // Clone the Combatant and send it
+                        }
                     }
 
                     // Next, try to add this Combatant to the Combatant list, and close up
@@ -246,7 +255,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     }
 
     private void updateNoCombatantMessage() {
-        // TO_DO LATER: This is VERY similar to the code in ConfigureCombatantListActivity, could perhaps consolidate them somehow?
+        // TO_DO LATER: This is VERY similar to the code in ConfigureFightableListActivity, could perhaps consolidate them somehow?
         boolean haveCombatants = false;
         if (adapter.getCombatantList() != null) {
             haveCombatants = !adapter.getCombatantList().isVisibleEmpty(); // Are any Combatant visible?
@@ -263,9 +272,9 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 //        FragmentManager fm = getChildFragmentManager();
 //        FragmentTransaction fragTransaction = null;
 //
-//        ArrayList<FactionCombatantList> factionCombatantLists = eligibleCombatantsList.getAllFactionLists();
+//        ArrayList<FactionFightableList> factionCombatantLists = eligibleCombatantsList.getAllFactionLists();
 //        for (int facInd = 0; facInd < factionCombatantLists.size(); facInd++) {
-//            FactionCombatantList factionList = factionCombatantLists.get(facInd);
+//            FactionFightableList factionList = factionCombatantLists.get(facInd);
 //
 //            // Check the two cases in which we will need to do a fragment transaction
 //            boolean mustAdd = !factionList.isEmpty() && !factionFragmentMap.containsKey(factionList.faction());  // We must add a fragment if the list is not empty, but there is no fragment for this faction
@@ -281,7 +290,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 //                // If we must add a fragment to display this faction
 //
 //                // Create a recyclerAdapter for each faction's recyclerview (done here so that item click handling will be simpler
-//                ListCombatantRecyclerAdapter adapter = new ListCombatantRecyclerAdapter(this, getContext(), eligibleCombatantsList.getAllFactionLists().get(facInd), !expectingReturnedCombatant); // If we are expecting a Combatant to return from the Fragment (we are selecting a Combatant to add), then we CANNOT modify the list.   If we are just viewing/modifying at the saved Combatants list, then we CAN modify the list
+//                ListFightableRecyclerAdapter adapter = new ListFightableRecyclerAdapter(this, getContext(), eligibleCombatantsList.getAllFactionLists().get(facInd), !expectingReturnedCombatant); // If we are expecting a Combatant to return from the Fragment (we are selecting a Combatant to add), then we CANNOT modify the list.   If we are just viewing/modifying at the saved Combatants list, then we CAN modify the list
 //
 //                // Create a new container view to add to the LinearLayout
 //                FrameLayout thisFragmentContainer = new FrameLayout(getContext());
@@ -314,7 +323,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 //
 //            // Let the adapter know that the Combatants list *may* have changed, if we are neither adding a Fragment (nothing changed because we just initialized it) nor removing one (it no longer exists, so doesn't need to update)
 //            if (factionFragmentMap.containsKey(factionList.faction())) {
-//                factionFragmentMap.get(factionList.faction()).getFragment().getAdapter().notifyCombatantListChanged();
+//                factionFragmentMap.get(factionList.faction()).getFragment().getAdapter().notifyFightableListChanged();
 //
 //                // Remove and re-add the Fragment view, so that the views are all in order, if we are neither adding a Fragment (already added this loop) nor removing a Fragment (don't need to worry about it anymore)
 //                combatantGroupParent.removeView(factionFragmentMap.get(factionList.faction()).getContainer());
@@ -329,13 +338,15 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     }
 
     @Override
-    public void receiveChosenCombatant(Combatant selectedCombatant) {
-        // Just received a Combatant from the ListCombatantRecyclerAdapter because the user selected one
+    public void receiveChosenFightable(Fightable selectedFightable) {
+        // Just received a Combatant from the ListFightableRecyclerAdapter because the user selected one
 
         if (expectingReturnedCombatant) {
-
-            // First, send the Combatant back to the calling Activity/Fragment
-            combatantDestination.receiveAddedCombatant(selectedCombatant.cloneUnique());
+            // Convert the Fightable to a CombatantList, and send the Combatants back to the calling Activity/Fragment
+            ArrayList<Combatant> fightableAsCombatantList = selectedFightable.convertToCombatants(); // If this is some non-Combatant fightable, convert it to a list of Combatants
+            for (int i = 0;i < fightableAsCombatantList.size(); i++) {
+                combatantDestination.receiveAddedCombatant(fightableAsCombatantList.get(i).cloneUnique()); // Clone the Combatant and send it
+            }
 
             // Next, try to add this Combatant to the Combatant list
             saveAndClose();
@@ -361,7 +372,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     }
 
     @Override
-    public void notifyCombatantListChanged() {
+    public void notifyFightableListChanged() {
         // If the Combatant List was modified, check if we need to display the no Combatant message
         updateNoCombatantMessage();
 
@@ -386,7 +397,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     }
 
     @Override
-    public boolean safeToDelete(Combatant combatant) {
+    public boolean safeToDelete(Fightable fightable) {
         return true; // Combatants in the bookmarked section can always be fully deleted, if need-be
     }
 
@@ -395,7 +406,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
         // If a Combatant with this base-name already exists, then don't bother saving it
         if (!adapter.getCombatantList().containsName(newCombatant.getBaseName())) {
             // If no other Combatant exists with this name, then make a clone of the Combatant with only the base name, and sanitize its roll, etc
-            adapter.addCombatant(newCombatant.getRaw());
+            adapter.addFightable(newCombatant.getRaw());
             saveCombatantList();
         } else if (!expectingReturnedCombatant) {
             // If the only reason the user is here is to modify the saved Combatants, and they just added a Combatant with an ordinal, tell them how silly they are
@@ -413,7 +424,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
 
     private void saveCombatantList() {
         // Save the Combatant data that we have now
-//        AllFactionCombatantLists newSavedCombatantsList = eligibleCombatantsList.clone(); // Create a list that contains the eligible Combatants (Combatants from the save file PLUS any Combatants that were just made)...
+//        AllFactionFightableLists newSavedCombatantsList = eligibleCombatantsList.clone(); // Create a list that contains the eligible Combatants (Combatants from the save file PLUS any Combatants that were just made)...
 //        newSavedCombatantsList.addAll(currentFactionCombatantList); // ... and the Combatants from the current Encounter
         if (!adapter.getCombatantList().rawEquals(savedCombatantsList)) {
             // If the test list is not equal to the list of Combatants from the file, that means that some Combatants were added (or possibly removed...?), so we should save the new list
@@ -456,8 +467,8 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListC
     }
 
 
-    private AllFactionCombatantLists generateMasterCombatantList() {
-        AllFactionCombatantLists masterCombatantList = new AllFactionCombatantLists();
+    private AllFactionFightableLists generateMasterCombatantList() {
+        AllFactionFightableLists masterCombatantList = new AllFactionFightableLists();
         masterCombatantList.addAll(adapter.getCombatantList());
         masterCombatantList.addAll(currentFactionCombatantList);
         return masterCombatantList;

@@ -5,13 +5,11 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 
-import java.util.ArrayList;
-
 public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
-    AllFactionCombatantLists oldList;
-    AllFactionCombatantLists newList;
+    AllFactionFightableLists oldList;
+    AllFactionFightableLists newList;
 
-    CombatantFilteredDiffUtil(AllFactionCombatantLists oldList, AllFactionCombatantLists newList) {
+    CombatantFilteredDiffUtil(AllFactionFightableLists oldList, AllFactionFightableLists newList) {
         this.oldList = oldList;
         this.newList = newList;
     }
@@ -29,8 +27,8 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
     @Override
     public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
         // First, see if these positions are Combatants or banners
-        int oldCombatantInd = oldList.posToCombatantInd(oldItemPosition);
-        int newCombatantInd = newList.posToCombatantInd(newItemPosition);
+        int oldCombatantInd = oldList.posToFightableInd(oldItemPosition);
+        int newCombatantInd = newList.posToFightableInd(newItemPosition);
         if ((2*oldCombatantInd + 1)*(2*newCombatantInd + 1) > 0 ) {
             if (oldCombatantInd >= 0) {
                 // Both items are Combatants
@@ -51,14 +49,13 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
     public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
         // Check if ALL of the values are the same
         // First, see if these positions are Combatants or banners
-        int oldCombatantInd = oldList.posToCombatantInd(oldItemPosition);
-        int newCombatantInd = newList.posToCombatantInd(newItemPosition);
+        int oldCombatantInd = oldList.posToFightableInd(oldItemPosition);
+        int newCombatantInd = newList.posToFightableInd(newItemPosition);
         if ((2*oldCombatantInd + 1)*(2*newCombatantInd + 1) > 0 ) {
             if (oldCombatantInd >= 0) {
                 // Both items are Combatants
                 // Make sure both Combatant displays are identical, and that the isSelected status is the same
-                boolean contentsSame = oldList.get(oldCombatantInd).displayEquals(newList.get(newCombatantInd));
-                return contentsSame;
+                return oldList.get(oldCombatantInd).displayEquals(newList.get(newCombatantInd));
             } else {
                 // Both items are banners
                 return oldCombatantInd == newCombatantInd;
@@ -73,25 +70,30 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
     @Override
     public Object getChangePayload(int oldItemPosition, int newItemPosition) {
         // For this list, we only care about name, faction, icon, and isSelected status
-        int oldCombatantInd = oldList.posToCombatantInd(oldItemPosition);
-        int newCombatantInd = newList.posToCombatantInd(newItemPosition);
+        int oldCombatantInd = oldList.posToFightableInd(oldItemPosition);
+        int newCombatantInd = newList.posToFightableInd(newItemPosition);
 
-        Combatant oldCombatant = oldList.get(oldCombatantInd);
-        Combatant newCombatant = newList.get(newCombatantInd);
+        Fightable oldFightable = oldList.get(oldCombatantInd);
+        Fightable newFightable = newList.get(newCombatantInd);
 
         // Go through each field that we care about, and record any differences
         Bundle diffs = new Bundle();
-        if (!oldCombatant.getName().equals(newCombatant.getName())) {
-            diffs.putString("Name", newCombatant.getName());
+        if (!oldFightable.getName().equals(newFightable.getName())) {
+            diffs.putString("Name", newFightable.getName());
         }
-        if (!oldCombatant.getFaction().equals(newCombatant.getFaction())) {
-            diffs.putSerializable("Faction", newCombatant.getFaction());
+        if (!oldFightable.getFaction().equals(newFightable.getFaction())) {
+            diffs.putSerializable("Faction", newFightable.getFaction());
         }
-        if (!(oldCombatant.getIconIndex() == newCombatant.getIconIndex())) {
-            diffs.putInt("Icon", newCombatant.getIconIndex());
+        if (oldFightable.isSelected() != newFightable.isSelected()) {
+            diffs.putBoolean("Selected", newFightable.isSelected());
         }
-        if (oldCombatant.isSelected() != newCombatant.isSelected()) {
-            diffs.putBoolean("Selected", newCombatant.isSelected());
+        if ((oldFightable instanceof Combatant) && (newFightable instanceof  Combatant))
+        {
+            Combatant oldCombatant = (Combatant) oldFightable;
+            Combatant newCombatant = (Combatant) newFightable;
+            if (!(oldCombatant.getIconIndex() == newCombatant.getIconIndex())) {
+                diffs.putInt("Icon", newCombatant.getIconIndex());
+            }
         }
         if (diffs.size() == 0) {
             return null;

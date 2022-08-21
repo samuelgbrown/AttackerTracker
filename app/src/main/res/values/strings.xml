@@ -91,10 +91,12 @@ TIP: Save a combatant\'s default initiative modifier here.  It can be changed du
     <string name="restart_combat_title">Restart combat?</string>
     <string name="restart_combat_message">Are you sure you want to restart combat?</string>
 
+    <string name="group_header">Groups</string>
     <string name="party_header">Party Combatants</string>
     <string name="enemy_header">Enemy Combatants</string>
     <string name="neutral_header">Neutral Combatants</string>
     <string-array name="group_names">
+        <item>@string/group_header</item>
         <item>@string/party_header</item>
         <item>@string/enemy_header</item>
         <item>@string/neutral_header</item>

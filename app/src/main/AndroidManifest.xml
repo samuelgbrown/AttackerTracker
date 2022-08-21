@@ -17,7 +17,7 @@
 
         <activity android:name=".EncounterActivity" />
         <activity android:name=".SettingsActivity" />
-        <activity android:name=".ConfigureCombatantListActivity">
+        <activity android:name=".ConfigureFightableListActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -2,15 +2,13 @@ package to.us.suncloud.myapplication;
 
 import androidx.recyclerview.widget.DiffUtil;
 
-import java.util.ArrayList;
-
 public class CombatantFilteredDiffUtil_Old extends DiffUtil.Callback {
-    FactionCombatantList oldList;
-    FactionCombatantList newList;
+    FactionFightableList oldList;
+    FactionFightableList newList;
     String oldString;
     String newString;
 
-    CombatantFilteredDiffUtil_Old(FactionCombatantList oldList, String oldString, FactionCombatantList newList, String newString) {
+    CombatantFilteredDiffUtil_Old(FactionFightableList oldList, String oldString, FactionFightableList newList, String newString) {
         this.oldList = oldList;
         this.newList = newList;
         this.oldString = oldString;
