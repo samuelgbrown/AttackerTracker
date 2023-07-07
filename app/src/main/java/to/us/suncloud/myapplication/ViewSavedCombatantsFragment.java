@@ -95,9 +95,27 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         //      2) See this group of combatants in the Combatant list
         //          a) Must either have useful/descriptive name, display combatants in group when in list, or show contents of group when selected?
         //      3) Select this group of combatants to add to the party
+        //      Workflows:
+        //          Add Combatant and View Saved Combatants will be combined into one button (functionality is too similar to be separate)
+        //          Create group / Add combatant(s) to group - Multi-select combatant *from any VSCF*, select "Add to group..."
+        //              Create an AllFactionFightableLists object using these combatants, sorting each into respective lists
+        //              New dialog appears with list of all current groups (plus "Create new group...")
+        //                  If adding to old group, add Combatants and pull up View Group dialog on that group
+        //                  If adding to new group, create new group with default name, pass to View Group dialog, pull up View Group dialog
+        //              Will add REFERENCE to any non-doubled Combatants to the group
+        //              If any already exist, tell user "One or more combatants are already in this group.\nAdd multiples of a Combatant by editing the group!"
+        //          View group - Click gear button for group - brings up new modal window, similar to VSCF but different enough that it will be independent.  Can change name of group, and change Combatants
+        //          From view group, add / remove combatant - Trash Bin icon for each Combatant
+        //          From view group, adding multiples of a Combatant - "Multiple person" icon for each Combatant - Extra portion on left of viewholder (where checkmark currently lives) will indicate multiples of a Combatant iff they are greater than 1
+        //          Add group to combat - Add group, same as Combatants are added.  If copy already exists, then ask user for each copy whether it should be added ("X is already in the Encounter!  Add a copy of X-nonordinal?") - use same response for copies
+        //              Go through each group combatant - if exists, get response from user - then resolve copies
+        //          Modifying Combatant (if it is in a group) - No new workflow, but changes will be reflected in groups
+        //          Deleting Combatant (if it is in a group) - Add text to delete confirmation ("Are you sure you want to delete this combatant?  It is in at least one group").
+        //          Exiting the app - Will save entire state by default on exit (including Encounter)
+        //          Stretch - Import/Export Combatants / Groups
+        //          Stretch - Import/Export Encounter data
 
         // Load in combatants from file (process them later)
-        // TODO: DEBUG GROUP START HERE: Make sure that we're reading the Combatants from the file correctly.  Then make sure we're SAVING the Combatants to the file correctly?
         savedCombatantsList = (AllFactionFightableLists) LocalPersistence.readObjectFromFile(requireContext(), combatantListSaveFile);
         if (savedCombatantsList == null) {
             // If there aren't any previously saved Combatants (not even a blank AllFactionCombatantList), then make a new empty list to represent them
@@ -478,6 +496,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         void receiveAddedCombatant(Combatant addedCombatant);
     }
 
+    // TODO: Remove?  Is this unused?
     static class FactionFragmentInfo {
         public CombatantGroupFragment thisFrag;
         public FrameLayout thisContainer;
