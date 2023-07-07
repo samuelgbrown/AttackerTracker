@@ -7,7 +7,7 @@ import java.util.Collections;
 
 // Simple wrapper for a list of combatants or groups that also holds faction information
 public class FactionFightableList implements Serializable {
-    // TODO GROUP UPDATE: Change this below ArrayList to contain a new class, one that will be a parent to Fightables and Groups
+    // TODO GROUP UPDATE: Change this below ArrayList to contain a new class, one that will be a parent to Fightables (Edit: I think I meant Combatants?) and Groups
     //      Check this class does with Fightables that this parent class must be able to do
     private ArrayList<Fightable> fightableArrayList;
     private Fightable.Faction thisFaction;

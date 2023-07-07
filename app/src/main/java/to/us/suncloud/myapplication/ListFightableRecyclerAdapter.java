@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Locale;
 
 public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFightableRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface {
-    // TODO: GROUP ACTUALLY START HERE - 2 observed bugs: 1) Enemy Combatant will change over to Party Combatant when loading the ViewSavedCombatantsFragment, 2) the app crashes when trying to load the encounter
     private static final int UNSET = -1;
 
     public static final int COMBATANT_VIEW = 0;

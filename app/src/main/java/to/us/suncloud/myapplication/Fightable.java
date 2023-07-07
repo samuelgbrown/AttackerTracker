@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 // A bare-bones abstract class that can represent either a Combatant or a Group of combatants.
-abstract public class Fightable {
+abstract public class Fightable implements Serializable {
     private Faction faction = Faction.Party;
     private boolean isSelected = false; // Is the Combatant selected or checked off?
     private UUID id = UUID.randomUUID();
