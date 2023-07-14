@@ -39,9 +39,10 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 
     private static final String TAG = "ListFightableRecycler";
 
-    MasterFightableKeeper parent = null; // If this is set, then the selected Combatant will be sent to the parent
-    boolean adapterCanModify = false; // Can the adapter modify the Combatant (used so that we can use this adapter for both Combatant display and modify+display purposes, because they are VERY similar)
-    boolean adapterCanCopy = false; // Can the adapter copy the Combatant (used in the Configure Activity, but not for viewing the saved Combatants
+    MasterFightableKeeper parent; // If this is set, then the selected Combatant will be sent to the parent
+    boolean adapterCanModify; // Can the adapter modify the Combatant (used so that we can use this adapter for both Combatant display and modify+display purposes, because they are VERY similar)
+    boolean adapterCanCopy; // Can the adapter copy the Combatant (used in the Configure Activity, but not for viewing the saved Combatants
+    boolean canMultiSelect; // Can the adapter allow multi-selecting of Combatants (does that make sense in context?)
 
 //    private FactionFightableList fightableList_Master; // The master version of the list
 //    //    private FactionFightableList combatantList_Display; // The version of the list that will be used for display (will take into account filtering from the search)
@@ -52,7 +53,6 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
     private AllFactionFightableLists fightableList_Memory; // A memory version of the list, to see what changes have occurred
     private ArrayList<ArrayList<Integer>> fightableFilteredIndices; // The indices in fightableList_Master that contain the given filter string
 
-    boolean expectingReturnFightable; // Is the adapter expected to return a Combatant (therefore, is it allowed to do multiselect)?
     boolean isMultiSelecting = false; // Is the adapter currently in multiselect mode
     ArrayList<Integer> iconResourceIds; // A list of resource ID's of the icons that will be used for each Combatant
 
@@ -124,7 +124,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
         this.parent = parent;
         this.adapterCanModify = flags.adapterCanModify;
         this.adapterCanCopy = flags.adapterCanCopy;
-        this.expectingReturnFightable = flags.mustReturnCombatant;
+        this.canMultiSelect = flags.canMultiSelect;
         this.fightableList_Master = combatantList; // Save the reference (master will be modified directly)
 //        this.combatantList_Display = new FactionFightableList(combatantList); // COPY the main list for these two lists, so that the master is not changed
         this.fightableList_Memory = combatantList.clone();
@@ -132,7 +132,6 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 //        clearMultiSelect(); // More trouble than it's worth...
         setupIconResourceIDs();
         fightableFilteredIndices = fightableList_Master.getIndicesThatMatch(filteredText);
-
     }
 
     private void setupIconResourceIDs() {
@@ -157,24 +156,22 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
     }
 
     public void clearMultiSelect() {
-        if (expectingReturnFightable) {
-            // Initialize the multi-select to have no selections
-            // Re-initialize the isSelected list to be all false
-            for (int i = 0; i < fightableList_Master.size(); i++) {
-                fightableList_Master.get(i).setSelected(false); // Set each Combatant to be deselected
-            }
-
-            // Now notify the adapter that we have changed the selection status (this will update isMultiSelecting)
-            notifyFightableListChanged();
-
-            parent.notifyIsMultiSelecting(isMultiSelecting);
+        // Initialize the multi-select to have no selections
+        // Re-initialize the isSelected list to be all false
+        for (int i = 0; i < fightableList_Master.size(); i++) {
+            fightableList_Master.get(i).setSelected(false); // Set each Combatant to be deselected
         }
+
+        // Now notify the adapter that we have changed the selection status (this will update isMultiSelecting)
+        notifyFightableListChanged();
+
+        parent.notifyIsMultiSelecting(isMultiSelecting);
     }
 
     public void updateMultiSelectStatus() {
-        if (expectingReturnFightable) {
-            // Update the isMultiSelecting variable based on the current values in isSelectedList
-            isMultiSelecting = false;
+        // Update the isMultiSelecting variable based on the current values in isSelectedList
+        isMultiSelecting = false;
+        if (canMultiSelect) {
             for (int i = 0; i < fightableList_Master.size(); i++) {
                 if (fightableList_Master.get(i).isSelected()) {
                     isMultiSelecting = true;
@@ -221,9 +218,9 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 
         View itemView;
         TextView NameView;
-        ImageButton CombatantRemove;
-        ImageButton CombatantChangeCombatant;
-        ImageButton CombatantCopy;
+        ImageButton CombatantRemove; // Only change visibility through setCombatantRemoveVisibility
+        ImageButton CombatantChangeCombatant; // Only change visibility through setCombatantChangeCombatantVisibility
+        ImageButton CombatantCopy; // Only change visibility through setCombatantCopyVisibility
         ImageView CombatantIcon;
         ConstraintLayout CombatantIconBorder;
         ConstraintLayout CombatantMultiSelect;
@@ -255,22 +252,21 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
             View.OnClickListener returnCombatantListener = new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (expectingReturnFightable) {
-                        // If we are expecting a Combatant to return, then figure out what the user is trying to do (otherwise, ignore the click)
-                        if (isMultiSelecting) {
-                            // If we are currently multi-selecting, then we just want to toggle this Combatant's isSelected status, and update any GUI elements
-                            boolean newIsSelected = !displayList().get(posToCombatantInd(getAdapterPosition())).isSelected(); // Toggle the current value
+                    // TODO: GROUP - Do we need to add a confirmation dialog here, because we combined the add/view dialogs?
+                    // If we are expecting a Combatant to return, then figure out what the user is trying to do (otherwise, ignore the click)
+                    if (isMultiSelecting) {
+                        // If we are currently multi-selecting, then we just want to toggle this Combatant's isSelected status, and update any GUI elements
+                        boolean newIsSelected = !displayList().get(posToCombatantInd(getAdapterPosition())).isSelected(); // Toggle the current value
 
-                            // Update the master list
-                            displayList().get(posToCombatantInd(getAdapterPosition())).setSelected(newIsSelected);
+                        // Update the master list
+                        displayList().get(posToCombatantInd(getAdapterPosition())).setSelected(newIsSelected);
 
-                            // Update the GUI, and notify the adapter
-                            notifyFightableListChanged();
-                        } else {
-                            if (parent != null) {
-                                // Get the current position in the adapter, use it to find the Combatant position in fightableList_Master (taking into account the banners), use that to find this Combatant in the master list (taking into account the filter string with "subList()"), and make a unique clone of it to send back to the parent (phew...)
-                                parent.receiveChosenFightable(displayList().get(posToCombatantInd(getAdapterPosition())).cloneUnique());
-                            }
+                        // Update the GUI, and notify the adapter
+                        notifyFightableListChanged();
+                    } else {
+                        if (parent != null) {
+                            // Get the current position in the adapter, use it to find the Combatant position in fightableList_Master (taking into account the banners), use that to find this Combatant in the master list (taking into account the filter string with "subList()"), and make a unique clone of it to send back to the parent (phew...)
+                            parent.receiveChosenFightable(displayList().get(posToCombatantInd(getAdapterPosition())).cloneUnique());
                         }
                     }
                 }
@@ -280,37 +276,33 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
             NameView.setOnClickListener(returnCombatantListener);
             itemView.setOnClickListener(returnCombatantListener);
 
-            if (expectingReturnFightable) {
-                // If this adapter can multi-select, set up the interface with the Viewholders
-                View.OnLongClickListener multiSelectStartListener = new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        if (expectingReturnFightable) {
-                            if (!isMultiSelecting) {
-                                // If we can multi-select, but we aren't multi-selecting right now, then the user wants to start multi-selecting, and also select this Combatant
-                                // Update the value of isSelectedList
-                                displayList().get(posToCombatantInd(getAdapterPosition())).setSelected(true);
+            // If this adapter can multi-select, set up the interface with the Viewholders
+            View.OnLongClickListener multiSelectStartListener = new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    if (canMultiSelect && !isMultiSelecting) {
+                        // If we can multi-select, but we aren't multi-selecting right now, then the user wants to start multi-selecting, and also select this Combatant
+                        // Update the value of isSelectedList
+                        displayList().get(posToCombatantInd(getAdapterPosition())).setSelected(true);
 
-                                // Let the adapter know that this has become selected
-                                notifyFightableListChanged();
-                                return true; // Let Android know that we handled this click here, so we don't need to activate the standard onClickListener
-                            }
-                        }
+                        // Let the adapter know that this has become selected
+                        notifyFightableListChanged();
+                        return true; // Let Android know that we handled this click here, so we don't need to activate the standard onClickListener
+                    } // If not multi-selecting, click will be handled as normal click
 
-                        return false; // Nothing happened, to go back to the standard onClickListener
-                    }
-                };
+                    return false; // Nothing happened, to go back to the standard onClickListener
+                }
+            };
 
-                CombatantIcon.setOnLongClickListener(multiSelectStartListener);
-                NameView.setOnLongClickListener(multiSelectStartListener);
-                itemView.setOnLongClickListener(multiSelectStartListener);
-            }
+            CombatantIcon.setOnLongClickListener(multiSelectStartListener);
+            NameView.setOnLongClickListener(multiSelectStartListener);
+            itemView.setOnLongClickListener(multiSelectStartListener);
 
+            setCombatantChangeCombatantVisibility(View.VISIBLE);
+            setCombatantRemoveVisibility(View.VISIBLE);
+            setCombatantCopyVisibility(View.VISIBLE);
             if (adapterCanModify) {
                 // If the adapter can modify the Combatants/the Combatant list, then allow the user to do so through these buttons
-                CombatantChangeCombatant.setVisibility(View.VISIBLE);
-                CombatantRemove.setVisibility(View.VISIBLE);
-
                 CombatantChangeCombatant.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -350,14 +342,9 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
                                 .show();
                     }
                 });
-            } else {
-                // If we cannot modify the combatants/the Combatant list, then remove the options
-                CombatantChangeCombatant.setVisibility(View.GONE);
-                CombatantRemove.setVisibility(View.GONE);
             }
 
             if (adapterCanCopy) {
-                CombatantCopy.setVisibility(View.VISIBLE);
                 CombatantCopy.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -381,9 +368,6 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
                     }
                 });
 
-            } else {
-                // If we can't copy the Combatant, then make the button disappear
-                CombatantCopy.setVisibility(View.GONE);
             }
         }
 
@@ -472,7 +456,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
             // This will get called by onBindViewHolder via payload in the event that all must be deselected (if the Combatant list gets modified in ANY WAY)
             // Set the visibility of the multi-select pane based on the input
             final int visibility;
-            if (expectingReturnFightable && isSelected) {
+            if (isSelected) {
                 // If we can multi-select in this list, AND this Combatant is selected, then make the multi-select pane visible
                 visibility = View.VISIBLE;
             } else {
@@ -481,6 +465,43 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 
             // Update the GUI
             CombatantMultiSelect.setVisibility(visibility);
+        }
+
+        public void setMultiSelectingMode(boolean isMultiSelecting) {
+            // This will be called when the adapter enters or exits multi selecting mode (for ALL viewHolders)
+            final int visibility;
+            if (isMultiSelecting) {
+                visibility = View.GONE;
+            } else {
+                visibility = View.VISIBLE;
+            }
+
+            // Update the GUI
+            setCombatantRemoveVisibility(visibility);
+            setCombatantChangeCombatantVisibility(visibility);
+            setCombatantCopyVisibility(visibility);
+        }
+
+        private void setCombatantRemoveVisibility(int newVis) {
+            if ( adapterCanModify ) {
+                CombatantRemove.setVisibility(newVis);
+            } else {
+                CombatantRemove.setVisibility(View.GONE);
+            }
+        }
+        private void setCombatantChangeCombatantVisibility(int newVis) {
+            if ( adapterCanModify ) {
+                CombatantChangeCombatant.setVisibility(newVis);
+            } else {
+                CombatantChangeCombatant.setVisibility(View.GONE);
+            }
+        }
+        private void setCombatantCopyVisibility(int newVis) {
+            if ( adapterCanCopy ) {
+                CombatantCopy.setVisibility(newVis);
+            } else {
+                CombatantCopy.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -716,6 +737,15 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
                         if (key.equals("Selected")) {
                             ((CombatantViewHolder) holder).setSelected(args.getBoolean(key));
                         }
+                        if (key.equals("MultiSelect")) {
+                            boolean newMultiSelectingMode = false;
+                            if (args.getSerializable(key) == CombatantFilteredDiffUtil.MultiSelectVisibilityChange.START_MULTISELECT) {
+                                newMultiSelectingMode = true;
+                            } else if ( args.getSerializable(key) == CombatantFilteredDiffUtil.MultiSelectVisibilityChange.END_MULTISELECT) {
+                                newMultiSelectingMode = false;
+                            }
+                            ((CombatantViewHolder) holder).setMultiSelectingMode(newMultiSelectingMode);
+                        }
                     }
                 }
                 return; // The payload was not empty, so don't bother going on to the the non-payload onBindViewHolder
@@ -783,15 +813,24 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 //        initializeCombatantFilteredIndices();
         fightableFilteredIndices = fightableList_Master.getIndicesThatMatch(filteredText);
 
+        // Make sure that the multi-select status is updated
+        CombatantFilteredDiffUtil.MultiSelectVisibilityChange visChange =
+                CombatantFilteredDiffUtil.MultiSelectVisibilityChange.NO_CHANGE;
+        boolean oldIsMultiSelecting = isMultiSelecting;
+        updateMultiSelectStatus();
+        if ( oldIsMultiSelecting && !isMultiSelecting ) {
+            visChange = CombatantFilteredDiffUtil.MultiSelectVisibilityChange.END_MULTISELECT;
+        } else if ( isMultiSelecting && !oldIsMultiSelecting ) {
+            visChange = CombatantFilteredDiffUtil.MultiSelectVisibilityChange.START_MULTISELECT;
+        }
+
+        // TODO: GROUP - Does CombatantFilteredDiffUtil need to be changed to support groups as well?
         // If anything about the combatants has changed (specifically the viewed version of the list according to fightableFilteredIndices), see if we need to rearrange the list
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantFilteredDiffUtil(fightableList_Memory, fightableList_Master.subListVisible(fightableFilteredIndices)));
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantFilteredDiffUtil(fightableList_Memory, fightableList_Master.subListVisible(fightableFilteredIndices), visChange));
         diffResult.dispatchUpdatesTo(this); // If anything has changed, move the list items around
 
         // Update the memory list
         fightableList_Memory = fightableList_Master.subListVisible(fightableFilteredIndices).clone();
-
-        // Make sure that the multi-select status is updated
-        updateMultiSelectStatus();
 
         // Let the parent know that the Combatant List changed (maybe)
         parent.notifyFightableListChanged();
@@ -848,6 +887,6 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
     static public class LFRAFlags implements Serializable {
         public boolean adapterCanModify = false;
         public boolean adapterCanCopy = false;
-        public boolean mustReturnCombatant = false;
+        public boolean canMultiSelect = false;
     }
 }

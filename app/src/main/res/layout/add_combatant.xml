@@ -15,46 +15,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <Button
-            android:id="@+id/add_new_combatant"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="0dp"
-            android:layout_marginBottom="8dp"
-            android:text="@string/new_combatant"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/cancel_multi_select"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <ImageButton
-            android:id="@+id/cancel_multi_select"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_marginEnd="0dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/cancel_24dp"
-            android:visibility="visible"
-            app:layout_constraintBottom_toBottomOf="@id/add_new_combatant"
-            app:layout_constraintDimensionRatio="1:1"
-            app:layout_constraintEnd_toStartOf="@+id/confirm_multi_select"
-            app:layout_constraintTop_toTopOf="@id/add_new_combatant" />
-
-        <ImageButton
-            android:id="@+id/confirm_multi_select"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_marginEnd="8dp"
-            android:backgroundTint="?attr/selected"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_baseline_check_24"
-            android:visibility="visible"
-            app:layout_constraintBottom_toBottomOf="@id/cancel_multi_select"
-            app:layout_constraintDimensionRatio="1:1"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/cancel_multi_select" />
-
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/add_combatant_title_background"
             android:layout_width="match_parent"
@@ -72,7 +32,7 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="8dp"
                 android:layout_marginBottom="8dp"
-                android:text="@string/add_combatant_title"
+                android:text="@string/view_saved_combatants_title"
                 android:textAlignment="center"
                 android:textColor="#FFFFFF"
                 android:textSize="18sp"
@@ -126,10 +86,78 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toTopOf="@+id/add_new_combatant"
+            app:layout_constraintBottom_toTopOf="@+id/options_layout"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/search_card" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/options_layout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <Button
+                android:id="@+id/add_new_combatant"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/new_combatant"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/multi_select_options"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/multi_select_options"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/add_new_combatant">
+
+                <Button
+                    android:id="@+id/add_to_group"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_to_group"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/cancel_multi_select"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageButton
+                    android:id="@+id/cancel_multi_select"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/cancel_24dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintDimensionRatio="1:1"
+                    app:layout_constraintEnd_toStartOf="@+id/confirm_multi_select"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageButton
+                    android:id="@+id/confirm_multi_select"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:backgroundTint="?attr/selected"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_baseline_check_24"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintDimensionRatio="1:1"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/add_combatants_empty"

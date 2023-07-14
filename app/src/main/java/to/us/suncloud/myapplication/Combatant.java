@@ -120,7 +120,6 @@ public class Combatant extends Fightable implements Serializable {
         // Set a few values for the new Combatant
         rawCombatant.clearRoll();
         rawCombatant.setName(getBaseName());
-        rawCombatant.genUUID();
         rawCombatant.setSelected(false);
         return rawCombatant;
     }

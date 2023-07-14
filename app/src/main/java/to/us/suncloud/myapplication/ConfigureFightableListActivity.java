@@ -159,6 +159,7 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
         ListFightableRecyclerAdapter.LFRAFlags flags = new ListFightableRecyclerAdapter.LFRAFlags(); // Create flags structure (does this look worse?  It may look worse...I just wanted it to be clean!!!)
         flags.adapterCanCopy = true;
         flags.adapterCanModify = true;
+        flags.canMultiSelect = false;
         adapter = new ListFightableRecyclerAdapter(this, combatantLists, flags);
         combatantListView.setAdapter(adapter);
         combatantListView.setHasFixedSize(true);
@@ -445,31 +446,22 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        switch (id) {
-            case R.id.settings:
-                // Open the settings menu
-                Intent settingsIntent = new Intent(this, SettingsActivity.class);
-                if (curEncounterListData != null) {
-                    settingsIntent.putExtra(SettingsFragment.IS_MID_COMBAT, curEncounterListData.isMidCombat()); // Let the Settings Activity know if we are mid-combat
-                }
-                startActivity(settingsIntent);
-                return true;
-            case R.id.open_bookmarks:
-                // Open the bookmarked Combatants menu
-                FragmentManager fm_ob = getSupportFragmentManager();
-                ViewSavedCombatantsFragment viewBookmarksFrag = ViewSavedCombatantsFragment.newModifySavedCombatantListInstance();
-                viewBookmarksFrag.show(fm_ob, "Open Bookmarks");
-                return true;
-            case R.id.add_combatant:
-                // Open the add Combatant menu
-                FragmentManager fm_ac = getSupportFragmentManager();
-//                ViewSavedCombatantsFragment addCombatantFrag = ViewSavedCombatantsFragment.newAddCombatantToListInstance(this, adapter.getCombatantList());
-                ViewSavedCombatantsFragment addCombatantFrag = ViewSavedCombatantsFragment.newAddCombatantToListInstance(adapter.getCombatantList());
-                addCombatantFrag.show(fm_ac, "AddCombatantToList");
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        if (id == R.id.settings) {// Open the settings menu
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            if (curEncounterListData != null) {
+                settingsIntent.putExtra(SettingsFragment.IS_MID_COMBAT, curEncounterListData.isMidCombat()); // Let the Settings Activity know if we are mid-combat
+            }
+            startActivity(settingsIntent);
+            return true;
+        } else if (id == R.id.open_bookmarks) {// Open the bookmarked Combatants menu
+            FragmentManager fm_ob = getSupportFragmentManager();
+            ViewSavedCombatantsFragment viewBookmarksFrag = ViewSavedCombatantsFragment.newViewBookmarkedFightablesInstance(adapter.getCombatantList());
+            viewBookmarksFrag.show(fm_ob, "Open Bookmarks");
+            return true;
+        } else {
+            // Do Nothing - unrecognized ID
         }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override

@@ -6,12 +6,20 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 
 public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
+    public enum MultiSelectVisibilityChange {
+        NO_CHANGE,
+        START_MULTISELECT,
+        END_MULTISELECT
+    }
+
     AllFactionFightableLists oldList;
     AllFactionFightableLists newList;
+    MultiSelectVisibilityChange visibilityChange;
 
-    CombatantFilteredDiffUtil(AllFactionFightableLists oldList, AllFactionFightableLists newList) {
+    CombatantFilteredDiffUtil(AllFactionFightableLists oldList, AllFactionFightableLists newList, MultiSelectVisibilityChange visChange) {
         this.oldList = oldList;
         this.newList = newList;
+        visibilityChange = visChange;
     }
 
     @Override
@@ -33,8 +41,7 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
             if (oldCombatantInd >= 0) {
                 // Both items are Combatants
                 // Compare the UUID of the Combatants
-                boolean areSame = oldList.get(oldCombatantInd).getId().equals(newList.get(newCombatantInd).getId());
-                return areSame;
+                return oldList.get(oldCombatantInd).getId().equals(newList.get(newCombatantInd).getId());
             } else {
                 // Both items are banners
                 return oldCombatantInd == newCombatantInd;
@@ -48,14 +55,21 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
     @Override
     public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
         // Check if ALL of the values are the same
+
         // First, see if these positions are Combatants or banners
         int oldCombatantInd = oldList.posToFightableInd(oldItemPosition);
         int newCombatantInd = newList.posToFightableInd(newItemPosition);
+
         if ((2*oldCombatantInd + 1)*(2*newCombatantInd + 1) > 0 ) {
             if (oldCombatantInd >= 0) {
                 // Both items are Combatants
-                // Make sure both Combatant displays are identical, and that the isSelected status is the same
-                return oldList.get(oldCombatantInd).displayEquals(newList.get(newCombatantInd));
+                if (visibilityChange != MultiSelectVisibilityChange.NO_CHANGE) {
+                    // If the multi-select visibility is changing, contents are different
+                    return false;
+                } else {
+                    // Make sure both Combatant displays are identical, and that the isSelected status is the same
+                    return oldList.get(oldCombatantInd).displayEquals(newList.get(newCombatantInd));
+                }
             } else {
                 // Both items are banners
                 return oldCombatantInd == newCombatantInd;
@@ -95,6 +109,11 @@ public class CombatantFilteredDiffUtil extends DiffUtil.Callback {
                 diffs.putInt("Icon", newCombatant.getIconIndex());
             }
         }
+        if ( visibilityChange != MultiSelectVisibilityChange.NO_CHANGE )
+        {
+            diffs.putSerializable("MultiSelect", visibilityChange);
+        }
+
         if (diffs.size() == 0) {
             return null;
         }

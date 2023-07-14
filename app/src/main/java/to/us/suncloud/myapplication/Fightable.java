@@ -19,7 +19,7 @@ abstract public class Fightable implements Serializable {
     abstract public Fightable clone();
     abstract public Fightable cloneUnique();
     abstract public Fightable getRaw();
-    abstract public ArrayList<Combatant> convertToCombatants();
+    abstract public ArrayList<Combatant> convertToCombatants(); // TODO: GROUP - For Combatant with multiples, just add the same Combatant to the list multiple times
 
     abstract public String getName();
     abstract public String getBaseName();

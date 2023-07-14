@@ -500,7 +500,7 @@ public class AllFactionFightableLists implements Serializable {
         if (obj instanceof AllFactionFightableLists) {
             AllFactionFightableLists objRaw = ((AllFactionFightableLists) obj).getRawCopy();
             AllFactionFightableLists thisRaw = getRawCopy();
-            return thisRaw.equals(objRaw);
+            isEqual = thisRaw.equals(objRaw);
         }
 
         return isEqual;

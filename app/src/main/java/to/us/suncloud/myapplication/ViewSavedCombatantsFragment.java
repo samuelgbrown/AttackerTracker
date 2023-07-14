@@ -5,6 +5,7 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -28,7 +29,7 @@ import java.util.ArrayList;
 
 /**
  * A simple {@link Fragment} subclass.
- * Use the {@link ViewSavedCombatantsFragment#newAddCombatantToListInstance} factory method to
+ * Use the {@link ViewSavedCombatantsFragment#newViewBookmarkedFightablesInstance} factory method to
  * create an instance of this fragment.
  */
 
@@ -36,8 +37,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
     private static final String TAG = "ViewSavedCombatants";
     // The fragment initialization parameters
     private static final String CURRENT_COMBATANT_LIST = "currentCombatantList";
-    private static final String COMBATANT_DESTINATION = "combatantDestination";
-    private static final String EXPECTING_RETURNED_COMBATANT = "expectingReturnedCombatant";
 
     private static final String combatantListSaveFile = "combatantListSaveFile";
 
@@ -48,15 +47,15 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
     private AllFactionFightableLists savedCombatantsList = null; // An exact copy of the Combatant list from the saved file
     private AllFactionFightableLists currentFactionCombatantList = null; // Used to generate a master Combatant list, to send to the CreateOrModCombatant dialogue
 
-    private boolean expectingReturnedCombatant = false;
     private boolean isMultiSelecting = false; // Is the Fragment (or adapter) currently in a multi-selecting state?
 
     private ReceiveAddedCombatant combatantDestination = null; // The Activity/Fragment that will receive the selected Combatant
 
     private ListFightableRecyclerAdapter adapter;
     private View emptyCombatants;
-    private ImageButton multiSelectConfirm;
-    private ImageButton multiSelectCancel;
+
+    private Button addNewCombatant;
+    private ConstraintLayout multiSelectLayout;
 
     public ViewSavedCombatantsFragment() {
         // Required empty public constructor
@@ -68,21 +67,10 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
      *
      * @return A new instance of fragment AddCombatantFragment.
      */
-//    static ViewSavedCombatantsFragment newAddCombatantToListInstance(ReceiveAddedCombatant combatantDestination, AllFactionFightableLists currentFactionCombatantList) {
-    static ViewSavedCombatantsFragment newAddCombatantToListInstance(AllFactionFightableLists currentFactionCombatantList) {
+    static ViewSavedCombatantsFragment newViewBookmarkedFightablesInstance(AllFactionFightableLists currentFactionCombatantList) {
         ViewSavedCombatantsFragment fragment = new ViewSavedCombatantsFragment();
         Bundle args = new Bundle();
         args.putSerializable(CURRENT_COMBATANT_LIST, currentFactionCombatantList);
-//        args.putSerializable(COMBATANT_DESTINATION, combatantDestination);
-        args.putBoolean(EXPECTING_RETURNED_COMBATANT, true); // If an AddCombatant Fragment is requested, then they are expecting a Combatant to be returned to the calling Activity/Fragment
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    static ViewSavedCombatantsFragment newModifySavedCombatantListInstance() {
-        ViewSavedCombatantsFragment fragment = new ViewSavedCombatantsFragment();
-        Bundle args = new Bundle();
-        args.putBoolean(EXPECTING_RETURNED_COMBATANT, false); // If a ViewSavedCombatants Fragment is requested, then they are NOT expecting a Combatant; this is just for viewing/modifying the list
         fragment.setArguments(args);
         return fragment;
     }
@@ -96,7 +84,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         //          a) Must either have useful/descriptive name, display combatants in group when in list, or show contents of group when selected?
         //      3) Select this group of combatants to add to the party
         //      Workflows:
-        //          Add Combatant and View Saved Combatants will be combined into one button (functionality is too similar to be separate)
+        //          X Add Combatant and View Saved Combatants will be combined into one button (functionality is too similar to be separate)
         //          Create group / Add combatant(s) to group - Multi-select combatant *from any VSCF*, select "Add to group..."
         //              Create an AllFactionFightableLists object using these combatants, sorting each into respective lists
         //              New dialog appears with list of all current groups (plus "Create new group...")
@@ -109,6 +97,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         //          From view group, adding multiples of a Combatant - "Multiple person" icon for each Combatant - Extra portion on left of viewholder (where checkmark currently lives) will indicate multiples of a Combatant iff they are greater than 1
         //          Add group to combat - Add group, same as Combatants are added.  If copy already exists, then ask user for each copy whether it should be added ("X is already in the Encounter!  Add a copy of X-nonordinal?") - use same response for copies
         //              Go through each group combatant - if exists, get response from user - then resolve copies
+        //  ************If INVISIBLE version of combatant exists - ?????
         //          Modifying Combatant (if it is in a group) - No new workflow, but changes will be reflected in groups
         //          Deleting Combatant (if it is in a group) - Add text to delete confirmation ("Are you sure you want to delete this combatant?  It is in at least one group").
         //          Exiting the app - Will save entire state by default on exit (including Encounter)
@@ -122,39 +111,26 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
             savedCombatantsList = new AllFactionFightableLists();
         }
 
+        // Initialize arguments
+        currentFactionCombatantList = new AllFactionFightableLists();
+
+        // Read arguments
         if (getArguments() != null) {
-            // First, see which mode we're in
-            expectingReturnedCombatant = getArguments().getBoolean(EXPECTING_RETURNED_COMBATANT);
-
-            if (expectingReturnedCombatant) {
-                // If this Fragment is intended to add a new Combatant to the Encounter...
-                if (getArguments().containsKey(CURRENT_COMBATANT_LIST)) {
-                    // This list will be null if a) this is the first time this fragment has been used on this device, or b) no combatants have been saved previously
-                    currentFactionCombatantList = ((AllFactionFightableLists) getArguments().getSerializable(CURRENT_COMBATANT_LIST)).clone(); // Get a "snapshot" clone of the incoming List, because this List may end up being modified over the lifetime of this Fragment (due to adding Combatants)
-//                    eligibleCombatantsList.removeAll(currentFactionCombatantList); // Remove all of the Combatants in the incoming list from the list of Combatants found in the file (the user cannot add anyone that already exists in the party) (REMOVED: They user can add a second "copy" of an existing Combatant, which will be dealt with automatically)
-                } else {
-                    Log.e(TAG, "Did not receive Combatant list");
-                    currentFactionCombatantList = new AllFactionFightableLists(); // No other Combatants need to be considered, aside from those that are saved
-                }
-
-                // Save the Combatant destination (cannot be passed as Fragment argument, otherwise there will be Serialization errors)
-                try {
-                    combatantDestination = (ReceiveAddedCombatant) getActivity();
-                } catch (ClassCastException e) {
-                    Log.e(TAG, "Activity cannot be cast to ReceiveAddedCombatant: " + e.getLocalizedMessage());
-                }
-
-//                if (getArguments().containsKey(COMBATANT_DESTINATION)) {
-//                    combatantDestination = (ReceiveAddedCombatant) getArguments().getSerializable(COMBATANT_DESTINATION);
-//                } else {
-//                    Log.e(TAG, "Did not receive Combatant Destination");
-//                }
+            // If this Fragment is intended to add a new Combatant to the Encounter...
+            if (getArguments().containsKey(CURRENT_COMBATANT_LIST)) {
+                // This list will be null if a) this is the first time this fragment has been used on this device, or b) no combatants have been saved previously
+                currentFactionCombatantList = ((AllFactionFightableLists) getArguments().getSerializable(CURRENT_COMBATANT_LIST)).clone(); // Get a "snapshot" clone of the incoming List, because this List may end up being modified over the lifetime of this Fragment (due to adding Combatants)
             } else {
-                // If this Fragment is intended only to modify the saved Combatant list?
-                currentFactionCombatantList = new AllFactionFightableLists(); // No other Combatants need to be considered, aside from those that are saved
-
+                // Will consider combatants saved in the file, but none others
+                Log.e(TAG, "Did not receive Combatant list");
             }
 
+            // Save the Combatant destination (cannot be passed as Fragment argument, otherwise there will be Serialization errors)
+            try {
+                combatantDestination = (ReceiveAddedCombatant) getActivity();
+            } catch (ClassCastException e) {
+                Log.e(TAG, "Activity cannot be cast to ReceiveAddedCombatant: " + e.getLocalizedMessage());
+            }
         } else {
             Log.e(TAG, "Did not receive arguments");
         }
@@ -169,23 +145,14 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         final SearchView searchView = layoutContents.findViewById(R.id.add_combatant_search);
         emptyCombatants = layoutContents.findViewById(R.id.add_combatants_empty);
         RecyclerView combatantListView = layoutContents.findViewById(R.id.view_saved_combatants_list);
-        Button addNewCombatant = layoutContents.findViewById(R.id.add_new_combatant);
-//        ImageButton closeButton = layoutContents.findViewById(R.id.view_list_close);
         TextView title = layoutContents.findViewById(R.id.view_saved_combatants_title);
-        multiSelectConfirm = layoutContents.findViewById(R.id.confirm_multi_select);
-        multiSelectCancel = layoutContents.findViewById(R.id.cancel_multi_select);
 
-        if (expectingReturnedCombatant) {
-            // We want to add a new Combatant to the encounter
-            title.setText(R.string.add_combatant_title);
-
-//            closeButton.setVisibility(View.GONE);
-        } else {
-            // We are just looking at/modifying the bookmarked Combatants
-            title.setText(R.string.mod_saved_combatant);
-
-//            closeButton.setVisibility(View.VISIBLE);
-        }
+        addNewCombatant = layoutContents.findViewById(R.id.add_new_combatant); // Saved to toggle visibility
+        multiSelectLayout = layoutContents.findViewById(R.id.multi_select_options); // Saved to toggle visibility
+        Button addToGroup = layoutContents.findViewById(R.id.add_to_group);
+        ImageButton multiSelectConfirm = layoutContents.findViewById(R.id.confirm_multi_select);
+        ImageButton multiSelectCancel = layoutContents.findViewById(R.id.cancel_multi_select);
+        title.setText(R.string.view_saved_combatants_title);
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -222,13 +189,13 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
 //                // Close the view
 //                // If changing flow, here we will want to a) return the selected combatant to the combatantDestination, and b) probably change the location of the button to which this listener is ascribed
 //                saveAndClose();
-//            }
+//            }.
 //        });
 
         // Create an adapter and give it to the Recycler View
         ListFightableRecyclerAdapter.LFRAFlags flags = new ListFightableRecyclerAdapter.LFRAFlags(); // Create flags
-        flags.adapterCanModify = !expectingReturnedCombatant;
-        flags.mustReturnCombatant = expectingReturnedCombatant;
+        flags.adapterCanModify = true;
+        flags.canMultiSelect = true;
         adapter = new ListFightableRecyclerAdapter(this, savedCombatantsList.clone(), flags); // Populate a Recycler view with the saved Combatants
         combatantListView.setAdapter(adapter);
         combatantListView.addItemDecoration(new BannerDecoration(getContext()));
@@ -239,23 +206,20 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
             @Override
             public void onClick(View v) {
                 // Get the list of Combatants from the adapter, and return the list to whoever called this Fragment
-                if (expectingReturnedCombatant) {
-                    ArrayList<Fightable> selectedList = adapter.getAllSelectedFightables(); // Get a list of all selected Combatants
+                ArrayList<Fightable> selectedList = adapter.getAllSelectedFightables(); // Get a list of all selected Combatants
 
-                    // Go through the entire list, and send each one to the destination, one-by-one
-                    for (int i = 0; i < selectedList.size(); i++) {
-                        Fightable thisFightable = selectedList.get(i);
-                        ArrayList<Combatant> fightableAsCombatantList = thisFightable.convertToCombatants(); // If this is some non-Combatant fightable, convert it to a list of Combatants
-                        for (int j = 0;j < fightableAsCombatantList.size(); j++) {
-                            combatantDestination.receiveAddedCombatant(fightableAsCombatantList.get(j).cloneUnique()); // Clone the Combatant and send it
-                        }
+                // Go through the entire list, and send each one to the destination, one-by-one
+                for (int i = 0; i < selectedList.size(); i++) {
+                    Fightable thisFightable = selectedList.get(i);
+                    ArrayList<Combatant> fightableAsCombatantList = thisFightable.convertToCombatants(); // If this is some non-Combatant fightable, convert it to a list of Combatants
+                    for (int j = 0;j < fightableAsCombatantList.size(); j++) {
+                        combatantDestination.receiveAddedCombatant(fightableAsCombatantList.get(j).cloneUnique()); // Clone the Combatant and send it
                     }
-
-                    // Next, try to add this Combatant to the Combatant list, and close up
-                    saveAndClose();
                 }
-                // If the calling Activity/Fragment is NOT expecting a returned Combatant, then do nothing
-            }
+
+                // Next, try to add this Combatant to the Combatant list, and close up
+                saveAndClose();
+        }
         });
 
         multiSelectCancel.setOnClickListener(new View.OnClickListener() {
@@ -264,6 +228,15 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
                 adapter.clearMultiSelect();
             }
         });
+        addToGroup.setOnClickListener((new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // TODO Get the list of Combatants from the adapter, and send it to the Select Group Fragment
+                ArrayList<Fightable> selectedList = adapter.getAllSelectedFightables(); // Get a list of all selected Combatants
+
+                // TODO: GROUP - Make sure that the selected fighters are cleared ONLY if successfully added to a group - otherwise, keep them selected
+            }
+        }));
 
         // Initialize the GUI
         updateNoCombatantMessage();
@@ -359,17 +332,14 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
     public void receiveChosenFightable(Fightable selectedFightable) {
         // Just received a Combatant from the ListFightableRecyclerAdapter because the user selected one
 
-        if (expectingReturnedCombatant) {
-            // Convert the Fightable to a CombatantList, and send the Combatants back to the calling Activity/Fragment
-            ArrayList<Combatant> fightableAsCombatantList = selectedFightable.convertToCombatants(); // If this is some non-Combatant fightable, convert it to a list of Combatants
-            for (int i = 0;i < fightableAsCombatantList.size(); i++) {
-                combatantDestination.receiveAddedCombatant(fightableAsCombatantList.get(i).cloneUnique()); // Clone the Combatant and send it
-            }
-
-            // Next, try to add this Combatant to the Combatant list
-            saveAndClose();
+        // Convert the Fightable to a CombatantList, and send the Combatants back to the calling Activity/Fragment
+        ArrayList<Combatant> fightableAsCombatantList = selectedFightable.convertToCombatants(); // If this is some non-Combatant fightable, convert it to a list of Combatants
+        for (int i = 0;i < fightableAsCombatantList.size(); i++) {
+            combatantDestination.receiveAddedCombatant(fightableAsCombatantList.get(i).cloneUnique()); // Clone the Combatant and send it
         }
-        // If the calling Activity/Fragment is NOT expecting a returned Combatant, then do nothing
+
+        // Next, try to add this Combatant to the Combatant list
+        saveAndClose();
     }
 
     @Override
@@ -380,13 +350,11 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         addCombatantToSave(newCombatant);
         updateNoCombatantMessage();
 
-        if (expectingReturnedCombatant) {
-            // If the main activity is expecting a Combatant back, then send it before we need to modify the new combatant
-            combatantDestination.receiveAddedCombatant(newCombatant);
+        // If the main activity is expecting a Combatant back, then send it before we need to modify the new combatant
+        combatantDestination.receiveAddedCombatant(newCombatant);
 
-            // If the reason this Fragment was called was to return a Combatant, then close it
-            saveAndClose();
-        }
+        // If the reason this Fragment was called was to return a Combatant, then close it
+        saveAndClose();
     }
 
     @Override
@@ -404,14 +372,13 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         this.isMultiSelecting = isMultiSelecting;
 
         // Set the visibility of multi-selection-related elements in the GUI
-        int visibility = View.GONE;
         if (isMultiSelecting) {
-            visibility = View.VISIBLE;
+            multiSelectLayout.setVisibility( View.VISIBLE );
+            addNewCombatant.setVisibility( View.GONE );
+        } else {
+            multiSelectLayout.setVisibility( View.GONE );
+            addNewCombatant.setVisibility( View.VISIBLE );
         }
-
-        // Set the visibility of both multi-select GUI elements
-        multiSelectConfirm.setVisibility(visibility);
-        multiSelectCancel.setVisibility(visibility);
     }
 
     @Override
@@ -426,9 +393,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
             // If no other Combatant exists with this name, then make a clone of the Combatant with only the base name, and sanitize its roll, etc
             adapter.addFightable(newCombatant.getRaw());
             saveCombatantList();
-        } else if (!expectingReturnedCombatant) {
-            // If the only reason the user is here is to modify the saved Combatants, and they just added a Combatant with an ordinal, tell them how silly they are
-            Toast.makeText(getContext(), "A version of " + newCombatant.getBaseName() + " is already bookmarked", Toast.LENGTH_SHORT).show();
         }
     }
 

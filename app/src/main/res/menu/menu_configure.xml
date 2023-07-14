@@ -3,21 +3,12 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/add_combatant"
-        android:icon="@drawable/plus_sign"
-        android:menuCategory="alternative"
-        android:title="@string/add_combatant"
-        android:visible="true"
-        app:showAsAction="ifRoom" />
-
-    <item
         android:id="@+id/open_bookmarks"
-        android:icon="@drawable/bookmarks"
+        android:icon="@drawable/plus_sign"
         android:menuCategory="alternative"
         android:title="@string/open_bookmarks"
         android:visible="true"
-        app:showAsAction="ifRoom"  />
-
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/settings"
         android:icon="@drawable/settings_24dp"
