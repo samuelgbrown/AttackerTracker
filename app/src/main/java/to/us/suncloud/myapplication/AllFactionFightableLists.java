@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.UUID;
 
 public class AllFactionFightableLists implements Serializable {
     ArrayList<FactionFightableList> allFactionLists = new ArrayList<>();
@@ -23,6 +24,7 @@ public class AllFactionFightableLists implements Serializable {
     AllFactionFightableLists(EncounterCombatantList encounterList) {
         addAll((ArrayList<Fightable>) ((ArrayList<?>) encounterList.getCombatantArrayList()), true, true); // Add all elements in this list, with force set to true (so no modifications occur)
 
+        // TODO: Shouldn't initFactionLists() happen *very first thing*?
         initFactionLists();
     }
 
@@ -190,10 +192,6 @@ public class AllFactionFightableLists implements Serializable {
         throw new IndexOutOfBoundsException("Index " + originalFightableInd + ", Size " + size()); // The Fightable index is out of bounds
     }
 
-    public Fightable getFightable(int fightableInd) {
-        return get(fightableInd);
-    }
-
     public Fightable getFromVisible(int desiredFightableInd, ArrayList<ArrayList<Integer>> filteredIndices) {
         // Get a Fightable using the ind, selected only from visible Fightables
         int curLoc = 0;
@@ -238,10 +236,6 @@ public class AllFactionFightableLists implements Serializable {
         throw new IndexOutOfBoundsException("Index " + desiredFightableInd + ", Size " + size()); // The Fightable index is out of bounds
     }
 
-    public Fightable getFightableFromVisible(int desiredFightableInd, ArrayList<ArrayList<Integer>> filteredIndices) {
-        return getFromVisible(desiredFightableInd, filteredIndices);
-    }
-
     int posToFightableInd(int position) {
         // Convert an adapter position to an index in fightableList_Master (adapter position will include banners)
         int viewsRemaining = position; // Keep track of how many Views have been traversed
@@ -277,7 +271,6 @@ public class AllFactionFightableLists implements Serializable {
         }
         throw new IndexOutOfBoundsException("Index " + position); // The Fightable index is out of bounds
     }
-
 
     public boolean containsName(String name) {
         boolean contains = false;
@@ -504,5 +497,68 @@ public class AllFactionFightableLists implements Serializable {
         }
 
         return isEqual;
+    }
+
+    public boolean containsCombatantWithID( UUID combatantID ) {
+        boolean containsCombatant = false;
+        for ( FactionFightableList list : allFactionLists ) {
+            Fightable.Faction thisFaction = list.faction();
+            if ( containsCombatantWithID( combatantID, thisFaction ) ) {
+                containsCombatant = true;
+                break;
+            }
+        }
+
+        return containsCombatant;
+    }
+
+    public boolean containsCombatantWithID( UUID combatantID, Fightable.Faction combatantFaction ) {
+        boolean containsCombatant = false;
+        if (combatantFaction != Fightable.Faction.Group) {
+            FactionFightableList list = getFactionList(combatantFaction);
+            if (list.containsCombatantWithID(combatantID)) {
+                containsCombatant = true;
+            }
+        }
+
+        return containsCombatant;
+    }
+
+
+    public Combatant getCombatantWithID( UUID combatantID ) {
+        Combatant returnCombatant = null;
+        for ( FactionFightableList list : allFactionLists ) {
+            Fightable.Faction thisFaction = list.faction();
+            returnCombatant = getCombatantWithID(combatantID, thisFaction);
+            if ( returnCombatant != null ) {
+                break;
+            }
+        }
+
+        return returnCombatant;
+    }
+
+    public Combatant getCombatantWithID( UUID combatantID, Fightable.Faction combatantFaction ) {
+        Combatant returnCombatant = null;
+        if (combatantFaction != Fightable.Faction.Group) {
+            FactionFightableList list = getFactionList(combatantFaction);
+            returnCombatant = list.getCombatantWithID(combatantID);
+        }
+
+        return returnCombatant;
+    }
+
+    public ArrayList<Fightable> getSelected( ) {
+        ArrayList<Fightable> returnList = new ArrayList<>();
+        for ( FactionFightableList list : allFactionLists ) {
+            for ( int fightableInd = 0; fightableInd < list.size(); fightableInd++ ) {
+                Fightable thisFightable = list.get(fightableInd);
+                if ( thisFightable.isSelected() ) {
+                    returnList.add(thisFightable);
+                }
+            }
+        }
+
+        return returnList;
     }
 }

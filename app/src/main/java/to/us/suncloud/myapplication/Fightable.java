@@ -1,6 +1,5 @@
 package to.us.suncloud.myapplication;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.io.Serializable;
@@ -19,7 +18,7 @@ abstract public class Fightable implements Serializable {
     abstract public Fightable clone();
     abstract public Fightable cloneUnique();
     abstract public Fightable getRaw();
-    abstract public ArrayList<Combatant> convertToCombatants(); // TODO: GROUP - For Combatant with multiples, just add the same Combatant to the list multiple times
+    abstract public ArrayList<Combatant> convertToCombatants(AllFactionFightableLists referenceList);
 
     abstract public String getName();
     abstract public String getBaseName();
@@ -44,6 +43,15 @@ abstract public class Fightable implements Serializable {
     abstract void setNameOrdinal(int newOrdinal);
 
     abstract boolean displayEquals(@Nullable Object obj);
+
+    static public ArrayList<Combatant> digestAllFightablesToCombatants( ArrayList<Fightable> fightablesList, AllFactionFightableLists referenceList ) {
+        ArrayList<Combatant> returnList = new ArrayList<>();
+        for ( Fightable fightable : fightablesList ) {
+            returnList.addAll(fightable.convertToCombatants(referenceList));
+        }
+
+        return returnList;
+    }
 
     public UUID getId() {
         return id;

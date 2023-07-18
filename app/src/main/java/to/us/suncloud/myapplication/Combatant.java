@@ -15,6 +15,7 @@ public class Combatant extends Fightable implements Serializable {
     // Enforce uniqueness by name (for enemies, should ALWAYS be different, e.g. "Zombie 1", "Zombie 2"...), although the UUID is used for actual unique identification
     private static final String INIT_NAME = "New Combatant";
 
+    // TODO: START HERE - Move name-handling to Fightable class...?  Then, keep rolling through override methods in CombatantGroup
     private String name; // Name will be initialized on construction
     private int iconIndex = 0; // Initialize with a blank icon
     private int speedFactor = 0;
@@ -230,7 +231,7 @@ public class Combatant extends Fightable implements Serializable {
         }
     }
 
-    public ArrayList<Combatant> convertToCombatants() {
+    public ArrayList<Combatant> convertToCombatants(AllFactionFightableLists referenceList) {
         ArrayList<Combatant> returnList = new ArrayList<>();
         returnList.add(this);
         return returnList;

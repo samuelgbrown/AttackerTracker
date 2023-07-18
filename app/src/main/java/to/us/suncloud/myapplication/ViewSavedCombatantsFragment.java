@@ -21,7 +21,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.SearchView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -85,8 +84,10 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         //      3) Select this group of combatants to add to the party
         //      Workflows:
         //          X Add Combatant and View Saved Combatants will be combined into one button (functionality is too similar to be separate)
-        //          Create group / Add combatant(s) to group - Multi-select combatant *from any VSCF*, select "Add to group..."
+        //          X Create group / Add combatant(s) to group - Multi-select combatant, select "Add to group..."
         //              Create an AllFactionFightableLists object using these combatants, sorting each into respective lists
+        //                  ****** Need to figure out how to do this with REFERENCES to Combatants, rather than the Combatants themselves...may need a new data object...
+        //                  Could pass entire AllFactionFightableLists object from VSCF, and construct Group based on actual Combatants?  May need verification method, which is tolerant to Combatant deletion/copying/Faction swapping...
         //              New dialog appears with list of all current groups (plus "Create new group...")
         //                  If adding to old group, add Combatants and pull up View Group dialog on that group
         //                  If adding to new group, create new group with default name, pass to View Group dialog, pull up View Group dialog
@@ -101,8 +102,10 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         //          Modifying Combatant (if it is in a group) - No new workflow, but changes will be reflected in groups
         //          Deleting Combatant (if it is in a group) - Add text to delete confirmation ("Are you sure you want to delete this combatant?  It is in at least one group").
         //          Exiting the app - Will save entire state by default on exit (including Encounter)
-        //          Stretch - Import/Export Combatants / Groups
-        //          Stretch - Import/Export Encounter data
+        //          Fix UI issue on main screen - banners have lower section visible: should only have upper green section visible
+        //          Stretch 1 - Import Combatants / Groups - (from .csv)
+        //          Stretch 2 - Export Combatants / Groups - (to .csv)
+        //          Stretch 3 - Import/Export Encounter data
 
         // Load in combatants from file (process them later)
         savedCombatantsList = (AllFactionFightableLists) LocalPersistence.readObjectFromFile(requireContext(), combatantListSaveFile);
@@ -207,14 +210,11 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
             public void onClick(View v) {
                 // Get the list of Combatants from the adapter, and return the list to whoever called this Fragment
                 ArrayList<Fightable> selectedList = adapter.getAllSelectedFightables(); // Get a list of all selected Combatants
+                ArrayList<Combatant> selectedListCombatants = Fightable.digestAllFightablesToCombatants(selectedList, adapter.getCombatantList());
 
                 // Go through the entire list, and send each one to the destination, one-by-one
-                for (int i = 0; i < selectedList.size(); i++) {
-                    Fightable thisFightable = selectedList.get(i);
-                    ArrayList<Combatant> fightableAsCombatantList = thisFightable.convertToCombatants(); // If this is some non-Combatant fightable, convert it to a list of Combatants
-                    for (int j = 0;j < fightableAsCombatantList.size(); j++) {
-                        combatantDestination.receiveAddedCombatant(fightableAsCombatantList.get(j).cloneUnique()); // Clone the Combatant and send it
-                    }
+                for ( Combatant selectedCombatant : selectedListCombatants ) {
+                    combatantDestination.receiveAddedCombatant(selectedCombatant.cloneUnique()); // TODO GROUP: Clone Unique will break Groups! Will regular "clone" work...?
                 }
 
                 // Next, try to add this Combatant to the Combatant list, and close up
@@ -234,6 +234,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
                 // TODO Get the list of Combatants from the adapter, and send it to the Select Group Fragment
                 ArrayList<Fightable> selectedList = adapter.getAllSelectedFightables(); // Get a list of all selected Combatants
 
+                // TODO: If this list is empty, Toast to the user to let them know how stupid they are
                 // TODO: GROUP - Make sure that the selected fighters are cleared ONLY if successfully added to a group - otherwise, keep them selected
             }
         }));
@@ -333,7 +334,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         // Just received a Combatant from the ListFightableRecyclerAdapter because the user selected one
 
         // Convert the Fightable to a CombatantList, and send the Combatants back to the calling Activity/Fragment
-        ArrayList<Combatant> fightableAsCombatantList = selectedFightable.convertToCombatants(); // If this is some non-Combatant fightable, convert it to a list of Combatants
+        ArrayList<Combatant> fightableAsCombatantList = selectedFightable.convertToCombatants(adapter.getCombatantList()); // If this is some non-Combatant fightable, convert it to a list of Combatants
         for (int i = 0;i < fightableAsCombatantList.size(); i++) {
             combatantDestination.receiveAddedCombatant(fightableAsCombatantList.get(i).cloneUnique()); // Clone the Combatant and send it
         }

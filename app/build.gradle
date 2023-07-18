@@ -29,6 +29,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    buildFeatures {
+        viewBinding true
+    }
 }
 // TODO: https://developer.android.com/studio/build/shrink-code#native-crash-support, https://developer.android.com/studio/build/shrink-code#decode-stack-trace
 // TODO: https://developer.android.com/studio/build/shrink-code#enable

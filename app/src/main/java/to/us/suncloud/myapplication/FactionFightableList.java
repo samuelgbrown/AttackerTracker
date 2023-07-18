@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.UUID;
 
 // Simple wrapper for a list of combatants or groups that also holds faction information
 public class FactionFightableList implements Serializable {
@@ -271,5 +272,27 @@ public class FactionFightableList implements Serializable {
         return indices;
     }
 
+    public boolean containsCombatantWithID( UUID combatantID ) {
+        boolean containsCombatant = false;
+        for (Fightable fightable : fightableArrayList) {
+            if (fightable.getId() == combatantID) {
+                containsCombatant = true;
+                break;
+            }
+        }
 
+        return containsCombatant;
+    }
+
+    public Combatant getCombatantWithID( UUID combatantID ) {
+        Combatant returnCombatant = null;
+        for (Fightable fightable : fightableArrayList) {
+            if (fightable.getId() == combatantID) {
+                returnCombatant = (Combatant) fightable;
+                break;
+            }
+        }
+
+        return returnCombatant;
+    }
 }

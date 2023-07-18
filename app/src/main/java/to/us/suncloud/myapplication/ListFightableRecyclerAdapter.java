@@ -236,7 +236,10 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
         // On second thought, figure out way to not have gear show up for Add Combatant version?
 
         public CombatantViewHolder(@NonNull final View itemView) {
-            // TODO: Make a viewholder for CombatantGroups
+            // TODO: Extend this viewHolder (and layout) so that it also works for the ViewOrModGroups Fragment Adapter!
+            //  Add an icon on the left (where "checkmark" is?) that indicates the number of copies of the given Combatant in the Group
+            //  Disable ChangeCombatant and Copy buttons (these are input flags)
+            // TODO: Make a viewHolder for CombatantGroups
             super(itemView);
 
             this.itemView = itemView;
@@ -266,7 +269,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
                     } else {
                         if (parent != null) {
                             // Get the current position in the adapter, use it to find the Combatant position in fightableList_Master (taking into account the banners), use that to find this Combatant in the master list (taking into account the filter string with "subList()"), and make a unique clone of it to send back to the parent (phew...)
-                            parent.receiveChosenFightable(displayList().get(posToCombatantInd(getAdapterPosition())).cloneUnique());
+                            parent.receiveChosenFightable(displayList().get(posToCombatantInd(getAdapterPosition())).cloneUnique()); // TODO GROUP: cloneUnique will break Groups!  Can regular clone work...?
                         }
                     }
                 }
