@@ -317,15 +317,21 @@ public class AllFactionFightableLists implements Serializable {
     }
 
     public int getHighestOrdinalInstance(Fightable fightableToCheck) {
-        return getHighestOrdinalInstance(fightableToCheck.getBaseName());
+        return getHighestOrdinalInstance(fightableToCheck.getBaseName(),
+                fightableToCheck instanceof Combatant);
     }
 
-    public int getHighestOrdinalInstance(String fightableBaseName) {
+    public int getHighestOrdinalInstance(String fightableBaseName, boolean isCombatant) {
         // Get the highest ordinal instance of the baseName among all of the Faction lists
         int highestOrdinal = Fightable.DOES_NOT_APPEAR;
         for (int i = 0; i < allFactionLists.size(); i++) {
-            // Go through each Faction, and get the highest ordinal instance of this base name
-            highestOrdinal = Math.max(highestOrdinal, allFactionLists.get(i).getHighestOrdinalInstance(fightableBaseName));
+            FactionFightableList thisFactionList = allFactionLists.get(i);
+            // Enforce uniqueness between Combatants and between Groups, but not across these two categories
+            if (( isCombatant && (thisFactionList.faction() != Fightable.Faction.Group) ) ||
+                    ( !isCombatant && (thisFactionList.faction() == Fightable.Faction.Group) )) {
+                // Go through each Faction, and get the highest ordinal instance of this base name
+                highestOrdinal = Math.max(highestOrdinal, thisFactionList.getHighestOrdinalInstance(fightableBaseName));
+            }
         }
 
         return highestOrdinal;

@@ -634,7 +634,7 @@ public class EncounterCombatantRecyclerAdapter extends RecyclerView.Adapter<Enco
         public void setDiceViewVisibility(boolean setRollEditing) {
             // Use the current setting of diceCheatModeOn to see which View should be seen for the viewHolder
             if (setRollEditing) {
-                // TODO START HERE: The calcActiveCombatant operation is probably slow, see if we can replace it?  Figure out if we're in Prep phase a different way...
+                // TODO: The calcActiveCombatant operation is probably slow, see if we can replace it?  Figure out if we're in Prep phase a different way...
                 //  I think the only way that we can change active Combatant is via the main button, the previous button, checking/un-checking a Combatant, or modifying a Combatant's modifier/roll.  Track a local variable, and just use that every time...?
                 //  Just search for every use of calcActiveCombatant when it's expected to be changed
                 // If we are in dice cheat mode, make sure that the EditText is visible and the TextView is hidden

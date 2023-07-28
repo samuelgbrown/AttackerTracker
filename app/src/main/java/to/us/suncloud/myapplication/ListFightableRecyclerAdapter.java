@@ -594,12 +594,14 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
                 fightableList_Master.remove(originalCombatant); // Get the Combatant referred to by the modCombatantLocation and remove it (easiest to just remove the Combatant and add it again (the add function will take care of any "smart naming" needs))
 
                 // Add a new Combatant to master list
+                // TODO: Want to change containsName to containsCombatantWithName? Will allow Groups to have the same name as Combatants.
                 if (fightableList_Master.containsName(newCombatant.getName())) {
                     // If the new name is already used by ANOTHER Combatant in the master list, then deal with it in different ways
                     Fightable existingFightableWithNewName = fightableList_Master.getFightable(newCombatant.getName());
                     if (existingFightableWithNewName instanceof Combatant) {
                         Combatant existingCombatantWithNewName = (Combatant) existingFightableWithNewName;
                         if (existingCombatantWithNewName.isVisible()) {
+                            // TODO: I don't think we can get here anymore!  Can we simplify this function?
                             // If there is an exact match of this new Combatant's name to an existing VISIBLE Combatant, then just add the new Combatant back in without the new name, copying everything that was changed EXCEPT for the name
                             newCombatant.setName(originalCombatant.getName()); // Set the Combatant's name to its old name
 

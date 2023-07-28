@@ -71,7 +71,7 @@ public class CombatantGroup extends Fightable {
         }
     }
 
-    // TODO: Fill out all abstract methods!  Are they all needed...?
+    // TODO START HERE: Fill out all abstract methods!  Are they all needed...?
     @Override
     public Fightable clone() {
         return new CombatantGroup(this);
@@ -103,37 +103,17 @@ public class CombatantGroup extends Fightable {
     }
 
     @Override
-    public String getName() {
-        return null;
-    }
-
-    @Override
-    public String getBaseName() {
-        return null;
-    }
-
-    @Override
-    public int getOrdinal() {
-        return 0;
-    }
-
-    @Override
     boolean isVisible() {
-        return false;
+        return true;
     }
 
     @Override
     void setVisible(boolean isVisible) {
-
+        // Do nothing
     }
 
     @Override
     void displayCopy(Fightable f) {
-
-    }
-
-    @Override
-    void setNameOrdinal(int newOrdinal) {
 
     }
 
