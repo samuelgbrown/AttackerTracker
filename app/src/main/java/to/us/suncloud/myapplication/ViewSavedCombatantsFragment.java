@@ -17,10 +17,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.SearchView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -93,6 +93,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         //                  If adding to new group, create new group with default name, pass to View Group dialog, pull up View Group dialog
         //              Will add REFERENCE to any non-doubled Combatants to the group
         //              If any already exist, tell user "One or more combatants are already in this group.\nAdd multiples of a Combatant by editing the group!"
+        //              Group must check that it has at least one Combatant - if not, then DO NOT create new Group / delete Group (with warning on final Combatant being deleted, if Group existed already)!
         //          View group - Click gear button for group - brings up new modal window, similar to VSCF but different enough that it will be independent.  Can change name of group, and change Combatants
         //          From view group, add / remove combatant - Trash Bin icon for each Combatant
         //          From view group, adding multiples of a Combatant - "Multiple person" icon for each Combatant - Extra portion on left of viewholder (where checkmark currently lives) will indicate multiples of a Combatant iff they are greater than 1
@@ -100,7 +101,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         //              Go through each group combatant - if exists, get response from user - then resolve copies
         //  ************If INVISIBLE version of combatant exists - ?????
         //          Modifying Combatant (if it is in a group) - No new workflow, but changes will be reflected in groups
-        //          Deleting Combatant (if it is in a group) - Add text to delete confirmation ("Are you sure you want to delete this combatant?  It is in at least one group").
+        //          Deleting Combatant (if it is in a group) - Add text to delete confirmation ("**combatant** will also be removed from any groups it's in. Are you sure you want to delete **combatant**?").
         //          Exiting the app - Will save entire state by default on exit (including Encounter)
         //          Fix UI issue on main screen - banners have lower section visible: should only have upper green section visible
         //          Stretch 1 - Import Combatants / Groups - (from .csv)
@@ -152,7 +153,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
 
         addNewCombatant = layoutContents.findViewById(R.id.add_new_combatant); // Saved to toggle visibility
         multiSelectLayout = layoutContents.findViewById(R.id.multi_select_options); // Saved to toggle visibility
-        Button addToGroup = layoutContents.findViewById(R.id.add_to_group);
+        final Button addToGroup = layoutContents.findViewById(R.id.add_to_group);
         ImageButton multiSelectConfirm = layoutContents.findViewById(R.id.confirm_multi_select);
         ImageButton multiSelectCancel = layoutContents.findViewById(R.id.cancel_multi_select);
         title.setText(R.string.view_saved_combatants_title);
@@ -198,7 +199,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         // Create an adapter and give it to the Recycler View
         ListFightableRecyclerAdapter.LFRAFlags flags = new ListFightableRecyclerAdapter.LFRAFlags(); // Create flags
         flags.adapterCanModify = true;
-        flags.canMultiSelect = true;
+        flags.adapterCanMultiSelect = true;
         adapter = new ListFightableRecyclerAdapter(this, savedCombatantsList.clone(), flags); // Populate a Recycler view with the saved Combatants
         combatantListView.setAdapter(adapter);
         combatantListView.addItemDecoration(new BannerDecoration(getContext()));
@@ -217,6 +218,8 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
                     combatantDestination.receiveAddedCombatant(selectedCombatant.cloneUnique()); // TODO GROUP: Clone Unique will break Groups! Will regular "clone" work...?
                 }
 
+                adapter.clearMultiSelect();
+
                 // Next, try to add this Combatant to the Combatant list, and close up
                 saveAndClose();
         }
@@ -231,11 +234,18 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         addToGroup.setOnClickListener((new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // TODO Get the list of Combatants from the adapter, and send it to the Select Group Fragment
-                ArrayList<Fightable> selectedList = adapter.getAllSelectedFightables(); // Get a list of all selected Combatants
+                ArrayList<Fightable> selectedTestList = adapter.getAllSelectedFightables();
+                if ( selectedTestList.size() > 0 ) {
+                    AllFactionFightableLists combatantList = adapter.getCombatantList(); // Get a list of all selected Combatants
 
-                // TODO: If this list is empty, Toast to the user to let them know how stupid they are
-                // TODO: GROUP - Make sure that the selected fighters are cleared ONLY if successfully added to a group - otherwise, keep them selected
+                    // TODO GROUP: Should there be a user-dialog check for adding Groups to Groups?
+                    FragmentManager fm = getChildFragmentManager();
+                    AddToGroupFragment.newInstance(combatantList).show(fm, "AddToGroup");
+
+                    // TODO: GROUP - Make sure that the selected fighters are cleared ONLY if successfully added to a group (adapter.clearMultiSelect()) - otherwise, keep them selected
+                } else {
+                    Toast.makeText(getContext(), getContext().getString(R.string.no_combatants_for_group), Toast.LENGTH_SHORT).show();
+                }
             }
         }));
 
@@ -410,6 +420,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
 //        AllFactionFightableLists newSavedCombatantsList = eligibleCombatantsList.clone(); // Create a list that contains the eligible Combatants (Combatants from the save file PLUS any Combatants that were just made)...
 //        newSavedCombatantsList.addAll(currentFactionCombatantList); // ... and the Combatants from the current Encounter
         if (!adapter.getCombatantList().rawEquals(savedCombatantsList)) {
+            // TODO GROUP SOON (7/23): This seems to be ALWAYS true.  Are we comparing ID's when we shouldn't be?
             // If the test list is not equal to the list of Combatants from the file, that means that some Combatants were added (or possibly removed...?), so we should save the new list
             LocalPersistence.writeObjectToFile(getContext(), adapter.getCombatantList().getRawCopy(), combatantListSaveFile);
         }
@@ -459,24 +470,5 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
 
     public interface ReceiveAddedCombatant extends Serializable {
         void receiveAddedCombatant(Combatant addedCombatant);
-    }
-
-    // TODO: Remove?  Is this unused?
-    static class FactionFragmentInfo {
-        public CombatantGroupFragment thisFrag;
-        public FrameLayout thisContainer;
-
-        FactionFragmentInfo(CombatantGroupFragment thisFrag, FrameLayout thisContainer) {
-            this.thisFrag = thisFrag;
-            this.thisContainer = thisContainer;
-        }
-
-        public CombatantGroupFragment getFragment() {
-            return thisFrag;
-        }
-
-        public FrameLayout getContainer() {
-            return thisContainer;
-        }
     }
 }

@@ -40,6 +40,7 @@ dependencies {
     implementation files('src/libs/activation.jar')
     implementation files('src/libs/additionnal.jar')
     implementation files('src/libs/mail.jar')
+    androidTestImplementation 'junit:junit:4.12'
     def billing_version = "3.0.1"
 
     implementation "com.android.billingclient:billing:$billing_version"

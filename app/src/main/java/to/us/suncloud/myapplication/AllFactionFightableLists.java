@@ -567,4 +567,12 @@ public class AllFactionFightableLists implements Serializable {
 
         return returnList;
     }
+
+    public void clearSelected( ) {
+        for ( FactionFightableList list : allFactionLists ) {
+            for ( int fightabbleInd = 0; fightabbleInd < list.size(); fightabbleInd++ ) {
+                list.get(fightabbleInd).setSelected(false);
+            }
+        }
+    }
 }

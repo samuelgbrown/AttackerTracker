@@ -1,31 +1,44 @@
 package to.us.suncloud.myapplication;
 
+import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import to.us.suncloud.myapplication.placeholder.PlaceholderContent.PlaceholderItem;
-
-/**
- * {@link RecyclerView.Adapter} that can display a {@link PlaceholderItem}.
- */
+import java.lang.reflect.ParameterizedType;
 
 // Recycler adapter to be used in the GroupFragment.  This fragment is for adding Combatants to a group (or creating a new group from these combatants).
 public class AddToGroupRecyclerViewAdapter extends RecyclerView.Adapter<AddToGroupRecyclerViewAdapter.GroupViewHolder> {
 
+    private static final String TAG = "AddToGroupAdapter";
+
     private final AllFactionFightableLists adapterAFFL;
     private final int numGroups; // The number of Groups in adapterAFFL (also equals the index that represents the "Add Group..." option)
+    private final GroupListRVA_Return parentFrag;
 
-    public AddToGroupRecyclerViewAdapter(AllFactionFightableLists items) {
+    public AddToGroupRecyclerViewAdapter(AllFactionFightableLists items, GroupListRVA_Return parentFrag) {
+        // Note: adapterAFFL will have some number of selected Combatants (or Groups), which are to be added to a group in this dialog
         adapterAFFL = items;
         numGroups = adapterAFFL.getFactionList(Fightable.Faction.Group).size();
+        this.parentFrag = parentFrag;
     }
 
-    private Fightable getGroup(int groupIndex) {
-        return adapterAFFL.getFactionList(Fightable.Faction.Group).get(groupIndex);
+    private CombatantGroup getGroup(int groupIndex) {
+        CombatantGroup thisGroup;
+        Fightable thisFightable = adapterAFFL.getFactionList(Fightable.Faction.Group).get(groupIndex);
+        if ( thisFightable instanceof CombatantGroup ) {
+            thisGroup = (CombatantGroup) thisFightable;
+        } else {
+            Log.e(TAG, "Got non-Group Fightable from Add To Group Adapter!");
+            thisGroup = new CombatantGroup(adapterAFFL);
+        }
+        return thisGroup;
     }
 
     @Override
@@ -65,22 +78,27 @@ public class AddToGroupRecyclerViewAdapter extends RecyclerView.Adapter<AddToGro
             View.OnClickListener groupClickListener = new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    CombatantGroup initialGroup;
-                    if (isAddGroup()) {
-                        // If this is the "Add Group..." item...
-                        // TODO: Open a ViewOrModGroup Fragment with no selected Group
-                        // TODO (perhaps below, combining both options in this if-statement?) add SELECTED Combatants to the Fragment as new members
-                    } else {
-                        // If this represents an existing group...
-                        getGroup(groupIndex); // TODO: Check that this is an instance of a GROUP (not just a Fightable)
+                    CombatantGroup thisGroup = new CombatantGroup(adapterAFFL);
 
-                        // TODO: Open a ViewOrModGroup Fragment with this selected group
-                        // TODO (perhaps below, combining both options in this if-statement?) add SELECTED Combatants to the Fragment as new members
-                        //  If there are selected Groups, they must be rendered to Combatants!  Should there be a user-dialog check for adding Groups to Groups?
-                        //  Remember - Need to do a check for multiples (and let user know if there are any) - should that be here, or in new Fragment?  Perhaps new Fragment?
+                    if (isAddGroup()) {
+                        // If this is the "Add Group..." item, put this new CombatantGroup we just made into the AFFL
+                        adapterAFFL.addFightable(thisGroup);
+                    } else {
+                        // If this represents an existing group, use the existing group (overwrite the new group made above)
+                        thisGroup = getGroup(groupIndex);
                     }
 
-                    // TODO: After adjusting/adding group to adapterAFFL, new Fragment receives adapterAFFL, as well as groupIndex
+                    // Add the selected Combatants to the chosen Group
+                    boolean gotMultiples = thisGroup.addSelected(adapterAFFL);
+                    if ( gotMultiples ) {
+                        Toast.makeText(parentFrag.getContext(),
+                            parentFrag.getContext().getString(R.string.no_combatants_for_group),
+                            Toast.LENGTH_LONG)
+                            .show();
+                    }
+
+                    // Send the index of this group back to the Fragment (changes to adapterAFFL will be reflected in fragment's groupFragmentAFFL, as well)
+                    parentFrag.groupIndexSelected(groupIndex);
                 }
             };
         }
@@ -88,22 +106,39 @@ public class AddToGroupRecyclerViewAdapter extends RecyclerView.Adapter<AddToGro
         public void bind(int groupIndexIn) {
             // This value is used in the groupClickListener
             groupIndex = groupIndexIn;
-            int partyCountVisible = View.GONE;
-            int neutralCountVisible = View.GONE;
-            int enemyCountVisible = View.GONE;
+            int partyCount = 0;
+            int neutralCount = 0;
+            int enemyCount = 0;
 
             if (isAddGroup()) {
                 // If this is the "Add Group..." item...
+                mGroupName.setText(R.string.add_new_group);
             } else {
                 // If this represents an existing group...
-                getGroup(groupIndex); // TODO: Check that this is an instance of a GROUP (not just a Fightable)
+                CombatantGroup thisGroup = getGroup(groupIndex);
 
-                // TODO: Start populating the text boxes - adjust visibility of party/neutral/enemy counts!
+                mGroupName.setText(thisGroup.getName());
+                partyCount = thisGroup.getTotalCombatantsInFaction(Fightable.Faction.Party);
+                neutralCount = thisGroup.getTotalCombatantsInFaction(Fightable.Faction.Neutral);
+                enemyCount = thisGroup.getTotalCombatantsInFaction(Fightable.Faction.Enemy);
             }
 
-            mPartyNum.setVisibility(partyCountVisible);
-            mNeutralNum.setVisibility(neutralCountVisible);
-            mEnemyNum.setVisibility(enemyCountVisible);
+            // Adjust visibility of the faction count boxes
+            if (partyCount > 0 ) {
+                mPartyNum.setVisibility(View.VISIBLE);
+            } else {
+                mPartyNum.setVisibility(View.INVISIBLE);
+            }
+            if (neutralCount > 0 ) {
+                mNeutralNum.setVisibility(View.VISIBLE);
+            } else {
+                mNeutralNum.setVisibility(View.INVISIBLE);
+            }
+            if (enemyCount > 0 ) {
+                mEnemyNum.setVisibility(View.VISIBLE);
+            } else {
+                mEnemyNum.setVisibility(View.INVISIBLE);
+            }
         }
 
         private boolean isAddGroup() {
@@ -118,5 +153,6 @@ public class AddToGroupRecyclerViewAdapter extends RecyclerView.Adapter<AddToGro
 
     public interface GroupListRVA_Return {
         void groupIndexSelected(int groupIndex);
+        Context getContext( ); // Auxiliary function to get Context from parent
     }
 }

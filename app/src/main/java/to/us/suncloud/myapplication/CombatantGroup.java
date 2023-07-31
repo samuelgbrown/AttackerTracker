@@ -10,13 +10,16 @@ import java.util.UUID;
 public class CombatantGroup extends Fightable {
     private ArrayList<CombatantGroupData> combatantList; // List of Combatants that are part of this Group
 
-    CombatantGroup( ) {
+    public CombatantGroup( AllFactionFightableLists listOfAllFightables ) {
+        super(listOfAllFightables);
+
         // Initialize list to empty
         combatantList = new ArrayList<>();
     }
 
     public CombatantGroup(CombatantGroup combatantGroup) {
-        combatantList = combatantGroup.getCombatantList();
+        super(combatantGroup);
+        setCombatantList(combatantGroup.getCombatantList());
     }
 
     private void setCombatantList(ArrayList<CombatantGroupData> newData) {
@@ -30,8 +33,8 @@ public class CombatantGroup extends Fightable {
 
     public boolean addSelected(AllFactionFightableLists referenceList ) {
         // Add all of the selected Fightables in this list to the Group.
-        // Return true if all new Combatants are unique - false if one Combatant already exists
-        boolean allCombatantsUnique = true;
+        // Return false if all new Combatants are unique - true if any Combatants already exists in this Group
+        boolean anyCombatantsDoubled = false;
         verifyGroupAgainstList(referenceList);
 
         // TODO: Finish - Remember all checks and behaviors!  Covered in AddToGroupRVA, as well as giant todo list
@@ -42,13 +45,13 @@ public class CombatantGroup extends Fightable {
             CombatantGroupData thisCombatantData = new CombatantGroupData(combatant);
             if (combatantList.contains(thisCombatantData)) {
                 // If this Combatant already exists in this Group, do not add it and raise a flag
-                allCombatantsUnique = false;
+                anyCombatantsDoubled = true;
             } else {
                 combatantList.add(thisCombatantData);
             }
         }
 
-        return allCombatantsUnique;
+        return anyCombatantsDoubled;
     }
 
     private void verifyGroupAgainstList(AllFactionFightableLists referenceList ) {
@@ -69,6 +72,17 @@ public class CombatantGroup extends Fightable {
                 iterator.remove();
             }
         }
+    }
+
+    public int getTotalCombatantsInFaction( Faction faction ) {
+        int runningSum = 0;
+        for ( CombatantGroupData combatantData : combatantList ) {
+            if ( combatantData.mFaction == faction) {
+                runningSum++;
+            }
+        }
+
+        return runningSum;
     }
 
     // TODO START HERE: Fill out all abstract methods!  Are they all needed...?
@@ -114,12 +128,15 @@ public class CombatantGroup extends Fightable {
 
     @Override
     void displayCopy(Fightable f) {
-
+        if ( f instanceof CombatantGroup ) {
+            displayCopyFightable(f);
+            setCombatantList(((CombatantGroup) f).getCombatantList());
+        }
     }
 
     @Override
     boolean displayEquals(@Nullable Object obj) {
-        return false;
+        return displayEqualsFightable(obj);
     }
 
     static private class CombatantGroupData {

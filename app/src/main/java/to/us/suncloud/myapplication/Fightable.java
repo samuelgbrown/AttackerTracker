@@ -15,8 +15,8 @@ abstract public class Fightable implements Serializable {
     private Faction faction = Faction.Party;
     private boolean isSelected = false; // Is the Fightable selected or checked off?
     private UUID id = UUID.randomUUID();
-
     private String name; // Name will be initialized on construction
+
     // Enforce uniqueness by name (for enemies, should ALWAYS be different, e.g. "Zombie 1", "Zombie 2"...), although the UUID is used for actual unique identification
     private static final String INIT_NAME = "New Fightable";
     // Regex Pattern for finding the base name of a Fightable
@@ -33,6 +33,20 @@ abstract public class Fightable implements Serializable {
     public Faction getFaction() { return faction;}
     public void setFaction(Faction faction) {
         this.faction = faction;
+    }
+    public static String factionToString(Faction faction) {
+        switch (faction) {
+            case Group  :
+                return "Group";
+            case Party:
+                return "Party";
+            case Enemy:
+                return "Enemy";
+            case Neutral:
+                return "Neutral";
+            default:
+                return "";
+        }
     }
 
     public boolean isSelected() {
@@ -69,6 +83,7 @@ abstract public class Fightable implements Serializable {
     public Fightable(Fightable f) {
         // Copy constructor (used for cloning) - make an EXACT clone of this Fightable (careful about Fightable uniqueness!)
         setName(f.getName());
+        setFaction(f.getFaction());
     }
 
 
@@ -174,6 +189,17 @@ abstract public class Fightable implements Serializable {
         setFaction(f.getFaction());
     }
 
+    protected boolean displayEqualsFightable(@Nullable Object obj) {
+        boolean isEqual = false;
+        if ( obj instanceof CombatantGroup ) {
+            boolean facEqual = getFaction() == ((CombatantGroup) obj).getFaction();
+            boolean nameEqual = getName().equals(((CombatantGroup) obj).getName());
+            boolean selectedEqual = isSelected() == ((CombatantGroup) obj).isSelected();
+            isEqual = facEqual && nameEqual && selectedEqual;
+        }
+        return isEqual;
+    }
+
     // Combatant Handling
     static public ArrayList<Combatant> digestAllFightablesToCombatants( ArrayList<Fightable> fightablesList, AllFactionFightableLists referenceList ) {
         ArrayList<Combatant> returnList = new ArrayList<>();
@@ -188,12 +214,9 @@ abstract public class Fightable implements Serializable {
     public boolean equals(Object obj) {
         boolean isEqual = false;
         if (obj instanceof Fightable) {
-            boolean nameEqual = getName().equals(((Fightable) obj).getName());
-            boolean facEqual = getFaction() == ((Fightable) obj).getFaction();
             boolean idEqual = getId() == ((Fightable) obj).getId();
-            boolean selectedEqual = isSelected() == ((Fightable) obj).isSelected();
 
-            isEqual = nameEqual && facEqual && idEqual && selectedEqual;
+            isEqual = displayEqualsFightable(obj) && idEqual;
         }
 
         return isEqual;

@@ -30,7 +30,6 @@ public class Combatant extends Fightable implements Serializable {
     public Combatant(Combatant c) {
         // Copy constructor (used for cloning) - make an EXACT clone of this Combatant (careful about Combatant uniqueness!)
         super(c);
-        setFaction(c.getFaction());
         iconIndex = c.getIconIndex();
         speedFactor = c.getModifier();
         roll = c.getRoll();
@@ -156,8 +155,9 @@ public class Combatant extends Fightable implements Serializable {
         boolean isEqual = false;
         if (obj instanceof Combatant) {
             boolean selectedEqual = isSelected() == ((Combatant) obj).isSelected();
+            boolean iconEqual = getIconIndex() == ((Combatant) obj).getIconIndex();
 
-            isEqual = rawEquals(obj) && selectedEqual;
+            isEqual = displayEqualsFightable(obj) && iconEqual && selectedEqual;
         }
 
         return isEqual;
@@ -165,9 +165,9 @@ public class Combatant extends Fightable implements Serializable {
 
     public void displayCopy(Fightable c) {
         // Copy the display values from the incoming Fightable (NOT selection)
-        displayCopyFightable((Fightable) c);
 
         if (c instanceof Combatant) {
+            displayCopyFightable((Fightable) c);
             setIconIndex(((Combatant) c).getIconIndex());
             setModifier(((Combatant) c).getModifier());
         }
@@ -179,20 +179,6 @@ public class Combatant extends Fightable implements Serializable {
         return returnList;
     }
 
-    public static String factionToString(Faction faction) {
-        switch (faction) {
-            case Group  :
-                return "Group";
-            case Party:
-                return "Party";
-            case Enemy:
-                return "Enemy";
-            case Neutral:
-                return "Neutral";
-            default:
-                return "";
-        }
-    }
 
     public void genUUID() {
         // Generate a new UUID for this Combatant

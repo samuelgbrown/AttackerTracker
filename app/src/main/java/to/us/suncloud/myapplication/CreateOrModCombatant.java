@@ -299,12 +299,12 @@ public class CreateOrModCombatant extends DialogFragment implements IconSelectFr
         combatantName.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
+                // Do nothing
             }
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
+                // Do nothing
             }
 
             @Override

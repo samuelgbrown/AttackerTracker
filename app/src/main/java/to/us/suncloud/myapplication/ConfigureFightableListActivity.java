@@ -113,6 +113,7 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
         }
 
         // Store all of the Views we will need
+        // TODO GROUP: Add another button (that appears when the "resume" text appears) to RESET THE ENCOUNTER.  Make sure that it has a confirmation dialog
         mainButton = findViewById(R.id.finish_button);
         Toolbar toolbar = findViewById(R.id.configure_toolbar);
         noCombatantMessage = findViewById(R.id.configure_combatant_empty);
@@ -159,7 +160,7 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
         ListFightableRecyclerAdapter.LFRAFlags flags = new ListFightableRecyclerAdapter.LFRAFlags(); // Create flags structure (does this look worse?  It may look worse...I just wanted it to be clean!!!)
         flags.adapterCanCopy = true;
         flags.adapterCanModify = true;
-        flags.canMultiSelect = false;
+        flags.adapterCanMultiSelect = false;
         adapter = new ListFightableRecyclerAdapter(this, combatantLists, flags);
         combatantListView.setAdapter(adapter);
         combatantListView.setHasFixedSize(true);
