@@ -32,7 +32,7 @@ import java.util.ArrayList;
  * create an instance of this fragment.
  */
 
-public class ViewSavedCombatantsFragment extends DialogFragment implements ListFightableRecyclerAdapter.MasterFightableKeeper, CreateOrModCombatant.receiveNewOrModCombatantInterface {
+public class ViewSavedCombatantsFragment extends DialogFragment implements ListFightableRecyclerAdapter.MasterAFFLKeeper, CreateOrModCombatant.receiveNewOrModCombatantInterface {
     private static final String TAG = "ViewSavedCombatants";
     // The fragment initialization parameters
     private static final String CURRENT_COMBATANT_LIST = "currentCombatantList";
@@ -240,9 +240,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
 
                     // TODO GROUP: Should there be a user-dialog check for adding Groups to Groups?
                     FragmentManager fm = getChildFragmentManager();
-                    AddToGroupFragment.newInstance(combatantList).show(fm, "AddToGroup");
-
-                    // TODO: GROUP - Make sure that the selected fighters are cleared ONLY if successfully added to a group (adapter.clearMultiSelect()) - otherwise, keep them selected
+                    AddToGroupFragment.newInstance(adapter, combatantList).show(fm, "AddToGroup");
                 } else {
                     Toast.makeText(getContext(), getContext().getString(R.string.no_combatants_for_group), Toast.LENGTH_SHORT).show();
                 }
@@ -459,7 +457,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         };
 
     }
-
 
     private AllFactionFightableLists generateMasterCombatantList() {
         AllFactionFightableLists masterCombatantList = new AllFactionFightableLists();

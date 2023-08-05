@@ -19,7 +19,7 @@ public class CombatantGroup extends Fightable {
 
     public CombatantGroup(CombatantGroup combatantGroup) {
         super(combatantGroup);
-        setCombatantList(combatantGroup.getCombatantList());
+        setCombatantList(new ArrayList<>(combatantGroup.getCombatantList())); // Clone combatantList into the new CombatantGroup
     }
 
     private void setCombatantList(ArrayList<CombatantGroupData> newData) {
@@ -54,6 +54,76 @@ public class CombatantGroup extends Fightable {
         return anyCombatantsDoubled;
     }
 
+    public void removeSelectedCombatants( AllFactionFightableLists referenceList ) {
+        ArrayList<Fightable> selectedCombatants = referenceList.getSelected();
+        for ( Fightable thisFightable : selectedCombatants ) {
+            // Go through each selected Combatant (ignoring Groups)
+            if ( thisFightable instanceof Combatant ) {
+                removeCombatant((Combatant) thisFightable);
+            } // Will ONLY remove Combatants, not digested CombatantGroups
+        }
+    }
+
+    public void removeCombatant(Combatant combatant) {
+        for ( Iterator<CombatantGroupData> iter = combatantList.iterator(); iter.hasNext();) {
+            // Go through combatantList, and remove thisCombatant (if it exists)
+            CombatantGroupData thisData = iter.next();
+            if ( combatant.getId() == thisData.mID ) {
+                iter.remove();
+                break;
+            }
+        }
+    }
+
+    public boolean allCombatantsAreSelected( AllFactionFightableLists referenceList ) {
+        boolean allSelected = true;
+        for ( CombatantGroupData thisData : combatantList ) {
+            Combatant thisCombatant = referenceList.getCombatantWithID(thisData.mID, thisData.mFaction);
+            if ( ( thisCombatant == null ) || ( !thisCombatant.isSelected() ) ) {
+                // If this Combatant 1) doesn't exist, or 2) isn't selected, we can stop here
+                allSelected = false;
+            }
+        }
+
+        return allSelected;
+    }
+
+    public boolean selectedCombatantsHaveMultiples( AllFactionFightableLists referenceList ) {
+        // Do any of the Combatants in this group that are selected have multiples greater than 1?
+        boolean haveMultiples = false;
+        for ( CombatantGroupData thisData : combatantList ) {
+            Combatant thisCombatant = referenceList.getCombatantWithID(thisData.mID, thisData.mFaction);
+            if ( ( thisCombatant.isSelected() )  && ( thisData.mMultiples > 1 ) ) {
+                haveMultiples = true;
+            }
+        }
+
+        return haveMultiples;
+    }
+
+    public void removeCombatant(int combatantIndex) {
+        combatantList.remove(combatantIndex);
+    }
+
+    public UUID getUUIDOfCombatant(int combatantInd ) {
+        return combatantList.get(combatantInd).mID;
+    }
+
+    public int getNumMultiplesOfCombatant(int combatantInd ) {
+        return combatantList.get(combatantInd).mMultiples;
+    }
+
+    public void setNumMultiplesOfCombatant(int combatantInd, int numMultiples ) {
+        combatantList.get(combatantInd).mMultiples = numMultiples;
+    }
+
+    public Combatant getCombatant(AllFactionFightableLists referenceAFFL, int combatantInd) {
+        CombatantGroupData thisData = combatantList.get(combatantInd);
+        Faction thisFaction = thisData.mFaction;
+        UUID thisID = thisData.mID;
+        return referenceAFFL.getFactionList(thisFaction).getCombatantWithID(thisID);
+    }
+
     private void verifyGroupAgainstList(AllFactionFightableLists referenceList ) {
         for (Iterator<CombatantGroupData> iterator = combatantList.iterator(); iterator.hasNext(); ) {
             CombatantGroupData thisCombatant = iterator.next();
@@ -72,6 +142,9 @@ public class CombatantGroup extends Fightable {
                 iterator.remove();
             }
         }
+
+        // TODO: Implement sorting Combatants (will either need referenceAFFL each time, or to store each Combatant's name in combatantList, which will lead to desynchronizations
+        // TODO: Sort Combatants
     }
 
     public int getTotalCombatantsInFaction( Faction faction ) {
@@ -85,7 +158,20 @@ public class CombatantGroup extends Fightable {
         return runningSum;
     }
 
-    // TODO START HERE: Fill out all abstract methods!  Are they all needed...?
+    public int size( ) {
+        return combatantList.size();
+    }
+
+    public int numTotalCombatants( ) {
+        // Get the number of Combatants that this group contains (INCLUDING multiples)
+        int runningSum = 0;
+        for ( CombatantGroupData thisData : combatantList ) {
+            runningSum += thisData.mMultiples;
+        }
+
+        return runningSum;
+    }
+
     @Override
     public Fightable clone() {
         return new CombatantGroup(this);
@@ -137,6 +223,16 @@ public class CombatantGroup extends Fightable {
     @Override
     boolean displayEquals(@Nullable Object obj) {
         return displayEqualsFightable(obj);
+    }
+
+    boolean combatantGroupDataEquals(Object obj, int objCombatantInd, int thisCombatantInd) {
+        boolean isEqual = false;
+        if ( obj instanceof CombatantGroup ) {
+            isEqual = ((CombatantGroup) obj).getNumMultiplesOfCombatant(objCombatantInd) ==
+                    getNumMultiplesOfCombatant(thisCombatantInd);
+        }
+
+        return isEqual;
     }
 
     static private class CombatantGroupData {

@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-public class ConfigureFightableListActivity extends AppCompatActivity implements ListFightableRecyclerAdapter.MasterFightableKeeper, ViewSavedCombatantsFragment.ReceiveAddedCombatant, PurchaseHandler.purchaseHandlerInterface {
+public class ConfigureFightableListActivity extends AppCompatActivity implements ListFightableRecyclerAdapter.MasterAFFLKeeper, ViewSavedCombatantsFragment.ReceiveAddedCombatant, PurchaseHandler.purchaseHandlerInterface {
 
     public static final String COMBATANT_LIST = "combatantListList"; // ID for inputs to the activity
     public static final String ROUND_NUMBER = "roundNumber"; // ID for inputs to the activity

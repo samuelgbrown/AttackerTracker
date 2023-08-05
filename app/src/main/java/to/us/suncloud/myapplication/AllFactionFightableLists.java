@@ -236,6 +236,46 @@ public class AllFactionFightableLists implements Serializable {
         throw new IndexOutOfBoundsException("Index " + desiredFightableInd + ", Size " + size()); // The Fightable index is out of bounds
     }
 
+    public boolean isFightableAGroup(int desiredFightableInd, ArrayList<ArrayList<Integer>> filteredIndices) {
+        boolean isCombatantGroup = false;
+
+        // Selecting only from visible Fightables, see if this Fightable is a Group
+        int curLoc = 0;
+        int facInd = 0; // We are only doing the Group Faction for this purpose!
+        FactionFightableList groupFactionList = getFactionList(Fightable.Faction.Group);
+
+        // Initialize our counting variables
+        int filterIndInd = 0;
+
+        // Go through each Fightable
+        for (int fightableInd = 0; fightableInd < groupFactionList.size(); fightableInd++) {
+            // For each Fightable in this Faction...
+
+                if (fightableInd == filteredIndices.get(facInd).get(filterIndInd)) {
+                    // We have found the filteredIndices.get(facInd).get(filterIndInd)'th Fightable
+
+                    if (curLoc == desiredFightableInd) {
+                        // We found the Combatant within this Faction, so it must be a group
+                        isCombatantGroup = true;
+                        break;
+                    } else {
+                        // Record that we've traversed one visible, filtered Fightable
+                        curLoc++;
+                    }
+
+                    // Finalize
+                    filterIndInd++; // We have encountered one visible Fightable that was in the filter list
+
+                    if (filterIndInd >= filteredIndices.get(facInd).size()) {
+                        // If we have exhausted all of the visible Fightables in this Faction that are within the filter, then don't bother looking through the rest
+                        break;
+                    }
+                }
+        }
+
+        return isCombatantGroup;
+    }
+
     int posToFightableInd(int position) {
         // Convert an adapter position to an index in fightableList_Master (adapter position will include banners)
         int viewsRemaining = position; // Keep track of how many Views have been traversed
@@ -258,14 +298,14 @@ public class AllFactionFightableLists implements Serializable {
                     viewsRemaining--; // We have traversed one View (the banner)
                 }
 
-                if (viewsRemaining < allFactionLists.get(facInd).visibleSize()) {
-                    // The position is in this array,
-                    returnPosition += viewsRemaining;
-                    return returnPosition;
+                int thisFacVisibleSize = allFactionLists.get(facInd).visibleSize();
+                if (viewsRemaining < thisFacVisibleSize) {
+                    // The position is in this array...
+                    return returnPosition + viewsRemaining;
                 } else {
                     // The position is beyond this array, so traverse all Views in this Faction
-                    viewsRemaining -= allFactionLists.get(facInd).visibleSize();
-                    returnPosition += allFactionLists.get(facInd).visibleSize();
+                    viewsRemaining -= thisFacVisibleSize;
+                    returnPosition += thisFacVisibleSize;
                 }
             }
         }

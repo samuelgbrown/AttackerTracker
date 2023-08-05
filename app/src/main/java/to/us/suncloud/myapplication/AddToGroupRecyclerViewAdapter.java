@@ -101,6 +101,12 @@ public class AddToGroupRecyclerViewAdapter extends RecyclerView.Adapter<AddToGro
                     parentFrag.groupIndexSelected(groupIndex);
                 }
             };
+
+            mBackground.setOnClickListener(groupClickListener);
+            mGroupName.setOnClickListener(groupClickListener);
+            mPartyNum.setOnClickListener(groupClickListener);
+            mNeutralNum.setOnClickListener(groupClickListener);
+            mEnemyNum.setOnClickListener(groupClickListener);
         }
 
         public void bind(int groupIndexIn) {

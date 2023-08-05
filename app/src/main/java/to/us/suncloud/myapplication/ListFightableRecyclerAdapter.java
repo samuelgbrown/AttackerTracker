@@ -29,17 +29,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFightableRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface {
+public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFightableRecyclerAdapter.bindableVH> implements Filterable, CreateOrModCombatant.receiveNewOrModCombatantInterface, ViewGroupFragment.ViewGroupFragmentListener {
     private static final int UNSET = -1;
 
     public static final int COMBATANT_VIEW = 0;
-    public static final int BANNER_VIEW = 1;
+    public static final int GROUP_VIEW = 1;
+    public static final int BANNER_VIEW = 2;
 
 //    public static final String SET_MULTI_SELECT = "setMultiSelect";
 
     private static final String TAG = "ListFightableRecycler";
 
-    MasterFightableKeeper parent; // If this is set, then the selected Combatant will be sent to the parent
+    MasterAFFLKeeper parent; // If this is set, then the selected Combatant will be sent to the parent
     boolean adapterCanModify; // Can the adapter modify the Combatant (used so that we can use this adapter for both Combatant display and modify+display purposes, because they are VERY similar)
     boolean adapterCanCopy; // Can the adapter copy the Combatant (used in the Configure Activity, but not for viewing the saved Combatants
     boolean adapterCanMultiSelect; // Can the adapter allow multi-selecting of Combatants (does that make sense in context?)
@@ -60,7 +61,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
     private String filteredText = ""; // The string that is currently being used to filter the list
 //    private String filteredText_Memory = ""; // The string that was last used to filter the list, before the last call to notifyCombatantsChanged
 
-//    public ListFightableRecyclerAdapter(MasterFightableKeeper parent, Context context, FactionFightableList combatantList) {
+//    public ListFightableRecyclerAdapter(MasterAFFLKeeper parent, Context context, FactionFightableList combatantList) {
 //        this.parent = parent;
 //        this.fightableList_Master = combatantList; // Save the reference (master will be modified directly)
 ////        this.combatantList_Display = combatantList.clone(); // COPY the main list for these two lists, so that the master is not changed
@@ -70,7 +71,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 //        initializeCombatantFilteredIndices();
 //    }
 
-//    public ListFightableRecyclerAdapter(MasterFightableKeeper parent, AllFactionFightableLists combatantList) {
+//    public ListFightableRecyclerAdapter(MasterAFFLKeeper parent, AllFactionFightableLists combatantList) {
 //        this.parent = parent;
 //        this.fightableList_Master = combatantList; // Save the reference (master will be modified directly)
 ////        this.combatantList_Display = combatantList.clone(); // COPY the main list for these two lists, so that the master is not changed
@@ -81,7 +82,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 //        fightableFilteredIndices = fightableList_Master.getIndicesThatMatch(filteredText);
 //    }
 //
-//    public ListFightableRecyclerAdapter(MasterFightableKeeper parent, AllFactionFightableLists combatantList, boolean adapterCanModify) {
+//    public ListFightableRecyclerAdapter(MasterAFFLKeeper parent, AllFactionFightableLists combatantList, boolean adapterCanModify) {
 //        this.parent = parent;
 //        this.adapterCanModify = adapterCanModify;
 //        this.fightableList_Master = combatantList; // Save the reference (master will be modified directly)
@@ -93,7 +94,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 //        fightableFilteredIndices = fightableList_Master.getIndicesThatMatch(filteredText);
 //    }
 
-//    public ListFightableRecyclerAdapter(MasterFightableKeeper parent, AllFactionFightableLists combatantList, boolean adapterCanModify, boolean adapterCanCopy) {
+//    public ListFightableRecyclerAdapter(MasterAFFLKeeper parent, AllFactionFightableLists combatantList, boolean adapterCanModify, boolean adapterCanCopy) {
 //        this.parent = parent;
 //        this.adapterCanModify = adapterCanModify;
 //        this.adapterCanCopy = adapterCanCopy;
@@ -106,7 +107,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 //        fightableFilteredIndices = fightableList_Master.getIndicesThatMatch(filteredText);
 //    }
 //
-//    public ListFightableRecyclerAdapter(MasterFightableKeeper parent, AllFactionFightableLists combatantList, boolean adapterCanModify, boolean adapterCanCopy, boolean adapterCanMultiSelect) {
+//    public ListFightableRecyclerAdapter(MasterAFFLKeeper parent, AllFactionFightableLists combatantList, boolean adapterCanModify, boolean adapterCanCopy, boolean adapterCanMultiSelect) {
 //        this.parent = parent;
 //        this.adapterCanModify = adapterCanModify;
 //        this.adapterCanCopy = adapterCanCopy;
@@ -120,8 +121,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 //        fightableFilteredIndices = fightableList_Master.getIndicesThatMatch(filteredText);
 //    }
 
-    public ListFightableRecyclerAdapter(MasterFightableKeeper parent, AllFactionFightableLists combatantList, LFRAFlags flags) {
-        // TODO OLD: I think there is a problem having this object hold onto the parent object (can't be serialized...?)
+    public ListFightableRecyclerAdapter(MasterAFFLKeeper parent, AllFactionFightableLists combatantList, LFRAFlags flags) {
         this.parent = parent;
         this.adapterCanModify = flags.adapterCanModify;
         this.adapterCanCopy = flags.adapterCanCopy;
@@ -184,23 +184,19 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
         }
     }
 
-//    private void initializeCombatantFilteredIndices() {
-////                 If there is something in the filter string, then filter out the combatants based on the string
-////                combatantList_Display = new FactionFightableList(fightableList_Master.faction());
-//
-//        fightableFilteredIndices = new ArrayList<>();
-//        for (int combatantInd = 0; combatantInd < fightableList_Master.size(); combatantInd++) {
-//            if (filteredText.isEmpty() || fightableList_Master.get(combatantInd).getName().toLowerCase().contains(filteredText)) {
-//                // If this Combatant's name contains the string (or the string is empty), then include it in the display results
-////                        combatantList_Display.add(fightableList_Master.get(combatantInd).cloneUnique());
-//                fightableFilteredIndices.add(combatantInd);
-//            }
-//        }
-//    }
-
     @Override
     public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
         super.onAttachedToRecyclerView(recyclerView);
+    }
+
+    @Override
+    public void onFinishModifyingGroup(boolean combatantsConsumed) {
+        // The ViewGroupFragment just finished viewing (and potentially modifying/deleting) a group.  Make sure this adapter is updated!
+        if ( combatantsConsumed ) {
+            // The selected Combatants should all be cleared
+            clearMultiSelect();
+        }
+        notifyFightableListChanged();
     }
 
     static class bindableVH extends RecyclerView.ViewHolder implements Serializable {
@@ -212,10 +208,107 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
         }
     }
 
+    class CombatantGroupViewHolder extends bindableVH implements Serializable {
+        int fightableInd = UNSET;
+        
+        View itemView;
+        public TextView mGroupName;
+        public TextView mPartyNum;
+        public TextView mNeutralNum;
+        public TextView mEnemyNum;
+
+        CombatantGroup thisGroup;
+
+        public CombatantGroupViewHolder(@NonNull final View itemView) {
+            super(itemView);
+
+            this.itemView = itemView;
+
+            mGroupName = itemView.findViewById(R.id.group_name);
+            mPartyNum = itemView.findViewById(R.id.party_count);
+            mNeutralNum = itemView.findViewById(R.id.neutral_count);
+            mEnemyNum = itemView.findViewById(R.id.enemy_count);
+
+            View.OnClickListener groupClickListener = new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Fightable thisFightable = getThisFightable();
+                    if (thisFightable instanceof CombatantGroup) {
+                        final CombatantGroup thisGroup = (CombatantGroup) thisFightable;
+                        String titleString = itemView.getContext().getString(
+                                R.string.confirm_add_group_combatants, thisGroup.numTotalCombatants(), thisGroup.getName());
+                        new AlertDialog.Builder(itemView.getContext())
+                                .setTitle(titleString)
+                                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        ArrayList<Combatant> allCombatantsToAdd = thisGroup.convertToCombatants(fightableList_Master);
+                                        for ( Combatant thisCombatant : allCombatantsToAdd ) {
+                                            // Add all Combatants in this Group to the encounter!
+                                            parent.receiveChosenFightable(thisCombatant.cloneUnique()); // TODO GROUP: cloneUnique will break Groups (maybe...? I guess not if it only gets sent to the encounter...check what the parent can be)!  Can regular clone work...?
+                                        }
+                                    }
+                                })
+                                .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        // Do nothing
+                                    }
+                                })
+                                .show();
+
+                    }
+                }
+            };
+
+            itemView.setOnClickListener(groupClickListener);
+            mGroupName.setOnClickListener(groupClickListener);
+            mPartyNum.setOnClickListener(groupClickListener);
+            mNeutralNum.setOnClickListener(groupClickListener);
+            mEnemyNum.setOnClickListener(groupClickListener);
+        }
+
+        private Fightable getThisFightable() {
+            return displayList().get(posToCombatantInd(getAdapterPosition()));
+        }
+
+        @Override
+        public void bind(int groupIndexIn) {
+            int partyCount = 0;
+            int neutralCount = 0;
+            int enemyCount = 0;
+
+            Fightable thisFightable = getThisFightable();
+            if (thisFightable instanceof CombatantGroup) {
+                // If this represents an existing group...
+                CombatantGroup thisGroup = (CombatantGroup) thisFightable;
+
+                mGroupName.setText(thisGroup.getName());
+                partyCount = thisGroup.getTotalCombatantsInFaction(Fightable.Faction.Party);
+                neutralCount = thisGroup.getTotalCombatantsInFaction(Fightable.Faction.Neutral);
+                enemyCount = thisGroup.getTotalCombatantsInFaction(Fightable.Faction.Enemy);
+            }
+
+            // Adjust visibility of the faction count boxes
+            if (partyCount > 0) {
+                mPartyNum.setVisibility(View.VISIBLE);
+            } else {
+                mPartyNum.setVisibility(View.INVISIBLE);
+            }
+            if (neutralCount > 0) {
+                mNeutralNum.setVisibility(View.VISIBLE);
+            } else {
+                mNeutralNum.setVisibility(View.INVISIBLE);
+            }
+            if (enemyCount > 0) {
+                mEnemyNum.setVisibility(View.VISIBLE);
+            } else {
+                mEnemyNum.setVisibility(View.INVISIBLE);
+            }
+        }
+    }
+
     class CombatantViewHolder extends bindableVH implements Serializable {
-
-        int combatantInd = UNSET;
-
         View itemView;
         TextView NameView;
         ImageButton CombatantRemove; // Only change visibility through setCombatantRemoveVisibility
@@ -236,10 +329,6 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
         // On second thought, figure out way to not have gear show up for Add Combatant version?
 
         public CombatantViewHolder(@NonNull final View itemView) {
-            // TODO GROUP: Extend this viewHolder (and layout) so that it also works for the ViewOrModGroups Fragment Adapter!
-            //  Add an icon on the left (where "checkmark" is?) that indicates the number of copies of the given Combatant in the Group
-            //  Disable ChangeCombatant and Copy buttons (these are input flags)
-            // TODO: Make a viewHolder for CombatantGroups
             super(itemView);
 
             this.itemView = itemView;
@@ -259,17 +348,17 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
                     // If we are expecting a Combatant to return, then figure out what the user is trying to do (otherwise, ignore the click)
                     if (isMultiSelecting) {
                         // If we are currently multi-selecting, then we just want to toggle this Combatant's isSelected status, and update any GUI elements
-                        boolean newIsSelected = !displayList().get(posToCombatantInd(getAdapterPosition())).isSelected(); // Toggle the current value
+                        boolean newIsSelected = !getThisFightable().isSelected(); // Toggle the current value
 
                         // Update the master list
-                        displayList().get(posToCombatantInd(getAdapterPosition())).setSelected(newIsSelected);
+                        getThisFightable().setSelected(newIsSelected);
 
                         // Update the GUI, and notify the adapter
                         notifyFightableListChanged();
                     } else {
                         if (parent != null) {
                             // Get the current position in the adapter, use it to find the Combatant position in fightableList_Master (taking into account the banners), use that to find this Combatant in the master list (taking into account the filter string with "subList()"), and make a unique clone of it to send back to the parent (phew...)
-                            parent.receiveChosenFightable(displayList().get(posToCombatantInd(getAdapterPosition())).cloneUnique()); // TODO GROUP: cloneUnique will break Groups!  Can regular clone work...?
+                            parent.receiveChosenFightable(getThisFightable().cloneUnique()); // TODO GROUP: cloneUnique will break Groups (maybe...? I guess not if it only gets sent to the encounter...)!  Can regular clone work...?
                         }
                     }
                 }
@@ -286,7 +375,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
                     if (adapterCanMultiSelect && !isMultiSelecting) {
                         // If we can multi-select, but we aren't multi-selecting right now, then the user wants to start multi-selecting, and also select this Combatant
                         // Update the value of isSelectedList
-                        displayList().get(posToCombatantInd(getAdapterPosition())).setSelected(true);
+                        getThisFightable().setSelected(true);
 
                         // Let the adapter know that this has become selected
                         notifyFightableListChanged();
@@ -300,6 +389,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
             CombatantIcon.setOnLongClickListener(multiSelectStartListener);
             NameView.setOnLongClickListener(multiSelectStartListener);
             itemView.setOnLongClickListener(multiSelectStartListener);
+            CombatantMultiSelect.setOnLongClickListener(multiSelectStartListener);
 
             setCombatantChangeCombatantVisibility(View.VISIBLE);
             setCombatantRemoveVisibility(View.VISIBLE);
@@ -376,7 +466,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 
         public void bind(int position) {
             // Get the corresponding Fightable ind
-            combatantInd = posToCombatantInd(position);
+            int combatantInd = posToCombatantInd(position);
 
             // Make sure the corresponding Fightable is actually a Combatant
             Fightable thisFightable = fightableList_Master.getFromVisible(combatantInd, fightableFilteredIndices);
@@ -398,6 +488,10 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
             Log.e(TAG, "CombatantViewHolder bind got a non-Combatant Fightable!");
             }
 
+        }
+        
+        private Fightable getThisFightable() {
+            return displayList().get(posToCombatantInd(getAdapterPosition()));
         }
 
         // Methods to update parts of the ViewHolder
@@ -430,7 +524,8 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
             int colorId = -1;
             switch (faction) {
                 case Group:
-                    colorId = CombatantIcon.getContext().getResources().getColor(R.color.colorParty);
+                    colorId = CombatantIcon.getContext().getResources().getColor(R.color.colorGroup);
+                    break;
                 case Party:
                     colorId = CombatantIcon.getContext().getResources().getColor(R.color.colorParty);
                     break;
@@ -641,7 +736,6 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 
     private void removeFightable(int position) {
         // Tell the parent to remove a Combatant in the list, based on the current position in the displayed List
-        AllFactionFightableLists test =  displayList();
         if (parent.safeToDelete(displayList().get(position))) {
             // If the parent says we can fully delete this Combatant, then do so
             fightableList_Master.remove(displayList().get(position));
@@ -762,10 +856,14 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
 
     @Override
     public int getItemViewType(int position) {
-        // TODO: GROUP - Add logic here to determine which viewholder to use (Combatant, CombatantGroup, etc.)
         int combatantInd = posToCombatantInd(position); // Get the position in the Combatant list (negative numbers indicate a banner view)
         if (combatantInd >= 0) {
-            return COMBATANT_VIEW;
+            // Can be either a Combatant or a Group
+            if ( fightableList_Master.isFightableAGroup(combatantInd, fightableFilteredIndices) ) {
+                return GROUP_VIEW;
+            } else {
+                return COMBATANT_VIEW;
+            }
         } else {
             return BANNER_VIEW;
         }
@@ -780,11 +878,15 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
     @Override
     public bindableVH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        View view;
         if (viewType == COMBATANT_VIEW) {
-            View view = inflater.inflate(R.layout.combatant_item_mod, parent, false);
+            view = inflater.inflate(R.layout.combatant_item_mod, parent, false);
             return new CombatantViewHolder(view);
+        } else if (viewType == GROUP_VIEW) {
+            view = inflater.inflate(R.layout.group_list_item, parent, false);
+            return new CombatantGroupViewHolder(view);
         } else if (viewType == BANNER_VIEW) {
-            View view = inflater.inflate(R.layout.faction_banner, parent, false);
+            view = inflater.inflate(R.layout.faction_banner, parent, false);
             return new FactionBannerViewHolder(view);
         } else {
             Log.e(TAG, "Got illegal viewType");
@@ -820,7 +922,6 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
             visChange = CombatantFilteredDiffUtil.MultiSelectVisibilityChange.START_MULTISELECT;
         }
 
-        // TODO: GROUP - Does CombatantFilteredDiffUtil need to be changed to support groups as well?
         // If anything about the combatants has changed (specifically the viewed version of the list according to fightableFilteredIndices), see if we need to rearrange the list
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new CombatantFilteredDiffUtil(fightableList_Memory, fightableList_Master.subListVisible(fightableFilteredIndices), visChange));
         diffResult.dispatchUpdatesTo(this); // If anything has changed, move the list items around
@@ -864,7 +965,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
     }
 
     // The interface calling this adapter MUST have control of a master list of combatants such that it can judge a Combatant's name to be mutually exclusive
-    interface MasterFightableKeeper extends Serializable {
+    interface MasterAFFLKeeper extends Serializable {
         // TODO: Update all uses of these functions in other places (has not been updated yet as of this TODO item)
         void receiveChosenFightable(Fightable selectedFightable); // Receive selected Fightable back from this Adapter
 
@@ -875,8 +976,6 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<ListFight
         void notifyIsMultiSelecting(boolean isMultiSelecting); // Let the parent know that the multi-selecting status may have changed, so we may need to update the GUI
 
         boolean safeToDelete(Fightable fightable); // Is a given Combatant safe to delete (does not appear in the EncounterCombatantList), or should it simply be turned invisible (appears in the list)
-
-        // Note: No methods associated with modifying the FactionFightableList, because any modifications that occur (through the "gear" button) are consistent between this adapter and other locations (because Java passes references...hopefully)
     }
 
     // A simple class that holds onto a bunch of input parameters for the ListFightableRecyclerAdapter.  Really only exists because having 3+ flags input to the constructor IN ADDITION to a bunch of other stuff just kinda makes me sad...

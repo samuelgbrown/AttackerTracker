@@ -1,7 +1,10 @@
 package to.us.suncloud.myapplication;
 
+import android.app.Dialog;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -19,7 +22,10 @@ import android.view.ViewGroup;
 public class AddToGroupFragment extends DialogFragment implements AddToGroupRecyclerViewAdapter.GroupListRVA_Return {
 
     private static final String ARG_AFFL = "all_faction_fightable_list";
+    private static final String ARG_PARENT = "parent";
+
     private AllFactionFightableLists groupFragmentAFFL;
+    private ViewGroupFragment.ViewGroupFragmentListener parent;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -28,9 +34,10 @@ public class AddToGroupFragment extends DialogFragment implements AddToGroupRecy
     public AddToGroupFragment() {
     }
 
-    public static AddToGroupFragment newInstance(AllFactionFightableLists inputAFFL) {
+    public static AddToGroupFragment newInstance(ViewGroupFragment.ViewGroupFragmentListener parent, AllFactionFightableLists inputAFFL) {
         AddToGroupFragment fragment = new AddToGroupFragment();
         Bundle args = new Bundle();
+        args.putSerializable(ARG_PARENT, parent);
         args.putSerializable(ARG_AFFL, inputAFFL);
         fragment.setArguments(args);
         return fragment;
@@ -42,6 +49,7 @@ public class AddToGroupFragment extends DialogFragment implements AddToGroupRecy
 
         if (getArguments() != null) {
             groupFragmentAFFL = (AllFactionFightableLists) getArguments().getSerializable(ARG_AFFL);
+            parent = (ViewGroupFragment.ViewGroupFragmentListener) getArguments().getSerializable(ARG_PARENT);
         }
     }
 
@@ -61,12 +69,16 @@ public class AddToGroupFragment extends DialogFragment implements AddToGroupRecy
     @Override
     public void groupIndexSelected(int groupIndex) {
         // The group with this index in groupFragmentAFFL was selected.  Create a ViewOrModGroupFragment with this group
-        // TODO GROUP - Need to make a way for the updated AFFL to get back to the VSCF...?
         FragmentManager fm = getChildFragmentManager();
-        ViewGroupFragment.newInstance(groupFragmentAFFL, groupIndex).show(fm, "ViewGroupFragment");
+        ViewGroupFragment.newInstance(parent, groupFragmentAFFL, groupIndex).show(fm, "ViewGroupFragment");
 
         // Close the Dialog (no need to return to choosing a Group)
         dismiss();
     }
 
+    @Override
+    public void dismiss() {
+        parent.onFinishModifyingGroup(false);
+        super.dismiss();
+    }
 }

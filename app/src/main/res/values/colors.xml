@@ -12,6 +12,7 @@
     <color name="colorGroup">#1E88E5</color>
     <color name="colorParty">#1E8820</color>
     <color name="colorEnemy">#BF1D1D</color>
+    <color name="colorCancel">#DC4A4A</color>
     <color name="colorNeutral">#B8B8B8</color>
     <color name="colorBlack">#000000</color>
     <color name="colorWhite">#FFFFFF</color>
