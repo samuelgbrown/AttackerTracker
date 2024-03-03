@@ -1,31 +1,33 @@
 package to.us.suncloud.myapplication;
 
-import android.app.Dialog;
+import static to.us.suncloud.myapplication.ViewGroupFragment.ARG_CALLINGFRAG;
+import static to.us.suncloud.myapplication.ViewGroupFragment.ARG_THIS_GROUP;
+
 import android.os.Bundle;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.io.Serializable;
+
 /**
  * A fragment representing a list of Items.
  */
 
 // A fragment for adding Combatants to a group
-public class AddToGroupFragment extends DialogFragment implements AddToGroupRecyclerViewAdapter.GroupListRVA_Return {
+public class AddToGroupFragment extends DialogFragment implements AddToGroupRecyclerViewAdapter.GroupListRVA_Return, Serializable {
 
     private static final String ARG_AFFL = "all_faction_fightable_list";
     private static final String ARG_PARENT = "parent";
 
     private AllFactionFightableLists groupFragmentAFFL;
-    private ViewGroupFragment.ViewGroupFragmentListener parent;
+    private ReceiveNewOrModFightablesInterface parent;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -34,11 +36,15 @@ public class AddToGroupFragment extends DialogFragment implements AddToGroupRecy
     public AddToGroupFragment() {
     }
 
-    public static AddToGroupFragment newInstance(ViewGroupFragment.ViewGroupFragmentListener parent, AllFactionFightableLists inputAFFL) {
+    public static AddToGroupFragment newInstance(ReceiveNewOrModFightablesInterface parent, AllFactionFightableLists inputAFFL) {
         AddToGroupFragment fragment = new AddToGroupFragment();
+
+        // Get a copy of the AFFL to use as reference for the group - make sure no Fightables are selected
+        AllFactionFightableLists referenceAFFL = inputAFFL.clone();
+
         Bundle args = new Bundle();
         args.putSerializable(ARG_PARENT, parent);
-        args.putSerializable(ARG_AFFL, inputAFFL);
+        args.putSerializable(ARG_AFFL, referenceAFFL);
         fragment.setArguments(args);
         return fragment;
     }
@@ -49,36 +55,38 @@ public class AddToGroupFragment extends DialogFragment implements AddToGroupRecy
 
         if (getArguments() != null) {
             groupFragmentAFFL = (AllFactionFightableLists) getArguments().getSerializable(ARG_AFFL);
-            parent = (ViewGroupFragment.ViewGroupFragmentListener) getArguments().getSerializable(ARG_PARENT);
+            parent = (ReceiveNewOrModFightablesInterface) getArguments().getSerializable(ARG_PARENT);
         }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.group_list_layout, container, false);
+        View view = inflater.inflate(R.layout.group_list_layout, container, false); // TODO GROUP: This (like MANY fragments) should have a width that is a fraction of the total width of the screen
 
         // Set the adapter
-        if (view instanceof RecyclerView) {
-            RecyclerView recyclerView = (RecyclerView) view;
-            recyclerView.setAdapter(new AddToGroupRecyclerViewAdapter(groupFragmentAFFL, this));
-        }
+        RecyclerView recyclerView = view.findViewById(R.id.add_to_group_recycler_view);
+        recyclerView.setAdapter(new AddToGroupRecyclerViewAdapter(groupFragmentAFFL, this));
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         return view;
     }
 
     @Override
-    public void groupIndexSelected(int groupIndex) {
+    public void choseGroupWithMetadata(CombatantGroup thisGroup) {
+        // Clear any selected from the groupFragmentAFFL, so nothing appears selected in the ViewGroup dialog
+        groupFragmentAFFL.clearSelected();
+
         // The group with this index in groupFragmentAFFL was selected.  Create a ViewOrModGroupFragment with this group
         FragmentManager fm = getChildFragmentManager();
-        ViewGroupFragment.newInstance(parent, groupFragmentAFFL, groupIndex).show(fm, "ViewGroupFragment");
+        Bundle bundle = new Bundle();
 
-        // Close the Dialog (no need to return to choosing a Group)
-        dismiss();
-    }
+        bundle.putSerializable(ARG_AFFL, groupFragmentAFFL);
+        bundle.putSerializable(ARG_PARENT, parent);
+        bundle.putSerializable(ARG_THIS_GROUP, thisGroup);
+        bundle.putSerializable(ARG_CALLINGFRAG, this);
 
-    @Override
-    public void dismiss() {
-        parent.onFinishModifyingGroup(false);
-        super.dismiss();
+        ViewGroupFragment newFragment = ViewGroupFragment.newInstance(bundle);
+        newFragment.show(fm, "ViewGroupFragment"); // ViewGroupFragment will close this Fragment when we're done
     }
 }

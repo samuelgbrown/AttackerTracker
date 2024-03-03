@@ -40,26 +40,29 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/multi_picker_banner"
+            android:layout_margin="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" >
+            app:layout_constraintTop_toBottomOf="@id/multi_picker_banner">
+
             <TextView
                 android:id="@+id/combatant_multiples_tag"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:textSize="20sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
                 android:text="@string/combatant_multiples_tag"
-                />
+                android:textSize="20sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <EditText
                 android:id="@+id/multiples_text_box"
-                android:layout_width="50dp"
+                android:layout_width="40dp"
                 android:layout_height="match_parent"
                 android:inputType="number"
                 android:maxLength="2"
+                android:textAlignment="center"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/combatant_multiples_tag"

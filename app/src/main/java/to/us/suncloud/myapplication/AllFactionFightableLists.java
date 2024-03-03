@@ -5,6 +5,8 @@ import androidx.annotation.Nullable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.UUID;
 
 public class AllFactionFightableLists implements Serializable {
@@ -22,10 +24,7 @@ public class AllFactionFightableLists implements Serializable {
     }
 
     AllFactionFightableLists(EncounterCombatantList encounterList) {
-        addAll((ArrayList<Fightable>) ((ArrayList<?>) encounterList.getCombatantArrayList()), true, true); // Add all elements in this list, with force set to true (so no modifications occur)
-
-        // TODO: Shouldn't initFactionLists() happen *very first thing*?
-        initFactionLists();
+        addAll( (ArrayList<Fightable>) ((ArrayList<?>) encounterList.getCombatantArrayList()) ); // Add all elements in this list, with force set to true (so no modifications occur)
     }
 
     AllFactionFightableLists(AllFactionFightableLists c) {
@@ -58,94 +57,35 @@ public class AllFactionFightableLists implements Serializable {
         return allFactionLists;
     }
 
-
-//    public void addFactionFightableList(FactionFightableList listToAdd) {
-//        // Add a new faction Fightable list, if the faction isn't already in this list
-//        if (!containsFaction(listToAdd.faction())) {
-//            allFactionLists.add(listToAdd);
-//        }
-//
-//        // Sort the List
-//        sort();
-//    }
-
-    public boolean addFightable(Fightable newFightable) {
-        // The standard addFightable call, assumes that the newFightable is a completely new addition to the Fightable list
-        return addFightable(newFightable, false, false);
-    }
-
-    public boolean addFightable(Fightable newFightable, boolean newFightableIsModifiedExistingFightable) {
-        return addFightable(newFightable, newFightableIsModifiedExistingFightable, false);
-    }
-
-    public boolean addFightable(Fightable newFightable, boolean newFightableIsModifiedExistingFightable, boolean force) {
-        // If the Faction Lists contain a Fightable with this Fightable's name, then we must make the new Fightable's name unique.
-        // First, check what the largest existing ordinal is for this Fightable's base name
-        // TO_DO LATER: Doing these checks could be a setting? Something like "Smart naming"?  Perhaps another setting could be if we even care about name uniqueness at all!
-        // KNOWN BUG: Known minor bug: If two version of a Fightable are added, one without ordinal, and the non-ordinal Fightable is deleted (saved), and THEN the user adds a new version and decides to copy (not resurrect), then subsequent added copies also bring up the resurrect/copy dialog.  The horror.
-        // Note on force:  In first half of function, "force" refers to forcing the Fightable to be added despite there being an old deleted version of it.  In second half, force refers to forcing the new Fightable's name to be unchanged.
-        int highestExistingOrdinal = getHighestOrdinalInstance(newFightable);
-        if (highestExistingOrdinal != Fightable.DOES_NOT_APPEAR) {
-            // If the Fightable's name does appear, first check if there is an exact match to a Fightable that is invisible
-            if (containsName(newFightable.getName())) {
-                // If the list contains an exact match for this Fightable, see if that Fightable is invisible
-                Fightable existingFightable = getFightable(newFightable.getName());
-                if (!(existingFightable == null) && !existingFightable.isVisible()) {
-                    // If the matching Fightable is invisible, then make it visible, and update the Fightable with the new Fightable's values
-                    //  This will likely only occur if a Fightable is removed and then reenters combat
-                    if (force) {
-                        if (newFightableIsModifiedExistingFightable) {
-                            // If this is an existing Fightable, then just modify the existing one
-                            existingFightable.setVisible(true);
-                            existingFightable.displayCopy(newFightable);
-                            sortAllLists(); // After setting the Fightable to be visible, sort the lists (sorting depends partially on visibility, and the list must be in order to display properly)
-                            return true; // We don't need to add the Fightable anymore, we've already "added" it.  Return success
-                        } else {
-                            force = false; // We've passed the check for matching the name of a visible Fightable.  Turn off "force" because, after this line, "force" refers to us wanting to force no name change for this Fightable (which is not what we want)
-                            // Continue, and rename this and the existing Fightable according to proper ordinal
-                        }
-
-                        // If this is meant to be a brand new Fightable, then continue on to the next block, to modify both this and the existing Fightable as needed to make sure their names are distinct
-                    } else {
-                        return false; // Do nothing, ask for user input
-                    }
-                }
-            }
-
-            // If force is set, then add the Fightable without modification (we are probably getting it back from the Encounter or after a name modification, so no renaming should occur)
-            // If there is no exact match to an invisible Fightable, then the names must be changed somehow...
-            if (highestExistingOrdinal == Fightable.NO_ORDINAL) {
-                if (!force) {
-                    // If this Fightable's base name DOES appear, but with no ordinal, AND we aren't forcing then that Fightable's name must be changed
-                    // If newFightable has an ordinal that's smaller than 2, then this Fightable's name must be changed to 1) preserve uniqueness, and 2) make it so that "Zombie" and "Zombie 1" don't both appear in the list (because that's weird)
-                    getFightable(newFightable.getBaseName()).setNameOrdinal(1); // Find the existing Fightable with this Fightable's name, and set its ordinal to 1
-                    if (newFightable.getOrdinal() < 2) {
-                        newFightable.setNameOrdinal(2); // Set the new Fightable's ordinal to 2
-                        // If the new Fightable's ordinal is 2 or greater, then...well...it's not bothering anyone, I guess...
-                    }
-                }
-            } else {
-                // If the Fightable's base name DOES appear in the list already with an ordinal, and the new Fightable's ordinal is already being used...
-
-                if (newFightableIsModifiedExistingFightable) {
-                    // If this new Fightable is the result of a modification of an existing Fightable...
-                    if (containsName(newFightable.getName())) {
-                        // If the list contains an EXACT match to this name, which is visible, then calmly explain to the user that they're an idiot
-                        return false;
-                    }
-
-                    // If the list does not contain this name, then...sure, why not.  User can do whatever they want, and we don't need to modify anything
-                } else {
-                    // ...then simply modify this Fightable's ordinal (if needed) to be at least one higher than the current highest ordinal
-                    newFightable.setNameOrdinal(Math.max(highestExistingOrdinal + 1, newFightable.getOrdinal())); // If the new Fightable's ordinal is not already being used, then it was probably already a part of the List (a Fightable being re-added after being modified), so don't mess with it!
-                }
-            }
+    public boolean
+    addOrModifyFightable(Fightable newFightable ) {
+        // Now, the Fightable and the list are *guaranteed* to unique to each other, and ready to have the Fightable added
+        Fightable oldFightable = getFightableWithID( newFightable.getId() );
+        boolean newFightableIsModifiedExistingFightable = oldFightable != null;
+        if ( newFightableIsModifiedExistingFightable ) {
+                // If modifying an existing Fightable, first remove the Fightable from the old list
+                getFactionList(oldFightable.getFaction()).remove(oldFightable);
         }
 
-        // Now, the Fightable and the list are *guaranteed* to unique to each other, and ready to have the Fightable added
-        getFactionList(newFightable.getFaction()).add(newFightable); // If the faction list does not exist yet, getFactionList will create it
+        // Returns true if there are no name collisions
+        boolean isSuccessful = getFactionList(newFightable.getFaction()).addFightable(newFightable); // If the faction list does not exist yet, getFactionList will create it
 
-        return true;  // Return success
+        if ( isSuccessful && newFightableIsModifiedExistingFightable ) {
+            // Notify any CombatantGroups that this Fightable has changed
+            verifyAllCombatantGroups();
+        }
+
+        return isSuccessful;
+    }
+
+    private void verifyAllCombatantGroups() {
+        // Go through each CombatantGroup in this list, and notify it that a change has occurred
+        // (can handle removals and faction changes, though it is slower than manually notifying of removals)
+        for (Fightable fightableGroup : getFactionList(Fightable.Faction.Group).getFightableArrayList()) {
+            if (fightableGroup instanceof CombatantGroup) {
+                ((CombatantGroup) fightableGroup).verifyGroupAgainstList(this);
+            }
+        }
     }
 
     public ArrayList<ArrayList<Integer>> getIndicesThatMatch(String text) {
@@ -209,23 +149,25 @@ public class AllFactionFightableLists implements Serializable {
                 if (allFactionLists.get(facInd).get(fightableInd).isVisible()) {
                     // We have found the visInd'th visible Fightable
 
-                    if (visInd == filteredIndices.get(facInd).get(filterIndInd)) {
-                        // We have found the filteredIndices.get(facInd).get(filterIndInd)'th visible Fightable
+                    if ( !filteredIndices.get(facInd).isEmpty() ) {
+                        if (visInd == filteredIndices.get(facInd).get(filterIndInd)) {
+                            // We have found the filteredIndices.get(facInd).get(filterIndInd)'th visible Fightable
 
-                        if (curLoc == desiredFightableInd) {
-                            // If this is the Fightable that we want, then return it
-                            return allFactionLists.get(facInd).get(fightableInd);
-                        } else {
-                            // Record that we've traversed one visible, filtered Fightable
-                            curLoc++;
-                        }
+                            if (curLoc == desiredFightableInd) {
+                                // If this is the Fightable that we want, then return it
+                                return allFactionLists.get(facInd).get(fightableInd);
+                            } else {
+                                // Record that we've traversed one visible, filtered Fightable
+                                curLoc++;
+                            }
 
-                        // Finalize
-                        filterIndInd++; // We have encountered one visible Fightable that was in the filter list
+                            // Finalize
+                            filterIndInd++; // We have encountered one visible Fightable that was in the filter list
 
-                        if (filterIndInd >= filteredIndices.get(facInd).size()) {
-                            // If we have exhausted all of the visible Fightables in this Faction that are within the filter, then don't bother looking through the rest
-                            break;
+                            if (filterIndInd >= filteredIndices.get(facInd).size()) {
+                                // If we have exhausted all of the visible Fightables in this Faction that are within the filter, then don't bother looking through the rest
+                                break;
+                            }
                         }
                     }
                     visInd++; // We have encountered one visible Fightable
@@ -251,27 +193,30 @@ public class AllFactionFightableLists implements Serializable {
         for (int fightableInd = 0; fightableInd < groupFactionList.size(); fightableInd++) {
             // For each Fightable in this Faction...
 
-                if (fightableInd == filteredIndices.get(facInd).get(filterIndInd)) {
-                    // We have found the filteredIndices.get(facInd).get(filterIndInd)'th Fightable
+                if ( !filteredIndices.get(facInd).isEmpty() ) {
+                    if (fightableInd == filteredIndices.get(facInd).get(filterIndInd)) {
+                        // We have found the filteredIndices.get(facInd).get(filterIndInd)'th Fightable
 
-                    if (curLoc == desiredFightableInd) {
-                        // We found the Combatant within this Faction, so it must be a group
-                        isCombatantGroup = true;
-                        break;
-                    } else {
-                        // Record that we've traversed one visible, filtered Fightable
-                        curLoc++;
-                    }
+                        if (curLoc == desiredFightableInd) {
+                            // We found the Combatant within this Faction, so it must be a group
+                            isCombatantGroup = true;
+                            break;
+                        } else {
+                            // Record that we've traversed one visible, filtered Fightable
+                            curLoc++;
+                        }
 
-                    // Finalize
-                    filterIndInd++; // We have encountered one visible Fightable that was in the filter list
+                        // Finalize
+                        filterIndInd++; // We have encountered one visible Fightable that was in the filter list
 
-                    if (filterIndInd >= filteredIndices.get(facInd).size()) {
-                        // If we have exhausted all of the visible Fightables in this Faction that are within the filter, then don't bother looking through the rest
-                        break;
+                        if (filterIndInd >= filteredIndices.get(facInd).size()) {
+                            // If we have exhausted all of the visible Fightables in this Faction that are within the filter, then don't bother looking through the rest
+                            break;
+                        }
                     }
                 }
         }
+
 
         return isCombatantGroup;
     }
@@ -312,16 +257,52 @@ public class AllFactionFightableLists implements Serializable {
         throw new IndexOutOfBoundsException("Index " + position); // The Fightable index is out of bounds
     }
 
-    public boolean containsName(String name) {
+    public boolean containsFightableOfTypeWithName(String name, Fightable.Faction thisFaction) {
+        boolean returnVal;
+        if ( thisFaction == Fightable.Faction.Group ) {
+            returnVal = containsGroupWithName(name);
+        } else {
+            returnVal = containsCombatantWithName(name);
+        }
+
+        return returnVal;
+    }
+
+    public boolean containsCombatantWithName(String name) {
+        // Check ONLY non-Group faction lists
         boolean contains = false;
         for (int i = 0; i < allFactionLists.size(); i++) {
-            if (allFactionLists.get(i).containsName(name)) {
-                contains = true;
-                break;
+            FactionFightableList thisList = allFactionLists.get(i);
+            if ( thisList.faction() != Fightable.Faction.Group ) {
+                if (thisList.containsName(name)) {
+                    contains = true;
+                    break;
+                }
             }
         }
 
         return contains;
+    }
+
+    public boolean containsCombatantWithBaseName(String name) {
+        // Check ONLY non-Group faction lists
+        boolean contains = false;
+        for (int i = 0; i < allFactionLists.size(); i++) {
+            FactionFightableList thisList = allFactionLists.get(i);
+            if ( thisList.faction() != Fightable.Faction.Group ) {
+                if (thisList.containsBaseName(name)) {
+                    contains = true;
+                    break;
+                }
+            }
+        }
+
+        return contains;
+    }
+
+    public boolean containsGroupWithName(String name) {
+        // Check ONLY Group faction list
+        return getFactionList(Fightable.Faction.Group).containsName(name);
     }
 
     public int size() {
@@ -356,12 +337,25 @@ public class AllFactionFightableLists implements Serializable {
         return returnSize;
     }
 
+    public int numFactionLists() {
+        return allFactionLists.size();
+    }
+
     public int getHighestOrdinalInstance(Fightable fightableToCheck) {
         return getHighestOrdinalInstance(fightableToCheck.getBaseName(),
-                fightableToCheck instanceof Combatant);
+                fightableToCheck instanceof Combatant, false);
+    }
+
+
+    public int getHighestVisibleOrdinalInstance(Fightable fightableToCheck) {
+        return getHighestOrdinalInstance(fightableToCheck.getBaseName(),
+                fightableToCheck instanceof Combatant, true);
     }
 
     public int getHighestOrdinalInstance(String fightableBaseName, boolean isCombatant) {
+        return getHighestOrdinalInstance( fightableBaseName, isCombatant, false );
+    }
+    public int getHighestOrdinalInstance(String fightableBaseName, boolean isCombatant, boolean needVisible) {
         // Get the highest ordinal instance of the baseName among all of the Faction lists
         int highestOrdinal = Fightable.DOES_NOT_APPEAR;
         for (int i = 0; i < allFactionLists.size(); i++) {
@@ -370,29 +364,37 @@ public class AllFactionFightableLists implements Serializable {
             if (( isCombatant && (thisFactionList.faction() != Fightable.Faction.Group) ) ||
                     ( !isCombatant && (thisFactionList.faction() == Fightable.Faction.Group) )) {
                 // Go through each Faction, and get the highest ordinal instance of this base name
-                highestOrdinal = Math.max(highestOrdinal, thisFactionList.getHighestOrdinalInstance(fightableBaseName));
+                if ( needVisible ) {
+                    highestOrdinal = Math.max(highestOrdinal, thisFactionList.getHighestVisibleOrdinalInstance(fightableBaseName));
+                } else {
+                    highestOrdinal = Math.max(highestOrdinal, thisFactionList.getHighestOrdinalInstance(fightableBaseName));
+                }
             }
         }
 
         return highestOrdinal;
     }
 
-    public void removeAll(AllFactionFightableLists fightableListToRemove) {
-        // Remove all Fightables present in the inputted AllFactionFightableLists
-        for (int fac = 0; fac < allFactionLists.size(); fac++) {
-            // For each faction in this list...
-            // Get the Fightables associated with this Faction
-            FactionFightableList thisFactionFightablesToRemove = fightableListToRemove.getFactionList(allFactionLists.get(fac).faction());
-
-            // Remove all of these Fightables
-            allFactionLists.get(fac).removeAll(thisFactionFightablesToRemove);
-        }
-    }
-
     public void remove(Fightable fightableToRemove) {
         if (getFactionList(fightableToRemove.getFaction()).containsName(fightableToRemove)) {
             // If the associated FactionFightableList has this Fightable, remove it
-            getFactionList(fightableToRemove.getFaction()).remove(fightableToRemove);
+            FactionFightableList thisList = getFactionList(fightableToRemove.getFaction());
+            thisList.remove(fightableToRemove);
+
+            if ( fightableToRemove.getFaction() != Fightable.Faction.Group ) {
+                // Groups cannot contain other groups
+                for (Iterator<Fightable> i = getFactionList(Fightable.Faction.Group).getFightableArrayList().iterator(); i.hasNext(); ) {
+                    Fightable groupFightable = i.next();
+                    if (groupFightable instanceof CombatantGroup) {
+                        // Remove fightableToRemove from the CombatantGroup groupFightable (if it exists in that group)
+                        boolean groupStillHasMembers = ((CombatantGroup) groupFightable).removeCombatant(fightableToRemove.getId(), this);
+                        if ( !groupStillHasMembers ) {
+                            // Group is now empty and we shouldn't preserve it, so remove it
+                            i.remove();
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -409,19 +411,10 @@ public class AllFactionFightableLists implements Serializable {
     }
 
     public void addAll(ArrayList<Fightable> fightableListToAdd) {
-        addAll(fightableListToAdd, false);
-    }
-
-
-    public void addAll(ArrayList<Fightable> fightableListToAdd, boolean newFightableIsModifiedExistingFightable) {
-        addAll(fightableListToAdd, newFightableIsModifiedExistingFightable, false);
-    }
-
-    public void addAll(ArrayList<Fightable> fightableListToAdd, boolean newFightableIsModifiedExistingFightable, boolean force) {
         // Add all fightables in this list
         for (int i = 0; i < fightableListToAdd.size(); i++) {
 //            addFightable(fightableListToAdd.get(i)); // (OLD: shallow copy)Renaming may occur if there was some kind of management error
-            addFightable(fightableListToAdd.get(i).clone(), newFightableIsModifiedExistingFightable, force); // Renaming may occur if there was some kind of management error
+            addOrModifyFightable(fightableListToAdd.get(i).clone()); // Renaming may occur if there was some kind of management error
         }
     }
 
@@ -442,12 +435,16 @@ public class AllFactionFightableLists implements Serializable {
         return newList;
     }
 
-    public Fightable getFightable(String name) {
+    public Fightable getFightableOfType(String name, Fightable.Faction faction) {
         // Return the Fightable that has the inputted name (there should only ever be one, so we'll only return the first we get).  If no such name appears in the list, return a null
+        boolean isGroup = faction == Fightable.Faction.Group;
         for (int i = 0; i < allFactionLists.size(); i++) {
-            Fightable thisFightable = allFactionLists.get(i).get(name);
-            if (thisFightable != null) {
-                return thisFightable;
+            if ( isGroup == (allFactionLists.get(i).faction() == Fightable.Faction.Group)) {
+                // Only check in faction lists that match the "type" (Combatant or Group)
+                Fightable thisFightable = allFactionLists.get(i).get(name);
+                if (thisFightable != null) {
+                    return thisFightable;
+                }
             }
         }
 
@@ -527,7 +524,7 @@ public class AllFactionFightableLists implements Serializable {
         // Get a copy of this List that contains "Raw" version of all Fightables (only Name, Faction, and Icon can be non-default)
         AllFactionFightableLists newList = new AllFactionFightableLists();
         for (int i = 0; i < size(); i++) {
-            newList.addFightable(get(i).getRaw());
+            newList.addOrModifyFightable(get(i).getRaw());
         }
 
         return newList;
@@ -545,53 +542,72 @@ public class AllFactionFightableLists implements Serializable {
         return isEqual;
     }
 
-    public boolean containsCombatantWithID( UUID combatantID ) {
-        boolean containsCombatant = false;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AllFactionFightableLists that = (AllFactionFightableLists) o;
+        return Objects.equals(allFactionLists, that.allFactionLists);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(allFactionLists);
+    }
+
+    public boolean containsFightableWithID(UUID fightableID) {
+        boolean containsFightable = false;
         for ( FactionFightableList list : allFactionLists ) {
             Fightable.Faction thisFaction = list.faction();
-            if ( containsCombatantWithID( combatantID, thisFaction ) ) {
-                containsCombatant = true;
+            if ( containsFightableWithID(fightableID, thisFaction ) ) {
+                containsFightable = true;
                 break;
             }
         }
 
-        return containsCombatant;
+        return containsFightable;
     }
 
-    public boolean containsCombatantWithID( UUID combatantID, Fightable.Faction combatantFaction ) {
-        boolean containsCombatant = false;
-        if (combatantFaction != Fightable.Faction.Group) {
-            FactionFightableList list = getFactionList(combatantFaction);
-            if (list.containsCombatantWithID(combatantID)) {
-                containsCombatant = true;
-            }
+    public boolean containsFightableWithID(UUID fightableID, Fightable.Faction fightableFaction) {
+        boolean containsFightable = false;
+        FactionFightableList list = getFactionList(fightableFaction);
+        if (list.containsFightableWithID(fightableID)) {
+            containsFightable = true;
         }
 
-        return containsCombatant;
+        return containsFightable;
     }
 
 
-    public Combatant getCombatantWithID( UUID combatantID ) {
-        Combatant returnCombatant = null;
+    public Fightable getFightableWithID(UUID fightableID) {
+        Fightable returnFightable = null;
         for ( FactionFightableList list : allFactionLists ) {
-            Fightable.Faction thisFaction = list.faction();
-            returnCombatant = getCombatantWithID(combatantID, thisFaction);
-            if ( returnCombatant != null ) {
+            returnFightable = list.getFightableWithID( fightableID );
+            if ( returnFightable != null ) {
                 break;
             }
         }
 
-        return returnCombatant;
+        return returnFightable;
     }
 
-    public Combatant getCombatantWithID( UUID combatantID, Fightable.Faction combatantFaction ) {
-        Combatant returnCombatant = null;
-        if (combatantFaction != Fightable.Faction.Group) {
-            FactionFightableList list = getFactionList(combatantFaction);
-            returnCombatant = list.getCombatantWithID(combatantID);
+    public Fightable getFightableWithID(CombatantGroup.CombatantGroupData data) {
+        return getFightableWithID(data.mID);
+    }
+
+    public boolean combatantIsInAGroup( Combatant combatant ) {
+        boolean inGroup = false;
+        CombatantGroup.CombatantGroupData testGroupData = new CombatantGroup.CombatantGroupData(combatant);
+        for ( Fightable groupFightable : getFactionList(Fightable.Faction.Group).getFightableArrayList()) {
+            if ( groupFightable instanceof CombatantGroup ) { // It damn well better be...
+                if (((CombatantGroup) groupFightable).getCombatantList().contains(testGroupData)) {
+                    inGroup = true;
+                    break;
+                }
+            }
         }
 
-        return returnCombatant;
+        return inGroup;
     }
 
     public ArrayList<Fightable> getSelected( ) {
@@ -613,6 +629,13 @@ public class AllFactionFightableLists implements Serializable {
             for ( int fightabbleInd = 0; fightabbleInd < list.size(); fightabbleInd++ ) {
                 list.get(fightabbleInd).setSelected(false);
             }
+        }
+    }
+
+    public void clear() {
+        // Clear each faction list
+        for (FactionFightableList list: allFactionLists) {
+            list.clear();
         }
     }
 }

@@ -29,15 +29,14 @@
                 android:layout_height="0dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                >
+                app:layout_constraintBottom_toBottomOf="parent" >
 
 
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/multi_select_pane"
+                android:id="@+id/combatant_multi_select_pane"
                 android:layout_width="50dp"
                 android:layout_height="match_parent"
-                android:visibility="gone"
+                android:visibility="visible"
                 android:background="?attr/selected"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -63,7 +62,7 @@
                 android:visibility="gone"
                 android:background="@color/darkGray"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/multi_select_pane"
+                app:layout_constraintStart_toEndOf="@+id/combatant_multi_select_pane"
                 app:layout_constraintTop_toTopOf="parent">
 
                 <androidx.constraintlayout.widget.ConstraintLayout

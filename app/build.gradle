@@ -10,7 +10,6 @@ android {
         }
     }
     compileSdkVersion 29
-    buildToolsVersion "29.0.2"
 
     defaultConfig {
         applicationId "to.us.suncloud.myapplication"
@@ -31,6 +30,10 @@ android {
     }
     buildFeatures {
         viewBinding true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 // TODO: https://developer.android.com/studio/build/shrink-code#native-crash-support, https://developer.android.com/studio/build/shrink-code#decode-stack-trace

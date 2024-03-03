@@ -18,6 +18,7 @@ class BannerDecoration extends RecyclerView.ItemDecoration {
 
     @Override
     public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+        int val = parent.getChildAdapterPosition(view);
         if (parent.getChildAdapterPosition(view) >= 0) {
             // If this view is in the RecyclerView (don't know why it WOULDN'T be, but I had to put this check in after a bug, soooooo...
             if (parent.getAdapter().getItemViewType(parent.getChildAdapterPosition(view)) == ListFightableRecyclerAdapter.BANNER_VIEW) {

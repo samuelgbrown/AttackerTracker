@@ -19,17 +19,26 @@
     <string name="view_group_title">View Group</string>
     <string name="no_combatants_for_group">Nothing is currently selected!  Not adding to group.</string>
     <string name="multiples_of_combatant_for_group">One or more combatants are already in this group.  Add multiples of a Combatant by editing the group!</string>
-    <string name="confirm_delete">Are you sure you want to delete this combatant?</string>
+    <string name="confirm_delete_combatant_title">Delete Combatant?</string>
+    <string name="confirm_delete_combatant">Are you sure you want to delete %1$s?</string>
+    <string name="confirm_delete_combatant_in_group">Are you sure you want to delete %1$s?  They will also be deleted from any groups they\'re in!</string>
+    <string name="confirm_delete_group">Are you sure you want to delete this group?</string>
+    <string name="confirm_remove_combatant_from_group_title">Remove From Group?</string>
     <string name="confirm_single_remove_from_group_one_copy">Are you sure you want to remove this combatant from the group?</string>
-    <string name="confirm_single_remove_from_group_multiple_copies">Are you sure you want to remove this combatant from the group?  This will remove ALL COPIES of this combatant. (To change the number of copies of this combatant, use the "copy" button again.)</string>
-    <string name="confirm_multiselect_remove_from_group_one_copy">Are you sure you want to remove these combatants from the group?</string>
-    <string name="confirm_multiselect_remove_from_group_multiple_copies">Are you sure you want to remove these combatants from the group?  This will remove ALL COPIES of these combatants. (To change the number of copies of an individual combatant, use the "copy" button again.)</string>
-    <string name="confirm_delete_group_single">Removing the last combatant will delete this entire group.  Continue?</string>
-    <string name="confirm_delete_group_multiple">Removing all remaining combatants will delete this entire group.  Continue?</string>
-    <string name="confirm_add_group_combatants">Add the %1$d combatants from group \"%2$s\" to the encounter?</string>
+    <string name="confirm_single_remove_from_group_multiple_copies">Remove ALL COPIES of this combatant from the group?</string>
+    <string name="confirm_multiselect_remove_from_group_one_copy">Remove these combatants from the group?</string>
+    <string name="confirm_multiselect_remove_from_group_multiple_copies">Remove ALL COPIES these combatants from the group?</string>
+    <string name="confirm_delete_group_title">Delete Group?</string>
+    <string name="confirm_delete_group_message_single">Removing the last combatant will delete this entire group.  Continue?</string>
+    <string name="confirm_delete_group_message_multiple">Removing all remaining combatants will delete this entire group.  Continue?</string>
+    <string name="confirm_add_group_to_group">Add all combatants from the selected group(s) to a group?</string>
+    <string name="confirm_add_group_combatants">Add the %1$d combatants from group \"%2$s\"?</string>
     <string name="combatant_multiple_attempt_zero">To remove this combatant from the group, use the remove button.</string>
     <string name="combatant_multiple_range">Multiple must be between %1$d and %2$d</string>
-    <string name="confirm_copy">Copy this combatant?</string>
+    <string name="confirm_add_combatant_from_group">%1$s is already in combat.  Add another copy of %1$s anyway?</string>
+    <string name="confirm_not_create_group">Group will not be created.  Continue?</string>
+    <string name="confirm_copy_combatant">Copy this combatant?</string>
+    <string name="confirm_copy_group">Copy this group?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="icon_title">Choose an Icon</string>
@@ -47,11 +56,20 @@
     <string name="dev_address">sambrownur@gmail.com</string>
     <string name="feedback_subject">AttackerTracker Feedback</string>
 
-    <string name="add_combatant_copy_check_title">Add New Copy?</string>
-    <string name="add_combatant_copy_check_message">A combatant with this name has already appeared in this encounter.  Resurrect the previous version, or create a new copy?</string>
+    <string name="add_combatant_resurrect_check_title">Add New Copy?</string>
+    <string name="add_combatant_resurrect_check_message">A combatant with this name has already appeared in this encounter.  Resurrect the previous version, or create a new copy?</string>
     <string name="copy_combatant">New Copy</string>
     <string name="resurrect_combatant">Resurrect Combatant</string>
     <string name="copy_combatant_warning">Future versions of this combatant will also be added as copies. Resurrect by renaming one of these new copies.</string>
+
+    <string name="mod_combatant_resurrect_check_title">Add New Copy?</string>
+    <string name="mod_combatant_resurrect_check_message">A combatant with this name has already appeared in this encounter.  Resurrect the previous version, or save modifications made to this combatant?</string>
+    <string name="keep_combatant">Save Modifications</string>
+
+    <string name="add_combatant_overwrite_check_title">Overwrite Combatant?</string>
+    <string name="add_combatant_overwrite_check_message">A combatant named %1$s is already present.  Overwrite this combatant?</string>
+    <string name="add_group_overwrite_check_title">Overwrite Group?</string>
+    <string name="add_group_overwrite_check_message">A group named %1$s is already present.  Overwrite this group?</string>
 
     <string name="no_combatants">There are no combatants here!</string>
     <string name="dont_seem_combatants">There don\'t seem to be any saved combatants here!</string>
@@ -98,6 +116,9 @@ TIP: Save a combatant\'s default initiative modifier here.  It can be changed du
 
     <string name="leave_app_title">Close AttackerTracker?</string>
     <string name="leave_app_message">Are you sure you want to leave and lose this encounter\'s data?</string>
+
+    <string name="clear_encounter_title">Clear Encounter?</string>
+    <string name="clear_encounter_message">Are you sure you want to delete this encounter?</string>
 
     <string name="mod_create_close_title">Lose changes</string>
     <string name="mod_create_close_message">Are you sure you want to delete any changes you have made?</string>
@@ -330,10 +351,12 @@ https://thenounproject.com/atifarshad"
     <string name="view_group_name_label">Name:</string>
     <string name="view_group_combatants_label">Combatants In Group:</string>
     <string name="add_new_group">Add New Group...</string>
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="combatant_group_multiples">Multiples in Group</string>
     <string name="combatant_multiples_tag">Combatant Multiples:</string>
     <string name="multiples_suffix">x</string>
+    <string name="group_list_fragment_title">Add to Which Group?</string>
+    <string name="new_group_name">New Group</string>
+    <string name="group_edit_done">Done</string>
 
 </resources>

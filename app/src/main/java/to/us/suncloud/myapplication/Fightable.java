@@ -18,16 +18,14 @@ abstract public class Fightable implements Serializable {
     private String name; // Name will be initialized on construction
 
     // Enforce uniqueness by name (for enemies, should ALWAYS be different, e.g. "Zombie 1", "Zombie 2"...), although the UUID is used for actual unique identification
-    private static final String INIT_NAME = "New Fightable";
+    private static final String INIT_NAME = "New Object";
     // Regex Pattern for finding the base name of a Fightable
-    private static final Pattern ordinalChecker = Pattern.compile("^(.*?)(?:\\W*(\\d++)|$)"); // A pattern that matches the Fightable name into the first group, and the Fightable's ordinal number (if it exists) into the second group
+    private static final Pattern ordinalChecker = Pattern.compile("^(.*?)(?:\\s+(\\d++)$|$)"); // A pattern that matches the Fightable name into the first group, and the Fightable's ordinal number (if it exists) into the second group
 
-    public static final int DOES_NOT_APPEAR = -2; // If, upon a search for highestOrdinalInstance among a list of Fightables, the given base name does not appear
-    public static final int NO_ORDINAL = -1; // If, upon a search for highestOrdinalInstance among a list of Fightables, the given base name does appear, but it has no ordinal (i.e. "Zombie" exists, but not "Zombie 1")
+    public static final int DOES_NOT_APPEAR = -1; // If, upon a search for highestOrdinalInstance among a list of Fightables, the given base name does not appear
+    public static final int NO_ORDINAL = 0; // If, upon a search for highestOrdinalInstance among a list of Fightables, the given base name does appear, but it has no ordinal (i.e. "Zombie" exists, but not "Zombie 1")
 
     abstract public Fightable clone();
-    abstract public Fightable cloneUnique();
-    abstract public Fightable getRaw();
     abstract public ArrayList<Combatant> convertToCombatants(AllFactionFightableLists referenceList);
 
     public Faction getFaction() { return faction;}
@@ -59,13 +57,12 @@ abstract public class Fightable implements Serializable {
     abstract boolean isVisible();
     abstract void setVisible(boolean isVisible);
 
-    abstract void displayCopy(Fightable f);
-
-    abstract boolean displayEquals(@Nullable Object obj);
-
     //
     // Constructors
     //
+    public Fightable( ) {
+        setName(INIT_NAME);
+    }
     public Fightable(AllFactionFightableLists listOfAllFightables) {
         // Require all FightableLists to enforce uniqueness across all lists
 
@@ -84,6 +81,8 @@ abstract public class Fightable implements Serializable {
         // Copy constructor (used for cloning) - make an EXACT clone of this Fightable (careful about Fightable uniqueness!)
         setName(f.getName());
         setFaction(f.getFaction());
+        setID(f.getId());
+        setSelected(f.isSelected());
     }
 
 
@@ -98,10 +97,19 @@ abstract public class Fightable implements Serializable {
     }
 
     public String getBaseName() {
+        return getBaseName(name);
+    }
+
+    static public String getBaseName( String this_name ) {
         // Get the name of this Fightable without any number at the end
-        Matcher match = ordinalChecker.matcher(name);
+        Matcher match = ordinalChecker.matcher(this_name);
         if (match.matches()) {
-            return match.group(1); // Get the first matched group (that isn't the full match), which corresponds to the Fightables's base name (without any ordinals)
+            if ( match.group( 2 ) != null ) {
+                // If we got an ordinal, run this function again, trimming off the ordinal (in case there are multiple string fragments that might be considered ordinals)
+                return getBaseName( match.group( 1 ) );
+            } else {
+                return match.group(1); // Get the first matched group (that isn't the full match), which corresponds to the Fightables' base name (without any ordinals)
+            }
         } else {
             return "";
         }
@@ -124,8 +132,13 @@ abstract public class Fightable implements Serializable {
     }
 
     public void setNameOrdinal(int ordinal) {
-        // Set the ordinal number of the name
-        setName(getBaseName() + " " + ordinal);
+        if ( ordinal != NO_ORDINAL ) {
+            // Set the ordinal number of the name
+            setName(getBaseName() + " " + ordinal);
+        } else {
+            // Remove any ordinals in the name
+            setName(getBaseName());
+        }
     }
 
     public static boolean isNameUnique(String nameToTest, ArrayList<FactionFightableList> listOfAllFightables) {
@@ -140,23 +153,7 @@ abstract public class Fightable implements Serializable {
         return !allFightableNames.contains(nameToTest);
     }
 
-    private static String generateUniqueName(AllFactionFightableLists listOfAllFightables, boolean isCombatant) {
-        int highestOrdinalInstance = listOfAllFightables.getHighestOrdinalInstance(INIT_NAME, isCombatant);
-        switch (highestOrdinalInstance) {
-            case DOES_NOT_APPEAR:
-                // No other Fightable appears with this name
-                return INIT_NAME;
-            case NO_ORDINAL:
-                // There is a Fightable with this name, but no other ordinal (i.e. "Zombie" appears, but not "Zombie 2").
-                // NOTE: When adding a Fightable with this new name, we will likely want to also rename the old Fightable to give it an ordinal (i.e. "Zombie" becomes "Zombie 1")
-                return INIT_NAME + "  2";
-            default:
-                // There is a Fightable with this name already, so add one to the highest ordinal number
-                return INIT_NAME + " " + (highestOrdinalInstance + 1);
-        }
-    }
-
-    private static String generateUniqueName(ArrayList<String> listOfAllFightableNames) {
+    public static String generateUniqueName(ArrayList<String> listOfAllFightableNames) {
         // Try making a name unique to this list
         boolean isUnique = false;
         int curSuffix = 2;
@@ -175,30 +172,86 @@ abstract public class Fightable implements Serializable {
         return currentNameSelection;
     }
 
-    protected Fightable getRawFightable() {
-        // Useful for quickly getting a "sanitized" version of theFightable (gets rid of the name ordinal)
+    public static String generateUniqueName(AllFactionFightableLists listOfAllFightables, boolean isCombatant) {
+        // Default name to "New Fightable"
+        return generateUniqueName(listOfAllFightables, isCombatant, INIT_NAME);
+    }
+
+    public static String generateUniqueName(AllFactionFightableLists listOfAllFightables, boolean isCombatant, String initName) {
+        int highestOrdinalInstance = listOfAllFightables.getHighestOrdinalInstance(INIT_NAME, isCombatant);
+        switch (highestOrdinalInstance) {
+            case DOES_NOT_APPEAR:
+                // No other Fightable appears with this name
+                return initName;
+            case NO_ORDINAL:
+                // There is a Fightable with this name, but no other ordinal (i.e. "Zombie" appears, but not "Zombie 2").
+                // NOTE: When adding a Fightable with this new name, we will likely want to also rename the old Fightable to give it an ordinal (i.e. "Zombie" becomes "Zombie 1")
+                highestOrdinalInstance = 1; // Fall through to the default case, with ordinal "2"
+            default:
+                // There is a Fightable with this name already, so add one to the highest ordinal number
+                return initName + " " + (highestOrdinalInstance + 1);
+        }
+    }
+
+    public Fightable getRaw( ) {
+        // Useful for quickly getting a "sanitized" version of the Fightable (clears the roll/total initiative, if it exists, clears isSelected)
+        Fightable rawFightable = getRawFightable();
+        getRaw_Child(rawFightable);
+        return rawFightable;
+    }
+    abstract protected Fightable getRaw_Child(Fightable rawFightable); // Method to set values in Fightable f if getting raw version of object of child type
+    private Fightable getRawFightable() {
+        // Useful for quickly getting a "sanitized" version of theFightable (gets rid of selection status)
         Fightable rawFightable = this.clone();
-        rawFightable.setName(getBaseName());
+        rawFightable.setSelected(false);
 
         return rawFightable;
     }
 
-    protected void displayCopyFightable(Fightable f) {
+    public void displayCopy( Fightable f ) {
+        displayCopyFightable(f);
+        displayCopy_Child(f);
+    }
+    abstract protected void displayCopy_Child(Fightable f); // Copy display values from the f to the child object
+    private void displayCopyFightable(Fightable f) {
         // Copy the display values from the incoming Fightable (NOT selection)
         setName(f.getName());
         setFaction(f.getFaction());
     }
 
-    protected boolean displayEqualsFightable(@Nullable Object obj) {
+    public boolean displayEquals(@Nullable Object obj ) {
+        // Used for checking when the RecyclerView needs to update
+        boolean FightableIsEqual = displayEqualsFightable(obj);
+        boolean childIsEqual = displayEquals_Child(obj);
+
+        return FightableIsEqual && childIsEqual;
+    }
+    abstract protected boolean displayEquals_Child(@Nullable Object obj); // Check if obj and the child object have the same display values
+    private boolean displayEqualsFightable(@Nullable Object obj) {
         boolean isEqual = false;
-        if ( obj instanceof CombatantGroup ) {
-            boolean facEqual = getFaction() == ((CombatantGroup) obj).getFaction();
-            boolean nameEqual = getName().equals(((CombatantGroup) obj).getName());
-            boolean selectedEqual = isSelected() == ((CombatantGroup) obj).isSelected();
+        if ( obj instanceof Fightable ) {
+            boolean facEqual = getFaction() == ((Fightable) obj).getFaction();
+            boolean nameEqual = getName().equals(((Fightable) obj).getName());
+            boolean selectedEqual = isSelected() == ((Fightable) obj).isSelected();
             isEqual = facEqual && nameEqual && selectedEqual;
         }
         return isEqual;
     }
+
+    public Fightable cloneUnique() {
+        Fightable uniqueClonedFightable = cloneUniqueFightable();
+        cloneUnique_Child(uniqueClonedFightable);
+        return uniqueClonedFightable;
+    }
+    abstract protected Fightable cloneUnique_Child( Fightable f ); // Method to set values in Fightable f if cloning object of child type
+    private Fightable cloneUniqueFightable() {
+        Fightable newFightable = clone();
+        newFightable.genUUID();
+        newFightable.setSelected(false);
+
+        return newFightable;
+    }
+
 
     // Combatant Handling
     static public ArrayList<Combatant> digestAllFightablesToCombatants( ArrayList<Fightable> fightablesList, AllFactionFightableLists referenceList ) {
@@ -216,7 +269,7 @@ abstract public class Fightable implements Serializable {
         if (obj instanceof Fightable) {
             boolean idEqual = getId() == ((Fightable) obj).getId();
 
-            isEqual = displayEqualsFightable(obj) && idEqual;
+            isEqual = displayEquals(obj) && idEqual;
         }
 
         return isEqual;
@@ -226,6 +279,10 @@ abstract public class Fightable implements Serializable {
         return id;
     }
     protected void setID(UUID newID) {id = newID;}
+    protected void genUUID() {
+        // Generate a new UUID for this Fightable
+        setID(UUID.randomUUID());
+    }
     enum Faction {
         Group,
         Party,

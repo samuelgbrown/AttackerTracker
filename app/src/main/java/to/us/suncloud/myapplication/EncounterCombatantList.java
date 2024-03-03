@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 
@@ -707,6 +708,31 @@ public class EncounterCombatantList implements Serializable {
 
     public boolean isVisiblyEmpty() {
         return visibleSize() == 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EncounterCombatantList that = (EncounterCombatantList) o;
+        return lastRecordedRoundNumber == that.lastRecordedRoundNumber &&
+                haveHadPrepPhase == that.haveHadPrepPhase &&
+                encounterRandomSeed == that.encounterRandomSeed &&
+                Objects.equals(combatantArrayList, that.combatantArrayList) &&
+                Objects.equals(duplicateInitiatives, that.duplicateInitiatives) &&
+                Objects.equals(diceRollList, that.diceRollList) &&
+                Objects.equals(modifierList, that.modifierList) &&
+                currentSortMethod == that.currentSortMethod &&
+                Objects.equals(prefs, that.prefs) &&
+                Objects.equals(combatantsToRemove, that.combatantsToRemove) &&
+                Objects.equals(combatantsToAdd, that.combatantsToAdd);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(combatantArrayList, duplicateInitiatives, diceRollList, modifierList,
+                lastRecordedRoundNumber, currentSortMethod, prefs, haveHadPrepPhase,
+                combatantsToRemove, combatantsToAdd, encounterRandomSeed);
     }
 
     public enum SortMethod {

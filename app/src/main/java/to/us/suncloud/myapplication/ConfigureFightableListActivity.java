@@ -28,11 +28,17 @@ import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 
-public class ConfigureFightableListActivity extends AppCompatActivity implements ListFightableRecyclerAdapter.MasterAFFLKeeper, ViewSavedCombatantsFragment.ReceiveAddedCombatant, PurchaseHandler.purchaseHandlerInterface {
+public class ConfigureFightableListActivity extends AppCompatActivity implements
+        ListFightableRecyclerAdapter.MasterAFFLKeeper,
+        ViewSavedCombatantsFragment.ReceiveAddedCombatant,
+        PurchaseHandler.purchaseHandlerInterface,
+        AllEncounterSaveData.EncounterDataHolder {
 
     public static final String COMBATANT_LIST = "combatantListList"; // ID for inputs to the activity
     public static final String ROUND_NUMBER = "roundNumber"; // ID for inputs to the activity
@@ -110,10 +116,18 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
             if (savedInstanceState.containsKey(ENCOUNTER_DATA)) {
                 curEncounterListData = (EncounterCombatantList) savedInstanceState.getSerializable(ENCOUNTER_DATA);
             }
+        } else {
+            AllEncounterSaveData savedData = AllEncounterSaveData.readEncounterData( this );
+            if ( savedData != null ) {
+                // Extract the saved data
+                combatantLists = savedData.savedCombatantLists;
+                roundNumber = savedData.savedRoundNumber;
+                maxRoundNumber = savedData.savedMaxRoundNumber;
+                curEncounterListData = savedData.savedCurEncounterListData;
+            }
         }
 
         // Store all of the Views we will need
-        // TODO GROUP: Add another button (that appears when the "resume" text appears) to RESET THE ENCOUNTER.  Make sure that it has a confirmation dialog
         mainButton = findViewById(R.id.finish_button);
         Toolbar toolbar = findViewById(R.id.configure_toolbar);
         noCombatantMessage = findViewById(R.id.configure_combatant_empty);
@@ -158,14 +172,16 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
 
         // Create a ListFightableRecyclerAdapter, and assign it to the RecyclerView
         ListFightableRecyclerAdapter.LFRAFlags flags = new ListFightableRecyclerAdapter.LFRAFlags(); // Create flags structure (does this look worse?  It may look worse...I just wanted it to be clean!!!)
-        flags.adapterCanCopy = true;
         flags.adapterCanModify = true;
-        flags.adapterCanMultiSelect = false;
+        flags.adapterCanCopy = true;
+        flags.adapterAllowsOrdinals = true;
         adapter = new ListFightableRecyclerAdapter(this, combatantLists, flags);
         combatantListView.setAdapter(adapter);
         combatantListView.setHasFixedSize(true);
         combatantListView.addItemDecoration(new BannerDecoration(getApplicationContext()));
         combatantListView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
+
+        notifyFightableListChanged(); // Update GUI, and save Encounter data
     }
 
     @Override
@@ -303,6 +319,7 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
                     updateMainButton();
                 }
             }
+            adapter.notifyListChanged();
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
@@ -364,6 +381,16 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
     public void notifyFightableListChanged() {
         // The Combatant List has (maybe) been changed, so we should update the "No Combatants" view information
         updateNoCombatantMessage();
+
+        saveEncounter();
+    }
+
+    private void saveEncounter() {
+        AllEncounterSaveData.saveEncounterData(this);
+    }
+
+    private void removeSavedEncounterData() {
+        AllEncounterSaveData.removeEncounterData();
     }
 
     @Override
@@ -381,7 +408,7 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
                 return !curEncounterListData.contains((Combatant) fightable); // A Combatant is safe to delete if the encounter Combatant list does not contain it
             }
         } else {
-            // We have no opinion on whether or not non-Combatant Fightables get deleted
+            // We have no opinion on whether or not non-Combatant Fightables get deleted, particularly because they shouldn't exist here
             return true;
         }
     }
@@ -405,12 +432,19 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
 //    }
 
     @Override
-    public void receiveAddedCombatant(Combatant addedCombatant) {
-        // Receive a new Combatant from the AddCombatantToList dialog
-        adapter.addFightable(addedCombatant); // Add the new Combatant to OUR adapter
+    public void receiveAddedCombatant(final Combatant addedCombatant) {
+        // Receive a new Combatant from the VSCF
+        // TODO: Check if we can use receiveFightable here.  May want addFightableToList here instead, assuming no funky edge cases can happen here...?
+        adapter.receiveFightable( addedCombatant ); // Add the new Combatant to OUR adapter
 
         // Create/destroy/update any faction fragments as needed
         updateNoCombatantMessage();
+
+    }
+
+    @Override
+    public boolean containsCombatantWithSameBaseName(Combatant combatant) {
+        return adapter.getCombatantList().containsCombatantWithBaseName(combatant.getBaseName());
     }
 
     @Override
@@ -459,6 +493,28 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
             ViewSavedCombatantsFragment viewBookmarksFrag = ViewSavedCombatantsFragment.newViewBookmarkedFightablesInstance(adapter.getCombatantList());
             viewBookmarksFrag.show(fm_ob, "Open Bookmarks");
             return true;
+        } else if (id == R.id.clear_encounter) {// Clear the encounter, if the user confirms
+            new AlertDialog.Builder(getContext())
+                    .setTitle(R.string.clear_encounter_title)
+                    .setMessage(R.string.clear_encounter_message)
+                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            adapter.clearCombatantList();
+                            roundNumber = 1;
+                            maxRoundNumber = 0;
+                            curEncounterListData = null;
+
+                            removeSavedEncounterData();
+                        }
+                    })
+                    .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            // Do nothing
+                        }
+                    })
+                    .show();
         } else {
             // Do Nothing - unrecognized ID
         }
@@ -468,5 +524,25 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
     @Override
     public Activity getActivity() {
         return this;
+    }
+
+    @Override
+    public AllFactionFightableLists getSavedCombatantLists() {
+        return combatantLists;
+    }
+
+    @Override
+    public EncounterCombatantList getSavedCurEncounterListData() {
+        return curEncounterListData;
+    }
+
+    @Override
+    public int getSavedRoundNumber() {
+        return roundNumber;
+    }
+
+    @Override
+    public int getSavedMaxRoundNumber() {
+        return maxRoundNumber;
     }
 }

@@ -90,6 +90,7 @@ public class IconSelectFragment extends DialogFragment implements IconGridRecycl
 
         // Set up the recycler view with the adapter and manager
         iconGridRecyclerView.setAdapter(iconGridAdapter);
+        iconGridRecyclerView.setHasFixedSize(true);
         iconGridRecyclerView.setLayoutManager(layoutManager);
 
 

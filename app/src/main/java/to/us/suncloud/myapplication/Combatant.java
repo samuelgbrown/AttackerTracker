@@ -19,6 +19,7 @@ public class Combatant extends Fightable implements Serializable {
     private boolean isVisible = true; // Is this Combatant visible in the initiative order?
 
     // Constructors
+    public Combatant( ) {}
     public Combatant(AllFactionFightableLists listOfAllCombatants) {
         super(listOfAllCombatants);
     }
@@ -34,8 +35,6 @@ public class Combatant extends Fightable implements Serializable {
         speedFactor = c.getModifier();
         roll = c.getRoll();
         totalInitiative = c.getTotalInitiative();
-        setID(c.getId());
-        setSelected(c.isSelected());
         isVisible = c.isVisible();
     }
 
@@ -69,14 +68,11 @@ public class Combatant extends Fightable implements Serializable {
     //
     // Advanced Getters
     //
-    public Combatant getRaw() {
-        // Useful for quickly getting a "sanitized" version of the Combatant (clears the roll/total initiative, if it exists, clears isSelected)
-        Combatant rawCombatant = (Combatant) getRawFightable();
-
-        // Set a few values for the new Combatant
-        rawCombatant.clearRoll();
-        rawCombatant.setSelected(false);
-        return rawCombatant;
+    public Fightable getRaw_Child(Fightable f) {
+        if ( f instanceof Combatant ) {
+            ((Combatant) f).clearRoll();
+        }
+        return f;
     }
 
     //
@@ -137,39 +133,35 @@ public class Combatant extends Fightable implements Serializable {
         return isEqual;
     }
 
-    public boolean rawEquals(@Nullable Object obj) {
-        // Check if the Combatants are the same, for data saving purposes
-        boolean isEqual = false;
-        if (obj instanceof Combatant) {
-            boolean parentEqual = super.equals(obj);
-            boolean iconEqual = getIconIndex() == ((Combatant) obj).getIconIndex();
+//    public boolean rawEquals(@Nullable Object obj) {
+//        // Check if the Combatants are the same, for data saving purposes
+//        boolean isEqual = false;
+//        if (obj instanceof Combatant) {
+//            boolean parentEqual = super.equals(obj);
+//            boolean iconEqual = getIconIndex() == ((Combatant) obj).getIconIndex();
+//
+//            isEqual = parentEqual && iconEqual;
+//        }
+//
+//        return isEqual;
+//    }
 
-            isEqual = parentEqual && iconEqual;
-        }
-
-        return isEqual;
-    }
-
-    public boolean displayEquals(@Nullable Object obj) {
-        // Check if the Combatants are the same, for RecyclerView viewing purpose
+    public boolean displayEquals_Child(@Nullable Object obj) {
         boolean isEqual = false;
         if (obj instanceof Combatant) {
             boolean selectedEqual = isSelected() == ((Combatant) obj).isSelected();
             boolean iconEqual = getIconIndex() == ((Combatant) obj).getIconIndex();
 
-            isEqual = displayEqualsFightable(obj) && iconEqual && selectedEqual;
+            isEqual = iconEqual && selectedEqual;
         }
 
         return isEqual;
     }
 
-    public void displayCopy(Fightable c) {
-        // Copy the display values from the incoming Fightable (NOT selection)
-
-        if (c instanceof Combatant) {
-            displayCopyFightable((Fightable) c);
-            setIconIndex(((Combatant) c).getIconIndex());
-            setModifier(((Combatant) c).getModifier());
+    public void displayCopy_Child(Fightable f) {
+        if (f instanceof Combatant) {
+            setIconIndex(((Combatant) f).getIconIndex());
+            setModifier(((Combatant) f).getModifier());
         }
     }
 
@@ -179,23 +171,15 @@ public class Combatant extends Fightable implements Serializable {
         return returnList;
     }
 
-
-    public void genUUID() {
-        // Generate a new UUID for this Combatant
-        setID(UUID.randomUUID());
-    }
-
     public Combatant clone() {
         return new Combatant(this);
     }
 
-    public Combatant cloneUnique() {
-        // Generate a Combatant with a unique ID and no roll/initiative/modifier
-        Combatant newCombatant = clone();
-        newCombatant.genUUID();
-//        newCombatant.clearVals();
-        newCombatant.clearRoll();
-        newCombatant.setSelected(false);
-        return newCombatant;
+    public Fightable cloneUnique_Child( Fightable f ) {
+        // Generate a Combatant with no roll
+        if ( f instanceof Combatant ) {
+            ((Combatant) f).clearRoll();
+        }
+        return f;
     }
 }

@@ -9,7 +9,7 @@ public class CombatantsInGroupDiffUtil extends DiffUtil.Callback {
     public static final String DIFF_NAME = "Name";
     public static final String DIFF_FACTION = "Faction";
     public static final String DIFF_SELECTED = "Selected";
-    public static final String DIFF_ICON = "ICON";
+    public static final String DIFF_ICON = "iCON";
     public static final String DIFF_MULTISELECT = "Multiselect";
     public static final String DIFF_MULTIPLES = "Multiples";
 
@@ -19,15 +19,17 @@ public class CombatantsInGroupDiffUtil extends DiffUtil.Callback {
         END_MULTISELECT
     }
 
-    AllFactionFightableLists refList;
+    AllFactionFightableLists oldRefList;
+    AllFactionFightableLists newRefList;
     CombatantGroup oldGroup;
     CombatantGroup newGroup;
     MultiSelectVisibilityChange visibilityChange;
 
-    CombatantsInGroupDiffUtil(CombatantGroup oldGroup, CombatantGroup newGroup, AllFactionFightableLists refList, MultiSelectVisibilityChange visChange) {
+    CombatantsInGroupDiffUtil(CombatantGroup oldGroup, CombatantGroup newGroup, AllFactionFightableLists oldRefList, AllFactionFightableLists newRefList, MultiSelectVisibilityChange visChange) {
         this.oldGroup  = oldGroup;
         this.newGroup = newGroup;
-        this.refList = refList;
+        this.oldRefList = oldRefList;
+        this.newRefList = newRefList;
         visibilityChange = visChange;
     }
 
@@ -42,11 +44,11 @@ public class CombatantsInGroupDiffUtil extends DiffUtil.Callback {
     }
 
     private Combatant getOldCombatant(int oldItemPosition ) {
-        return oldGroup.getCombatant(refList, oldItemPosition);
+        return oldGroup.getCombatant(oldRefList, oldItemPosition);
     }
 
     private Combatant getNewCombatant(int newItemPosition ) {
-        return newGroup.getCombatant(refList, newItemPosition);
+        return newGroup.getCombatant(newRefList, newItemPosition);
     }
 
     @Override

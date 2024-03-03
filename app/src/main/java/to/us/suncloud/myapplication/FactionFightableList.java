@@ -1,15 +1,16 @@
 package to.us.suncloud.myapplication;
 
+import android.util.Log;
+
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.UUID;
 
 // Simple wrapper for a list of combatants or groups that also holds faction information
 public class FactionFightableList implements Serializable {
-    // TODO GROUP UPDATE: Change this below ArrayList to contain a new class, one that will be a parent to Fightables (Edit: I think I meant Combatants?) and Groups
-    //      Check this class does with Fightables that this parent class must be able to do
     private ArrayList<Fightable> fightableArrayList;
     private Fightable.Faction thisFaction;
 
@@ -55,18 +56,31 @@ public class FactionFightableList implements Serializable {
         return null;
     }
 
-    public void add(Fightable newFightable) {
-        fightableArrayList.add(newFightable);
-        sort();
-    }
+    public boolean addFightable(Fightable newFightable) {
+        // Returns true if the add operation is successful (NO name collision)
+        boolean isSuccessful = true;
 
-    public void add(int i, Fightable newFightable) {
-        fightableArrayList.add(i, newFightable);
-        sort();
+        if ( containsName( newFightable.getName() ) ) {
+            // There was a name collision with a Fightable
+            isSuccessful = false;
+            Log.w("FFL", String.format("Got name collision on new Fightable %s", newFightable.getName()));
+        } else {
+            // There is no name collision, so proceed normally
+            fightableArrayList.add(newFightable);
+            sort();
+        }
+
+        return isSuccessful;
     }
 
     public void remove(Fightable fightableToRemove) {
-        fightableArrayList.remove(fightableToRemove);
+        // Remove any Fightable with the same name
+        for (Iterator<Fightable> iter = fightableArrayList.iterator();iter.hasNext();)  {
+            if (iter.next().getName().equals(fightableToRemove.getName())) {
+                iter.remove();
+                break;
+            }
+        }
     }
 
     public FactionFightableList subList(ArrayList<Integer> subListIndices) {
@@ -138,6 +152,20 @@ public class FactionFightableList implements Serializable {
         return contains;
     }
 
+    public int getIndOfFightableWithID( UUID fightableID ) {
+        int fightableInd = -1;
+
+        for (int i = 0; i < fightableArrayList.size(); i++) {
+            // Doing comparison manually, because Collection.contains(Object o) uses the equals(Object o) method, which includes more than just the ID for Fightables
+            if ( fightableArrayList.get( i ).getId().equals( fightableID ) ) {
+                fightableInd = i;
+                break;
+            }
+        }
+
+        return fightableInd;
+    }
+
     public boolean containsBaseName(Fightable fightableToCheck) {
         return containsBaseName(fightableToCheck.getBaseName());
     }
@@ -169,6 +197,22 @@ public class FactionFightableList implements Serializable {
             // Doing comparison manually, because Collection.contains(Object o) uses the equals(Object o) method, which includes more than just the name for Fightables
             if (fightableArrayList.get(i).getBaseName().equals(fightableBaseNameToCheck)) {
                 // Get the new highest ordinal value, between the current highest and this Fightable
+                highestOrdinal = Math.max(highestOrdinal, fightableArrayList.get(i).getOrdinal());
+            }
+        }
+
+        return highestOrdinal;
+    }
+
+    public int getHighestVisibleOrdinalInstance(String fightableBaseNameToCheck) {
+        // What is the highest ordinal instance of this Fightable's base name in this list (i.e. for new Fightable "Zombie 3", what is the largest X for which there is a Fightable named "Zombie X" that appears in this list?
+        // If no other Fightable with this base name exists, function will return a -1
+        int highestOrdinal = Fightable.DOES_NOT_APPEAR;
+
+        for (int i = 0; i < fightableArrayList.size(); i++) {
+            // Doing comparison manually, because Collection.contains(Object o) uses the equals(Object o) method, which includes more than just the name for Fightables
+            if ( fightableArrayList.get(i).isVisible() && fightableArrayList.get(i).getBaseName().equals( fightableBaseNameToCheck ) ) {
+                // Get the new highest VISIBLE ordinal value, between the current highest and this Fightable
                 highestOrdinal = Math.max(highestOrdinal, fightableArrayList.get(i).getOrdinal());
             }
         }
@@ -272,7 +316,7 @@ public class FactionFightableList implements Serializable {
         return indices;
     }
 
-    public boolean containsCombatantWithID( UUID combatantID ) {
+    public boolean containsFightableWithID(UUID combatantID ) {
         boolean containsCombatant = false;
         for (Fightable fightable : fightableArrayList) {
             if (fightable.getId() == combatantID) {
@@ -284,15 +328,33 @@ public class FactionFightableList implements Serializable {
         return containsCombatant;
     }
 
-    public Combatant getCombatantWithID( UUID combatantID ) {
-        Combatant returnCombatant = null;
+    public Fightable getFightableWithID(UUID fightableID) {
+        Fightable returnCombatant = null;
         for (Fightable fightable : fightableArrayList) {
-            if (fightable.getId() == combatantID) {
-                returnCombatant = (Combatant) fightable;
+            if (fightable.getId() == fightableID) {
+                returnCombatant = fightable;
                 break;
             }
         }
 
         return returnCombatant;
+    }
+
+    public void clear() {
+        // Delete each Fightable in the list
+        fightableArrayList.clear();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FactionFightableList that = (FactionFightableList) o;
+        return Objects.equals(fightableArrayList, that.fightableArrayList) && thisFaction == that.thisFaction;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(fightableArrayList, thisFaction);
     }
 }

@@ -58,17 +58,4 @@ public class FightableSorter {
             return o1.faction().compareTo(o2.faction()); // Sort according to the factions
         }
     }
-
-    // What directional order the initiative should be sorted
-    enum sortOrder {
-        LowToHigh,
-        HighToLow
-    }
-
-    // What to do in the case of an initiative tie
-    enum tieBreaker {
-        AlphaByFaction, // Just use the SortAlphabeticallyByFaction
-        Modifier, // Sort according to the modifier, then random
-        Random // Sort (consistently!) randomly
-    }
 }

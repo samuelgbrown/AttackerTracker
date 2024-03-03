@@ -8,11 +8,15 @@
         <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/add_combatant.xml" value="0.40729166666666666" />
         <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/combatant_group.xml" value="0.40729166666666666" />
         <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/combatant_item_encounter.xml" value="0.40729166666666666" />
+        <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/combatant_item_mod.xml" value="0.33" />
         <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/configure_combatants_content.xml" value="0.40729166666666666" />
+        <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/faction_banner.xml" value="0.5" />
         <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/fragment_create_or_mod_combatant.xml" value="0.40729166666666666" />
+        <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/fragment_group_combatant_mult_picker.xml" value="0.5" />
         <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/fragment_icon_select.xml" value="0.40729166666666666" />
+        <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/fragment_view_group.xml" value="0.5" />
         <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/group_list_item.xml" value="0.5" />
-        <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/group_list_layout.xml" value="0.40729166666666666" />
+        <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/group_list_layout.xml" value="0.5" />
         <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/icon_layout.xml" value="0.40729166666666666" />
         <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/layout/settings_activity.xml" value="0.40729166666666666" />
         <entry key="..\:/Users/sambr/StudioProjects/AttackerTracker/app/src/main/res/menu/menu_configure.xml" value="0.40729166666666666" />

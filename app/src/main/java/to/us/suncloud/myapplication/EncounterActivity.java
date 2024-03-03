@@ -35,8 +35,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-public class EncounterActivity extends AppCompatActivity implements EncounterCombatantRecyclerAdapter.combatProgressInterface, PurchaseHandler.purchaseHandlerInterface {
-    // TODO GROUP UPDATE: Save encounter details by default?  Allow user to save or not when quitting?
+public class EncounterActivity extends AppCompatActivity implements
+        EncounterCombatantRecyclerAdapter.combatProgressInterface,
+        PurchaseHandler.purchaseHandlerInterface,
+        AllEncounterSaveData.EncounterDataHolder {
 
     EncounterCombatantList masterCombatantList;
     EncounterCombatantRecyclerAdapter adapter; // The adapter for the main Combatant list
@@ -342,6 +344,8 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
 
         // God forgive me.
         nextButton.postDelayed(new GUIAlterThread(nextButton, previousButton, roundCounter, nextButtonText, nextButtonVisibility, previousButtonVisibility, roundNumber), delay);
+
+        saveEncounter();
     }
 
     private static class GUIAlterThread implements Runnable {
@@ -377,6 +381,10 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
             // Update the number on the round counter, from the adapter
             roundCounter.setText(String.valueOf(roundNum));
         }
+    }
+
+    private void saveEncounter() {
+        AllEncounterSaveData.saveEncounterData(this);
     }
 
     private void updateNoCombatantView() {
@@ -588,5 +596,25 @@ public class EncounterActivity extends AppCompatActivity implements EncounterCom
         returnIntent.putExtra(ConfigureFightableListActivity.MAX_ROUND_ROLLED, adapter.getMaxRoundRolled()); // Add the maximum round rolled to the intent
         setResult(RESULT_OK, returnIntent);
         finish();
+    }
+
+    @Override
+    public AllFactionFightableLists getSavedCombatantLists() {
+        return new AllFactionFightableLists(getSavedCurEncounterListData());
+    }
+
+    @Override
+    public int getSavedRoundNumber() {
+        return adapter.getRoundNumber();
+    }
+
+    @Override
+    public int getSavedMaxRoundNumber() {
+        return adapter.getMaxRoundRolled();
+    }
+
+    @Override
+    public EncounterCombatantList getSavedCurEncounterListData() {
+        return adapter.getCombatantList();
     }
 }

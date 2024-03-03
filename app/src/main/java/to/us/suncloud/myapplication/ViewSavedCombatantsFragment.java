@@ -1,6 +1,8 @@
 package to.us.suncloud.myapplication;
 
+import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -24,6 +26,7 @@ import android.widget.Toast;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 /**
@@ -32,12 +35,17 @@ import java.util.ArrayList;
  * create an instance of this fragment.
  */
 
-public class ViewSavedCombatantsFragment extends DialogFragment implements ListFightableRecyclerAdapter.MasterAFFLKeeper, CreateOrModCombatant.receiveNewOrModCombatantInterface {
+public class ViewSavedCombatantsFragment extends DialogFragment implements ListFightableRecyclerAdapter.MasterAFFLKeeper {
     private static final String TAG = "ViewSavedCombatants";
     // The fragment initialization parameters
     private static final String CURRENT_COMBATANT_LIST = "currentCombatantList";
 
-    private static final String combatantListSaveFile = "combatantListSaveFile";
+    private static final String COMBATANT_LIST_SAVE_FILE = "COMBATANT_LIST_SAVE_FILE";
+
+    // Keys for the recursive function to send Combatants to combat
+    private static final String ARG_FIGHTABLE = "fightable";
+    private static final String ARG_STARTINT = "startInt";
+    private static final String ARG_USERCONFIRMHASH = "userConfirmHash";
 
 //    HashMap<Fightable.Faction, FactionFragmentInfo> factionFragmentMap = new HashMap<>();
 
@@ -85,31 +93,32 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         //      Workflows:
         //          X Add Combatant and View Saved Combatants will be combined into one button (functionality is too similar to be separate)
         //          X Create group / Add combatant(s) to group - Multi-select combatant, select "Add to group..."
-        //              Create an AllFactionFightableLists object using these combatants, sorting each into respective lists
-        //                  ****** Need to figure out how to do this with REFERENCES to Combatants, rather than the Combatants themselves...may need a new data object...
-        //                  Could pass entire AllFactionFightableLists object from VSCF, and construct Group based on actual Combatants?  May need verification method, which is tolerant to Combatant deletion/copying/Faction swapping...
-        //              New dialog appears with list of all current groups (plus "Create new group...")
-        //                  If adding to old group, add Combatants and pull up View Group dialog on that group
-        //                  If adding to new group, create new group with default name, pass to View Group dialog, pull up View Group dialog
-        //              Will add REFERENCE to any non-doubled Combatants to the group
-        //              If any already exist, tell user "One or more combatants are already in this group.\nAdd multiples of a Combatant by editing the group!"
-        //              Group must check that it has at least one Combatant - if not, then DO NOT create new Group / delete Group (with warning on final Combatant being deleted, if Group existed already)!
-        //          View group - Click gear button for group - brings up new modal window, similar to VSCF but different enough that it will be independent.  Can change name of group, and change Combatants
-        //          From view group, add / remove combatant - Trash Bin icon for each Combatant
-        //          From view group, adding multiples of a Combatant - "Multiple person" icon for each Combatant - Extra portion on left of viewholder (where checkmark currently lives) will indicate multiples of a Combatant iff they are greater than 1
-        //          Add group to combat - Add group, same as Combatants are added.  If copy already exists, then ask user for each copy whether it should be added ("X is already in the Encounter!  Add a copy of X-nonordinal?") - use same response for copies
-        //              Go through each group combatant - if exists, get response from user - then resolve copies
-        //  ************If INVISIBLE version of combatant exists - ?????
-        //          Modifying Combatant (if it is in a group) - No new workflow, but changes will be reflected in groups
-        //          Deleting Combatant (if it is in a group) - Add text to delete confirmation ("**combatant** will also be removed from any groups it's in. Are you sure you want to delete **combatant**?").
-        //          Exiting the app - Will save entire state by default on exit (including Encounter)
-        //          Fix UI issue on main screen - banners have lower section visible: should only have upper green section visible
+        //              X Create an CombatantGroup object using these combatants
+        //                  X Need to figure out how to do this with REFERENCES to Combatants, rather than the Combatants themselves...may need a new data object...
+        //                  X Could pass entire AllFactionFightableLists object from VSCF, and construct Group based on actual Combatants?  May need verification method, which is tolerant to Combatant deletion/copying/Faction swapping...
+        //              X New dialog appears with list of all current groups (plus "Create new group...")
+        //                  X If adding to old group, add Combatants and pull up View Group dialog on that group
+        //                  X If adding to new group, create new group with default name, pass to View Group dialog, pull up View Group dialog
+        //              X Will add REFERENCE to any non-doubled Combatants to the group
+        //              X If any already exist, tell user "One or more combatants are already in this group.\nAdd multiples of a Combatant by editing the group!"
+        //              X Group must check that it has at least one Combatant - if not, then DO NOT create new Group / delete Group (with warning on final Combatant being deleted, if Group existed already)!
+        //          X View group - Click gear button for group - brings up new modal window, similar to VSCF but different enough that it will be independent.  Can change name of group, and change Combatants
+        //          X From view group, add / remove combatant - Trash Bin icon for each Combatant
+        //          X From view group, adding multiples of a Combatant - "Multiple person" icon for each Combatant - Extra portion on left of viewholder (where checkmark currently lives) will indicate multiples of a Combatant iff they are greater than 1
+        //          X Add group to combat - Add group, same as Combatants are added.  If copy already exists, then ask user for each copy whether it should be added ("X is already in the Encounter!  Add a copy of X-nonordinal?") - use same response for copies
+        //              X Go through each group combatant - if exists, get response from user - then resolve copies
+        //              X If INVISIBLE version of combatant exists - after checking if we want to add Combatant again from Group, normal process is followed, user is asked if they want to revive.
+        //          X Modifying Combatant (if it is in a group) - No new workflow, but changes will be reflected in groups
+        //          X Deleting Combatant (if it is in a group) - Add text to delete confirmation ("**combatant** will also be removed from any groups it's in. Are you sure you want to delete **combatant**?").
+        //          X (check that this works) Exiting the app - Will save entire state by default on exit (including Encounter)
+        //          X Fix UI issue on main screen - banners have lower section visible: should only have upper green section visible
+        //          Make app change sizes for tablets!
         //          Stretch 1 - Import Combatants / Groups - (from .csv)
         //          Stretch 2 - Export Combatants / Groups - (to .csv)
         //          Stretch 3 - Import/Export Encounter data
 
         // Load in combatants from file (process them later)
-        savedCombatantsList = (AllFactionFightableLists) LocalPersistence.readObjectFromFile(requireContext(), combatantListSaveFile);
+        savedCombatantsList = (AllFactionFightableLists) LocalPersistence.readObjectFromFile(requireContext(), COMBATANT_LIST_SAVE_FILE);
         if (savedCombatantsList == null) {
             // If there aren't any previously saved Combatants (not even a blank AllFactionCombatantList), then make a new empty list to represent them
             savedCombatantsList = new AllFactionFightableLists();
@@ -178,44 +187,18 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
             }
         });
 
-        addNewCombatant.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                FragmentManager fm = getChildFragmentManager();
-                CreateOrModCombatant createCombatantFragment = CreateOrModCombatant.newInstance(ViewSavedCombatantsFragment.this, generateMasterCombatantList(), new Bundle());
-                createCombatantFragment.show(fm, "CreateNewCombatant");
-            }
-        });
-
-//        closeButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                // Close the view
-//                // If changing flow, here we will want to a) return the selected combatant to the combatantDestination, and b) probably change the location of the button to which this listener is ascribed
-//                saveAndClose();
-//            }.
-//        });
-
-        // Create an adapter and give it to the Recycler View
-        ListFightableRecyclerAdapter.LFRAFlags flags = new ListFightableRecyclerAdapter.LFRAFlags(); // Create flags
-        flags.adapterCanModify = true;
-        flags.adapterCanMultiSelect = true;
-        adapter = new ListFightableRecyclerAdapter(this, savedCombatantsList.clone(), flags); // Populate a Recycler view with the saved Combatants
-        combatantListView.setAdapter(adapter);
-        combatantListView.addItemDecoration(new BannerDecoration(getContext()));
-        combatantListView.setLayoutManager(new LinearLayoutManager(getContext()));
-
         // Set up the multi-selection button, so that the user can confirm their selection if choosing multiple combatants
         multiSelectConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // Get the list of Combatants from the adapter, and return the list to whoever called this Fragment
                 ArrayList<Fightable> selectedList = adapter.getAllSelectedFightables(); // Get a list of all selected Combatants
-                ArrayList<Combatant> selectedListCombatants = Fightable.digestAllFightablesToCombatants(selectedList, adapter.getCombatantList());
+                for ( Fightable fightable : selectedList ) {
+                    Bundle sendFightableBundle = new Bundle();
+                    sendFightableBundle.putSerializable(ARG_FIGHTABLE, fightable);
 
-                // Go through the entire list, and send each one to the destination, one-by-one
-                for ( Combatant selectedCombatant : selectedListCombatants ) {
-                    combatantDestination.receiveAddedCombatant(selectedCombatant.cloneUnique()); // TODO GROUP: Clone Unique will break Groups! Will regular "clone" work...?
+                    // Send each Fightable along (groups handled smoothly within)
+                    sendFightableToCombat_Recursive( sendFightableBundle );
                 }
 
                 adapter.clearMultiSelect();
@@ -236,20 +219,63 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
             public void onClick(View view) {
                 ArrayList<Fightable> selectedTestList = adapter.getAllSelectedFightables();
                 if ( selectedTestList.size() > 0 ) {
-                    AllFactionFightableLists combatantList = adapter.getCombatantList(); // Get a list of all selected Combatants
+                    final AllFactionFightableLists combatantList = adapter.getCombatantList();
 
-                    // TODO GROUP: Should there be a user-dialog check for adding Groups to Groups?
-                    FragmentManager fm = getChildFragmentManager();
-                    AddToGroupFragment.newInstance(adapter, combatantList).show(fm, "AddToGroup");
+                    boolean containsGroup = false;
+                    for ( Fightable fightable : selectedTestList ) {
+                        if ( fightable instanceof CombatantGroup ) {
+                            containsGroup = true;
+                            break;
+                        }
+                    }
+
+                    final FragmentManager fm = getChildFragmentManager();
+                    if ( containsGroup ) {
+                        new AlertDialog.Builder(getContext())
+                                .setTitle(R.string.confirm_add_group_to_group)
+                                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        AddToGroupFragment.newInstance(adapter, combatantList).show(fm, "AddToGroup"); // combatantList will be cloned inside newInstance function
+                                    }
+                                })
+                                .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        // Do nothing
+                                    }
+                                })
+                                .show();
+                    } else {
+                        AddToGroupFragment.newInstance(adapter, combatantList).show(fm, "AddToGroup"); // combatantList will be cloned inside newInstance function
+                    }
                 } else {
                     Toast.makeText(getContext(), getContext().getString(R.string.no_combatants_for_group), Toast.LENGTH_SHORT).show();
                 }
             }
         }));
 
+        // Prepare the Add New Combatant button
+        addNewCombatant.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                FragmentManager fm = getChildFragmentManager();
+                CreateOrModCombatant createCombatantFragment = CreateOrModCombatant.newInstance(adapter);
+                createCombatantFragment.show(fm, "CreateNewCombatant");
+            }
+        });
+
+        // Create an adapter and give it to the Recycler View
+        ListFightableRecyclerAdapter.LFRAFlags flags = new ListFightableRecyclerAdapter.LFRAFlags(); // Create flags
+        flags.adapterCanModify = true;
+        flags.adapterCanMultiSelect = true;
+        adapter = new ListFightableRecyclerAdapter(this, savedCombatantsList.clone(), flags); // Populate a Recycler view with the saved Combatants
+        combatantListView.setAdapter(adapter);
+        combatantListView.addItemDecoration(new BannerDecoration(getContext()));
+        combatantListView.setLayoutManager(new LinearLayoutManager(getContext()));
+
         // Initialize the GUI
         updateNoCombatantMessage();
-        notifyIsMultiSelecting(false);
 
         return layoutContents;
     }
@@ -339,31 +365,97 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
 
     @Override
     public void receiveChosenFightable(Fightable selectedFightable) {
-        // Just received a Combatant from the ListFightableRecyclerAdapter because the user selected one
+        // Just received a Fightable from the ListFightableRecyclerAdapter because the user selected one
+
+        Bundle sendFightableBundle = new Bundle();
+        sendFightableBundle.putSerializable(ARG_FIGHTABLE, selectedFightable);
+
+        sendFightableToCombat_Recursive(sendFightableBundle);
+    }
+
+    private void sendFightableToCombat_Recursive(Bundle sendFightableBundle) {
+        // Initialize variables
+        int startCombatantInd = 0;
+        boolean doSave = true; // Only save if we have not branched into another call of this function
+        final HashMap<String, Boolean> confirmedUserWantsToAdd;
+        final Fightable selectedFightable;
+
+        // Unpack incoming bundle
+        if (sendFightableBundle.containsKey(ARG_FIGHTABLE)) {
+            selectedFightable = (Fightable) sendFightableBundle.getSerializable(ARG_FIGHTABLE);
+        } else {
+            return; // Without a fightable, we can't really do much here...
+        }
+        if (sendFightableBundle.containsKey(ARG_STARTINT)) {
+            startCombatantInd = sendFightableBundle.getInt(ARG_STARTINT);
+        }
+        if (sendFightableBundle.containsKey(ARG_USERCONFIRMHASH)) {
+            confirmedUserWantsToAdd = (HashMap<String, Boolean>) sendFightableBundle.getSerializable(ARG_USERCONFIRMHASH);
+        } else {
+            confirmedUserWantsToAdd = new HashMap<>();
+        }
 
         // Convert the Fightable to a CombatantList, and send the Combatants back to the calling Activity/Fragment
         ArrayList<Combatant> fightableAsCombatantList = selectedFightable.convertToCombatants(adapter.getCombatantList()); // If this is some non-Combatant fightable, convert it to a list of Combatants
-        for (int i = 0;i < fightableAsCombatantList.size(); i++) {
-            combatantDestination.receiveAddedCombatant(fightableAsCombatantList.get(i).cloneUnique()); // Clone the Combatant and send it
+        boolean isGroup = fightableAsCombatantList.size() > 1 ;
+
+        for (int combatantInd = startCombatantInd; combatantInd < fightableAsCombatantList.size(); combatantInd++ ) {
+            // Clone the Combatant to send
+            final Combatant clonedCombatant = (Combatant) fightableAsCombatantList.get(combatantInd).cloneUnique();
+
+            // Check if we've asked about this Combatant yet
+            boolean haveAskedUserAboutThisCombatant = confirmedUserWantsToAdd.containsKey(clonedCombatant.getBaseName());
+            boolean wantToAddThisCombatant = true;
+            if (haveAskedUserAboutThisCombatant) {
+                wantToAddThisCombatant = Boolean.TRUE.equals(confirmedUserWantsToAdd.get(clonedCombatant.getBaseName()));
+            }
+
+            if (isGroup && !haveAskedUserAboutThisCombatant && combatantDestination.containsCombatantWithSameBaseName(clonedCombatant)) {
+                final int curCombatantInd = combatantInd;
+                // If we need to ask the user first (Combatant is from a group, combat already has this Combatant [visible or not!], and this is the first time this Combatant has come up in this group), check with them
+                new AlertDialog.Builder(getContext())
+                        .setTitle(requireContext().getString(R.string.confirm_add_combatant_from_group, clonedCombatant.getName()))
+                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                // Send Combatant along, and note that we know the user DOES want it to be added
+                                combatantDestination.receiveAddedCombatant(clonedCombatant);
+                                confirmedUserWantsToAdd.put(clonedCombatant.getBaseName(), true);
+
+                                Bundle sendFightableBundle = new Bundle();
+                                sendFightableBundle.putSerializable(ARG_FIGHTABLE, selectedFightable);
+                                sendFightableBundle.putInt(ARG_STARTINT, curCombatantInd + 1);
+                                sendFightableBundle.putSerializable(ARG_USERCONFIRMHASH, confirmedUserWantsToAdd);
+                                sendFightableToCombat_Recursive(sendFightableBundle);
+                            }
+                        })
+                        .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                // Do NOT send Combatant along, and note that we know the user does NOT want it to be added
+                                confirmedUserWantsToAdd.put(clonedCombatant.getBaseName(), false);
+
+                                Bundle sendFightableBundle = new Bundle();
+                                sendFightableBundle.putSerializable(ARG_FIGHTABLE, selectedFightable);
+                                sendFightableBundle.putInt(ARG_STARTINT, curCombatantInd + 1);
+                                sendFightableBundle.putSerializable(ARG_USERCONFIRMHASH, confirmedUserWantsToAdd);
+                                sendFightableToCombat_Recursive(sendFightableBundle);
+                            }
+                        })
+                        .show();
+                doSave = false;
+                break; // End this call of the function - adding more Combatants will continue from the call in the dialog box
+            } else if (wantToAddThisCombatant) {
+                // If we don't need to ask the user, just add this Combatant to combat and make sure we know to add it from here on out
+                combatantDestination.receiveAddedCombatant(clonedCombatant);
+                confirmedUserWantsToAdd.put(clonedCombatant.getBaseName(), true);
+            }
         }
 
-        // Next, try to add this Combatant to the Combatant list
-        saveAndClose();
-    }
-
-    @Override
-    public void receiveCombatant(Combatant newCombatant, Bundle returnBundle) {
-        // A new Combatant was just created (must be a new Combatant, because if it was a modified combatant, then it would have been sent to the adapter)
-
-        // Try to add this combatant to the save file (will only add the base-name)
-        addCombatantToSave(newCombatant);
-        updateNoCombatantMessage();
-
-        // If the main activity is expecting a Combatant back, then send it before we need to modify the new combatant
-        combatantDestination.receiveAddedCombatant(newCombatant);
-
-        // If the reason this Fragment was called was to return a Combatant, then close it
-        saveAndClose();
+        // Finally, save and close the Fragment
+        if ( doSave ) {
+            saveAndClose();
+        }
     }
 
     @Override
@@ -395,36 +487,16 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         return true; // Combatants in the bookmarked section can always be fully deleted, if need-be
     }
 
-    private void addCombatantToSave(Combatant newCombatant) {
-        // Try to add a new Combatant (by base name) to the eligible Combatant list, which will be then saved to file once we close out of this Fragment
-        // If a Combatant with this base-name already exists, then don't bother saving it
-        if (!adapter.getCombatantList().containsName(newCombatant.getBaseName())) {
-            // If no other Combatant exists with this name, then make a clone of the Combatant with only the base name, and sanitize its roll, etc
-            adapter.addFightable(newCombatant.getRaw());
-            saveCombatantList();
-        }
-    }
-
-    @Override
-    public void notifyCombatantChanged(Bundle returnBundle) {
-        // Should never receive this, because this Fragment can only accept NEW combatants from the CreateOrModCombatant Fragment, not MODIFIED combatants
-
-        // Do Nothing
-        Log.w(TAG, "Got notification of changed Combatant where there should not be one");
-    }
-
     private void saveCombatantList() {
         // Save the Combatant data that we have now
-//        AllFactionFightableLists newSavedCombatantsList = eligibleCombatantsList.clone(); // Create a list that contains the eligible Combatants (Combatants from the save file PLUS any Combatants that were just made)...
-//        newSavedCombatantsList.addAll(currentFactionCombatantList); // ... and the Combatants from the current Encounter
-        if (!adapter.getCombatantList().rawEquals(savedCombatantsList)) {
-            // TODO GROUP SOON (7/23): This seems to be ALWAYS true.  Are we comparing ID's when we shouldn't be?
+        AllFactionFightableLists adapterList = adapter.getCombatantList();
+        if (!adapterList.rawEquals(savedCombatantsList)) {
             // If the test list is not equal to the list of Combatants from the file, that means that some Combatants were added (or possibly removed...?), so we should save the new list
-            LocalPersistence.writeObjectToFile(getContext(), adapter.getCombatantList().getRawCopy(), combatantListSaveFile);
+            LocalPersistence.writeObjectToFile(requireContext(), adapter.getCombatantList().getRawCopy(), COMBATANT_LIST_SAVE_FILE);
         }
 
         // Now keep track of the most recently saved batch of Combatants
-        savedCombatantsList = adapter.getCombatantList().clone();
+        savedCombatantsList = adapterList.clone();
     }
 
     private void saveAndClose() {
@@ -467,5 +539,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
 
     public interface ReceiveAddedCombatant extends Serializable {
         void receiveAddedCombatant(Combatant addedCombatant);
-    }
+        boolean containsCombatantWithSameBaseName(Combatant combatant);
+}
 }

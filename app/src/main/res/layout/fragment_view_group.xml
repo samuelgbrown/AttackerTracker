@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".ViewGroupFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -46,6 +46,7 @@
             android:id="@+id/view_group_content"
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:layout_margin="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/view_group_title_background"
@@ -87,43 +88,66 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/view_group_list"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:layout_marginTop="8dp"
+                app:layout_constraintBottom_toTopOf="@+id/group_bottom_buttons"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/view_group_list_label" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/group_multi_select_options"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:visibility="gone"
-                app:layout_constraintTop_toBottomOf="@id/view_group_list"
+                android:id="@+id/group_bottom_buttons"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent">
+                app:layout_constraintBottom_toBottomOf="parent"
+                >
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/group_multi_select_options"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:visibility="visible"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent">
+
+                    <Button
+                        android:id="@+id/delete_from_group"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/remove_from_group"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/group_cancel_multi_select"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <ImageButton
+                        android:id="@+id/group_cancel_multi_select"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/cancel_24dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintDimensionRatio="1:1"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <Button
-                    android:id="@+id/delete_from_group"
-                    android:layout_width="0dp"
+                    android:id="@+id/group_done_button"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/remove_from_group"
+                    android:layout_margin="8dp"
+                    android:text="@string/group_edit_done"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@id/group_cancel_multi_select"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <ImageButton
-                    android:id="@+id/group_cancel_multi_select"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/cancel_24dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintDimensionRatio="1:1"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:visibility="visible"/>
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
 

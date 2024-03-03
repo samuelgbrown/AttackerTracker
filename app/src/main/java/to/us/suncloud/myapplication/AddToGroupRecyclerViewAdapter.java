@@ -1,17 +1,16 @@
 package to.us.suncloud.myapplication;
 
-import androidx.fragment.app.FragmentManager;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import java.lang.reflect.ParameterizedType;
 
 // Recycler adapter to be used in the GroupFragment.  This fragment is for adding Combatants to a group (or creating a new group from these combatants).
 public class AddToGroupRecyclerViewAdapter extends RecyclerView.Adapter<AddToGroupRecyclerViewAdapter.GroupViewHolder> {
@@ -44,7 +43,7 @@ public class AddToGroupRecyclerViewAdapter extends RecyclerView.Adapter<AddToGro
     @Override
     public GroupViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
-        return new GroupViewHolder(layoutInflater.inflate(R.layout.group_list_layout, parent, false));
+        return new GroupViewHolder(layoutInflater.inflate(R.layout.group_list_item, parent, false));
     }
 
     @Override
@@ -74,31 +73,34 @@ public class AddToGroupRecyclerViewAdapter extends RecyclerView.Adapter<AddToGro
             mPartyNum = itemView.findViewById(R.id.party_count);
             mNeutralNum = itemView.findViewById(R.id.neutral_count);
             mEnemyNum = itemView.findViewById(R.id.enemy_count);
+            ConstraintLayout mMultiSelectPane = itemView.findViewById(R.id.group_multi_select_pane);
 
             View.OnClickListener groupClickListener = new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    CombatantGroup thisGroup = new CombatantGroup(adapterAFFL);
+                    CombatantGroup thisGroup;
 
                     if (isAddGroup()) {
-                        // If this is the "Add Group..." item, put this new CombatantGroup we just made into the AFFL
-                        adapterAFFL.addFightable(thisGroup);
+                        // If this is the "Add Group..." item, create a new CombatantGroup
+                        thisGroup = new CombatantGroup(adapterAFFL);
+                        String groupName = Fightable.generateUniqueName(adapterAFFL, false, parentFrag.getContext().getString(R.string.new_group_name));
+                        thisGroup.setName(groupName);
                     } else {
                         // If this represents an existing group, use the existing group (overwrite the new group made above)
-                        thisGroup = getGroup(groupIndex);
+                        thisGroup = (CombatantGroup) getGroup(groupIndex).clone();
                     }
 
                     // Add the selected Combatants to the chosen Group
                     boolean gotMultiples = thisGroup.addSelected(adapterAFFL);
                     if ( gotMultiples ) {
                         Toast.makeText(parentFrag.getContext(),
-                            parentFrag.getContext().getString(R.string.no_combatants_for_group),
+                            parentFrag.getContext().getString(R.string.multiples_of_combatant_for_group),
                             Toast.LENGTH_LONG)
                             .show();
                     }
 
                     // Send the index of this group back to the Fragment (changes to adapterAFFL will be reflected in fragment's groupFragmentAFFL, as well)
-                    parentFrag.groupIndexSelected(groupIndex);
+                    parentFrag.choseGroupWithMetadata(thisGroup);
                 }
             };
 
@@ -107,6 +109,8 @@ public class AddToGroupRecyclerViewAdapter extends RecyclerView.Adapter<AddToGro
             mPartyNum.setOnClickListener(groupClickListener);
             mNeutralNum.setOnClickListener(groupClickListener);
             mEnemyNum.setOnClickListener(groupClickListener);
+
+            mMultiSelectPane.setVisibility(View.GONE);
         }
 
         public void bind(int groupIndexIn) {
@@ -158,7 +162,7 @@ public class AddToGroupRecyclerViewAdapter extends RecyclerView.Adapter<AddToGro
     }
 
     public interface GroupListRVA_Return {
-        void groupIndexSelected(int groupIndex);
+        void choseGroupWithMetadata(CombatantGroup thisGroup);
         Context getContext( ); // Auxiliary function to get Context from parent
     }
 }
