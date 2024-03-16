@@ -736,6 +736,7 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<RecyclerV
 
     static class ReceiveFightableOptions {
         public static final String IS_COPY = "is_copy";
+        public static final String FROM_FILE = "from_file";
     }
 
     @Override
@@ -758,8 +759,12 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<RecyclerV
 
         // Extract bundle
         boolean isCopy = false;
+        boolean fromFile = false;
         if ( fighterBundleData.containsKey(ReceiveFightableOptions.IS_COPY)) {
             isCopy = fighterBundleData.getBoolean(ReceiveFightableOptions.IS_COPY);
+        }
+        if ( fighterBundleData.containsKey(ReceiveFightableOptions.FROM_FILE)) {
+            fromFile = fighterBundleData.getBoolean(ReceiveFightableOptions.FROM_FILE);
         }
 
         // Gather some required input data
@@ -856,111 +861,119 @@ public class ListFightableRecyclerAdapter extends RecyclerView.Adapter<RecyclerV
         final Fightable finalCollisionFightable = fightableList_Master.getFightableOfType(receivedFightable.getName(), receivedFaction); // To check for name collisions
         switch ( finalAction ) {
             case FinalAction_Enum.DO_WRITE_EXCEPT_NAME:
-                // Let the user know they did something silly
-                Toast.makeText(parent.getContext(),
-                                parent.getContext().getString(R.string.name_already_used, receivedFightable.getName()),
-                                Toast.LENGTH_SHORT)
-                        .show();
+                if (!fromFile) {
+                    // Let the user know they did something silly
+                    Toast.makeText(parent.getContext(),
+                                    parent.getContext().getString(R.string.name_already_used, receivedFightable.getName()),
+                                    Toast.LENGTH_SHORT)
+                            .show();
 
-                // Change the name back, but leave everything else
-                receivedFightable.setName(originalFightable.getName());
+                    // Change the name back, but leave everything else
+                    receivedFightable.setName(originalFightable.getName());
 
-                // Use this combatant to modify an existing Combatant
-                addFightableToList( receivedFightable );
+                    // Use this combatant to modify an existing Combatant
+                    addFightableToList(receivedFightable);
+                }
                 break;
             case FinalAction_Enum.ASK_RESURRECT_NEW:
-                // The user may be attempting to resurrect a Combatant by ADDING A NEW Combatant!
-                // Check to see their intentions
-                new AlertDialog.Builder(parent.getContext())
-                        .setTitle(R.string.add_combatant_resurrect_check_title)
-                        .setMessage(R.string.add_combatant_resurrect_check_message)
-                        .setPositiveButton(R.string.copy_combatant, (dialog, which) -> {
-                            // The user wants to copy this Combatant as a new version
-                            // Modify this Combatant to use a higher ordinal
-                            int highestExistingOrdinal = fightableList_Master.getHighestOrdinalInstance( finalCollisionFightable ); // Cannot be DOES_NOT_EXIST
-                            if ( highestExistingOrdinal == Fightable.NO_ORDINAL) {
-                                finalCollisionFightable.setNameOrdinal(1); // Even though it's "dead", change the ordinal to be "1"
-                                receivedFightable.setNameOrdinal(2);
-                            } else {
-                                receivedFightable.setNameOrdinal( highestExistingOrdinal + 1 );
-                            }
+                if (!fromFile) {
+                    // The user may be attempting to resurrect a Combatant by ADDING A NEW Combatant!
+                    // Check to see their intentions
+                    new AlertDialog.Builder(parent.getContext())
+                            .setTitle(R.string.add_combatant_resurrect_check_title)
+                            .setMessage(R.string.add_combatant_resurrect_check_message)
+                            .setPositiveButton(R.string.copy_combatant, (dialog, which) -> {
+                                // The user wants to copy this Combatant as a new version
+                                // Modify this Combatant to use a higher ordinal
+                                int highestExistingOrdinal = fightableList_Master.getHighestOrdinalInstance(finalCollisionFightable); // Cannot be DOES_NOT_EXIST
+                                if (highestExistingOrdinal == Fightable.NO_ORDINAL) {
+                                    finalCollisionFightable.setNameOrdinal(1); // Even though it's "dead", change the ordinal to be "1"
+                                    receivedFightable.setNameOrdinal(2);
+                                } else {
+                                    receivedFightable.setNameOrdinal(highestExistingOrdinal + 1);
+                                }
 
-                            // Let the user know that any new version of this Combatant will be assumed to be copies
-                            Toast.makeText(parent.getContext(), R.string.copy_combatant_warning, Toast.LENGTH_LONG).show();
+                                // Let the user know that any new version of this Combatant will be assumed to be copies
+                                Toast.makeText(parent.getContext(), R.string.copy_combatant_warning, Toast.LENGTH_LONG).show();
 
-                            // Add the new copy
-                            addFightableToList( receivedFightable );
-                        })
-                        .setNegativeButton(R.string.resurrect_combatant, (dialog, which) -> {
-                            // The user wants to resurrect the old version of the Combatant
-                            finalCollisionFightable.setVisible( true ); // Set the Combatant as visible
+                                // Add the new copy
+                                addFightableToList(receivedFightable);
+                            })
+                            .setNegativeButton(R.string.resurrect_combatant, (dialog, which) -> {
+                                // The user wants to resurrect the old version of the Combatant
+                                finalCollisionFightable.setVisible(true); // Set the Combatant as visible
 
-                            // Simply copy Combatant into list as is
-                            addFightableToList(finalCollisionFightable);
-                        })
-                        .show();
+                                // Simply copy Combatant into list as is
+                                addFightableToList(finalCollisionFightable);
+                            })
+                            .show();
+                }
                 break;
             case FinalAction_Enum.ASK_OVERWRITE:
-                // Ask the user if they're ok with over-writing an existing roster Fightable (collisionFightable, NOT originalFightable!!!) with the new Fightable that they just created
-                String messageString = receivedIsCombatant ?
-                        parent.getContext().getString(R.string.add_combatant_overwrite_check_message, receivedFightable.getName()) :
-                        parent.getContext().getString(R.string.add_group_overwrite_check_message, receivedFightable.getName());
-                new AlertDialog.Builder(parent.getContext())
-                        .setTitle(receivedIsCombatant ? R.string.add_combatant_overwrite_check_title : R.string.add_group_overwrite_check_title)
-                        .setMessage(messageString)
-                        .setPositiveButton(R.string.yes, (dialog, which) -> {
-                            // Overwrite the existing Fightable's data
-                            receivedFightable.setID(finalCollisionFightable.getId()); // Copy the ID from the existing Fightable
-                            addFightableToList(receivedFightable); // "Modify" the collided Fightable with the data from receivedFightable
-                        })
-                        .setNegativeButton(R.string.no, (dialog, which) -> {
-                            // Do NOT over-write the existing Fightable
-                            FragmentManager fm = scanForActivity(parent.getContext()).getSupportFragmentManager();
-                            if ( receivedIsCombatant ) {
-                                // Go back to the CreateOrModCombatant Fragment to modify this Combatant again
-                                CreateOrModCombatant createCombatantFragment = CreateOrModCombatant.newInstance(
-                                        ListFightableRecyclerAdapter.this, (Combatant) unmodifiedReceivedFightable, true);
-                                createCombatantFragment.show(fm, "CreateNewCombatant");
-                            } else {
-                                // Go back to the ViewGroupFragment to modify this Group
-                                Bundle bundle = new Bundle(); // Bundle that contains info that ViewGroupFragment needs
-                                bundle.putSerializable(ARG_AFFL, fightableList_Master);
-                                bundle.putSerializable(ARG_PARENT, ListFightableRecyclerAdapter.this);
-                                bundle.putSerializable(ARG_THIS_GROUP, unmodifiedReceivedFightable);
-                                bundle.putBoolean(ARG_AUTO_ACCEPT_GROUP, false); // If the user tries to exit via back button to allow them to discard the interaction, as they could before, given the complication of the over-write
-                                bundle.putBoolean(ARG_INITIALIZE_GROUP_CHANGED, true); // Make sure the fragment confirms with the user before closing
+                if (!fromFile) {
+                    // Ask the user if they're ok with over-writing an existing roster Fightable (collisionFightable, NOT originalFightable!!!) with the new Fightable that they just created
+                    String messageString = receivedIsCombatant ?
+                            parent.getContext().getString(R.string.add_combatant_overwrite_check_message, receivedFightable.getName()) :
+                            parent.getContext().getString(R.string.add_group_overwrite_check_message, receivedFightable.getName());
+                    new AlertDialog.Builder(parent.getContext())
+                            .setTitle(receivedIsCombatant ? R.string.add_combatant_overwrite_check_title : R.string.add_group_overwrite_check_title)
+                            .setMessage(messageString)
+                            .setPositiveButton(R.string.yes, (dialog, which) -> {
+                                // Overwrite the existing Fightable's data
+                                receivedFightable.setID(finalCollisionFightable.getId()); // Copy the ID from the existing Fightable
+                                addFightableToList(receivedFightable); // "Modify" the collided Fightable with the data from receivedFightable
+                            })
+                            .setNegativeButton(R.string.no, (dialog, which) -> {
+                                // Do NOT over-write the existing Fightable
+                                FragmentManager fm = scanForActivity(parent.getContext()).getSupportFragmentManager();
+                                if (receivedIsCombatant) {
+                                    // Go back to the CreateOrModCombatant Fragment to modify this Combatant again
+                                    CreateOrModCombatant createCombatantFragment = CreateOrModCombatant.newInstance(
+                                            ListFightableRecyclerAdapter.this, (Combatant) unmodifiedReceivedFightable, true);
+                                    createCombatantFragment.show(fm, "CreateNewCombatant");
+                                } else {
+                                    // Go back to the ViewGroupFragment to modify this Group
+                                    Bundle bundle = new Bundle(); // Bundle that contains info that ViewGroupFragment needs
+                                    bundle.putSerializable(ARG_AFFL, fightableList_Master);
+                                    bundle.putSerializable(ARG_PARENT, ListFightableRecyclerAdapter.this);
+                                    bundle.putSerializable(ARG_THIS_GROUP, unmodifiedReceivedFightable);
+                                    bundle.putBoolean(ARG_AUTO_ACCEPT_GROUP, false); // If the user tries to exit via back button to allow them to discard the interaction, as they could before, given the complication of the over-write
+                                    bundle.putBoolean(ARG_INITIALIZE_GROUP_CHANGED, true); // Make sure the fragment confirms with the user before closing
 
-                                ViewGroupFragment.newInstance(bundle).show(fm, "ViewGroupFragment");
-                            }
-                        })
-                        .show();
+                                    ViewGroupFragment.newInstance(bundle).show(fm, "ViewGroupFragment");
+                                }
+                            })
+                            .show();
+                }
                 break;
             case FinalAction_Enum.ASK_RESURRECT_MODIFIED:
-                // The user may be attempting to resurrect a Combatant by MODIFYING an existing Combatant!
-                // Check to see their intentions
-                new AlertDialog.Builder(parent.getContext())
-                    .setTitle(R.string.mod_combatant_resurrect_check_title)
-                    .setMessage(R.string.mod_combatant_resurrect_check_message)
-                    .setPositiveButton(R.string.keep_combatant, (dialog, which) -> {
-                        // The user wants to copy this Combatant as a new version
-                        // Reset this Combatant's name
-                        receivedFightable.setName(originalFightable.getName());
+                if (!fromFile) {
+                    // The user may be attempting to resurrect a Combatant by MODIFYING an existing Combatant!
+                    // Check to see their intentions
+                    new AlertDialog.Builder(parent.getContext())
+                            .setTitle(R.string.mod_combatant_resurrect_check_title)
+                            .setMessage(R.string.mod_combatant_resurrect_check_message)
+                            .setPositiveButton(R.string.keep_combatant, (dialog, which) -> {
+                                // The user wants to copy this Combatant as a new version
+                                // Reset this Combatant's name
+                                receivedFightable.setName(originalFightable.getName());
 
-                        // Add the new copy
-                        addFightableToList( receivedFightable );
-                    })
-                    .setNegativeButton(R.string.resurrect_combatant, (dialog, which) -> {
-                        // The user wants to resurrect the old version of the Combatant
-                        // Remove originalFightable (originalFightable != null if we are here)
-                        removeFightable(originalFightable, false); // Don't notify the adapter just yet
+                                // Add the new copy
+                                addFightableToList(receivedFightable);
+                            })
+                            .setNegativeButton(R.string.resurrect_combatant, (dialog, which) -> {
+                                // The user wants to resurrect the old version of the Combatant
+                                // Remove originalFightable (originalFightable != null if we are here)
+                                removeFightable(originalFightable, false); // Don't notify the adapter just yet
 
-                        // The user wants to resurrect the old version of the Combatant
-                        finalCollisionFightable.setVisible( true ); // Set the Combatant as visible
+                                // The user wants to resurrect the old version of the Combatant
+                                finalCollisionFightable.setVisible(true); // Set the Combatant as visible
 
-                        // Finally, add the Combatant into list as is
-                        addFightableToList(finalCollisionFightable);
-                    })
-                    .show();
+                                // Finally, add the Combatant into list as is
+                                addFightableToList(finalCollisionFightable);
+                            })
+                            .show();
+                }
                 break;
             default:
                 // Nothing fancy, just add that Fightable!

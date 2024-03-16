@@ -7,6 +7,9 @@
     <string name="group_name_placeholder">Group Name</string>
     <string name="add_combatant">Add</string>
     <string name="settings">Settings</string>
+    <string name="reset_encounter">Reset Encounter</string>
+    <string name="import_roster">Import Roster</string>
+    <string name="export_roster">Export Roster</string>
     <string name="view_saved_combatants_title">Add/Deploy Combatants</string>
     <string name="open_bookmarks">Open Bookmarked Fighters</string>
     <string name="sort_init">Sort: Initiative</string>
@@ -358,5 +361,6 @@ https://thenounproject.com/atifarshad"
     <string name="group_list_fragment_title">Add to Which Group?</string>
     <string name="new_group_name">New Group</string>
     <string name="group_edit_done">Done</string>
+    <string name="default_json_filename">ATCombatants.json</string>
 
 </resources>

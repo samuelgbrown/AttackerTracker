@@ -4,6 +4,9 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -12,6 +15,8 @@ import java.util.regex.Pattern;
 
 // A bare-bones abstract class that can represent either a Combatant or a Group of combatants.
 abstract public class Fightable implements Serializable {
+    private static final String TAG = "Fightable";
+
     private Faction faction = Faction.Party;
     private boolean isSelected = false; // Is the Fightable selected or checked off?
     private UUID id = UUID.randomUUID();
@@ -84,7 +89,6 @@ abstract public class Fightable implements Serializable {
         setID(f.getId());
         setSelected(f.isSelected());
     }
-
 
     //
     // Name Handling
@@ -267,7 +271,7 @@ abstract public class Fightable implements Serializable {
     public boolean equals(Object obj) {
         boolean isEqual = false;
         if (obj instanceof Fightable) {
-            boolean idEqual = getId() == ((Fightable) obj).getId();
+            boolean idEqual = getId().equals(((Fightable) obj).getId());
 
             isEqual = displayEquals(obj) && idEqual;
         }
@@ -284,9 +288,85 @@ abstract public class Fightable implements Serializable {
         setID(UUID.randomUUID());
     }
     enum Faction {
-        Group,
-        Party,
-        Enemy,
-        Neutral
+        // New values MUST be added to the end, AND pick up numbering where it left off
+        Group(0), // MUST start at 0
+        Party(1), // Each value MUST increment by 1
+        Enemy(2),
+        Neutral(3);
+
+        static final Faction[] FactionVals = values();
+        private final int val;
+        Faction(int val) {this.val = val;}
+        public int getVal() {return val;}
+        public static Faction fromInt(int val) {return FactionVals[val];}
     }
+
+    // For JSON conversions
+    private static final String FACTION_KEY = "FACTION";
+    private static final String IS_SELECTED_KEY = "IS_SELECTED";
+    private static final String ID_KEY = "ID";
+    private static final String NAME_KEY = "NAME";
+    public static final String FIGHTABLE_TYPE = "TYPE";
+
+    public JSONObject toJSON() {
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put(FACTION_KEY, faction != null ? ( faction.getVal() ) : JSONObject.NULL);
+            jsonObject.put(IS_SELECTED_KEY, isSelected);
+            jsonObject.put(ID_KEY, id != null ? id.toString() : JSONObject.NULL);
+            jsonObject.put(NAME_KEY, name != null ? name : JSONObject.NULL);
+
+            toJSON_Child(jsonObject);
+        } catch (JSONException e) {
+            Log.e(TAG,e.toString());
+        }
+
+        return jsonObject;
+    }
+
+    public void fromJSON( JSONObject jsonObject ) {
+        try {
+            if (!jsonObject.isNull(FACTION_KEY)) {
+                faction = Faction.fromInt(jsonObject.getInt(FACTION_KEY));
+            }
+            isSelected = jsonObject.getBoolean(IS_SELECTED_KEY);
+            if (!jsonObject.isNull(ID_KEY)) {
+                id = UUID.fromString(jsonObject.getString(ID_KEY));
+            }
+            if (!jsonObject.isNull(NAME_KEY)) {
+                name = jsonObject.getString(NAME_KEY);
+            }
+
+            fromJSON_Child( jsonObject );
+        } catch (JSONException e) {
+            Log.e(TAG,e.toString());
+        }
+    }
+
+    static public Fightable createFromJSON( JSONObject jsonObject ) {
+        Fightable returnFightable = null;
+        try {
+            if (!jsonObject.isNull(FIGHTABLE_TYPE)) {
+                switch (jsonObject.getInt(FIGHTABLE_TYPE)) {
+                    case Combatant.THIS_FIGHTABLE_TYPE:
+                        returnFightable = new Combatant(jsonObject);
+                        break;
+                    case CombatantGroup.THIS_FIGHTABLE_TYPE:
+                        returnFightable = new CombatantGroup(jsonObject);
+                        break;
+                    default:
+                        Log.e(TAG, "ERROR: Unknown Fightable type!  Cannot expand from JSON.");
+                }
+            } else {
+                Log.e(TAG, "ERROR: JSON does not contain Fightable type!  Cannot expand from JSON.");
+            }
+        } catch ( JSONException e ) {
+            Log.e(TAG,e.toString());
+        }
+
+        return returnFightable;
+    }
+
+    abstract protected void fromJSON_Child( JSONObject jsonObject );
+    abstract protected void toJSON_Child( JSONObject jsonObject );
 }

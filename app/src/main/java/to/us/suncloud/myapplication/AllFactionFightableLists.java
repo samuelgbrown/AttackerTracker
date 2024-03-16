@@ -1,6 +1,12 @@
 package to.us.suncloud.myapplication;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -10,6 +16,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class AllFactionFightableLists implements Serializable {
+    private static final String TAG = "AllFactionFightableLists";
+
     ArrayList<FactionFightableList> allFactionLists = new ArrayList<>();
 
     AllFactionFightableLists(ArrayList<FactionFightableList> allFactionLists) {
@@ -36,6 +44,11 @@ public class AllFactionFightableLists implements Serializable {
         }
 
         initFactionLists();
+    }
+
+    public AllFactionFightableLists(JSONObject jsonObject) {
+        initFactionLists();
+        fromJSON( jsonObject );
     }
 
     private void initFactionLists() {
@@ -78,12 +91,17 @@ public class AllFactionFightableLists implements Serializable {
         return isSuccessful;
     }
 
-    private void verifyAllCombatantGroups() {
+    public void verifyAllCombatantGroups() {
         // Go through each CombatantGroup in this list, and notify it that a change has occurred
         // (can handle removals and faction changes, though it is slower than manually notifying of removals)
-        for (Fightable fightableGroup : getFactionList(Fightable.Faction.Group).getFightableArrayList()) {
+        Iterator<Fightable> i = getFactionList(Fightable.Faction.Group).getFightableArrayList().iterator();
+        while ( i.hasNext() ) {
+            Fightable fightableGroup = i.next();
             if (fightableGroup instanceof CombatantGroup) {
                 ((CombatantGroup) fightableGroup).verifyGroupAgainstList(this);
+                if ( ((CombatantGroup) fightableGroup).size() == 0 ) {
+                    i.remove();
+                }
             }
         }
     }
@@ -400,13 +418,9 @@ public class AllFactionFightableLists implements Serializable {
 
     public void addAll(AllFactionFightableLists fightableListToAdd) {
         // Add all fightables present in the inputted AllFactionFightableLists
-        for (int fac = 0; fac < fightableListToAdd.getAllFactionLists().size(); fac++) {
-            // For each faction in the new list...
-            // Get the Fightables associated with this Faction
-            FactionFightableList thisFactionFightablesToAdd = fightableListToAdd.getAllFactionLists().get(fac);
-
+        for (int fightableInd = 0; fightableInd < fightableListToAdd.size(); fightableInd++) {
             // Add all of these Fightables
-            getFactionList(thisFactionFightablesToAdd.faction()).addAll(thisFactionFightablesToAdd); // If the FactionFightable list doesn't exist yet, then the getFactionList() method will create it
+            addOrModifyFightable(fightableListToAdd.get(fightableInd).clone());
         }
     }
 
@@ -445,6 +459,19 @@ public class AllFactionFightableLists implements Serializable {
                 if (thisFightable != null) {
                     return thisFightable;
                 }
+            }
+        }
+
+        // If we get here, then no such Fightable exists
+        return null;
+    }
+
+    public Fightable getFightableWithName(String name) {
+        // Return the Fightable that has the inputted name (there should only ever be one, so we'll only return the first we get).  If no such name appears in the list, return a null
+        for (int i = 0; i < allFactionLists.size(); i++) {
+            Fightable thisFightable = allFactionLists.get(i).get(name);
+            if (thisFightable != null) {
+                return thisFightable;
             }
         }
 
@@ -637,5 +664,52 @@ public class AllFactionFightableLists implements Serializable {
         for (FactionFightableList list: allFactionLists) {
             list.clear();
         }
+    }
+
+    // For JSON conversions
+    private static final String FACTION_FIGHTABLE_LIST_KEY = "FIGHTABLE_LIST";
+    // TODO START HERE: Add import/export buttons to the toolbar (should probably usually be hidden), and implement these!  Let the user choose where to import from / export to?
+
+    protected void fromJSON( JSONObject jsonObject ) {
+        if ( allFactionLists == null ) {
+            allFactionLists = new ArrayList<>();
+        } else {
+            clear();
+        }
+        try {
+            if (!jsonObject.isNull(FACTION_FIGHTABLE_LIST_KEY)) {
+                JSONArray jsonArray = jsonObject.getJSONArray(FACTION_FIGHTABLE_LIST_KEY);
+                ArrayList<Fightable> fightablesToAdd = new ArrayList<>();
+                // Go through each Fightable list
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    // Create the new list
+                    FactionFightableList thisList = new FactionFightableList(jsonArray.getJSONObject(i));
+                    for ( int fightableInd = 0; fightableInd < thisList.size(); fightableInd++ ) {
+                        // Add all Fightables from this FactionFightableList to the Fightables list
+                        fightablesToAdd.add(thisList.get(fightableInd));
+                    }
+                }
+
+                // Add all of the new Fightables
+                addAll(fightablesToAdd);
+            }
+        } catch (JSONException e) {
+            Log.e(TAG,e.toString());
+        }
+    }
+
+    protected JSONObject toJSON( ) {
+        JSONObject jsonObject = new JSONObject();
+        JSONArray fightableListJSON = new JSONArray();
+        try {
+            for (FactionFightableList list : allFactionLists) {
+                fightableListJSON.put(list.toJSON());
+            }
+            jsonObject.put(FACTION_FIGHTABLE_LIST_KEY, fightableListJSON);
+        } catch ( JSONException e ) {
+            Log.e(TAG,e.toString());
+        }
+
+        return jsonObject;
     }
 }

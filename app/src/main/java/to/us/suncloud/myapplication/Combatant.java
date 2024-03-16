@@ -4,14 +4,17 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 // A simple class to keep track of a Combatant
 public class Combatant extends Fightable implements Serializable {
+    public static final int THIS_FIGHTABLE_TYPE = 0; // Must be unique among all subclasses of Fightables!
+    private static final String TAG = "Combatant";
+
     private int iconIndex = 0; // Initialize with a blank icon
     private int speedFactor = 0;
     private int roll = 0;
@@ -36,6 +39,10 @@ public class Combatant extends Fightable implements Serializable {
         roll = c.getRoll();
         totalInitiative = c.getTotalInitiative();
         isVisible = c.isVisible();
+    }
+
+    public Combatant( JSONObject jsonObject ) {
+        fromJSON(jsonObject);
     }
 
     //
@@ -181,5 +188,39 @@ public class Combatant extends Fightable implements Serializable {
             ((Combatant) f).clearRoll();
         }
         return f;
+    }
+
+    // For JSON conversions
+    private static final String ICON_INDEX_KEY = "ICON_INDEX";
+    private static final String SPEED_FACTOR_KEY = "SPEED_FACTOR";
+    private static final String ROLL_KEY = "ROLL";
+    private static final String TOTAL_INITIATIVE_KEY = "TOTAL_INITIATIVE";
+    private static final String IS_VISIBLE_KEY = "IS_VISIBLE";
+
+    @Override
+    protected void fromJSON_Child(JSONObject jsonObject) {
+        try {
+            iconIndex = jsonObject.getInt(ICON_INDEX_KEY);
+            speedFactor = jsonObject.getInt(SPEED_FACTOR_KEY);
+            roll = jsonObject.getInt(ROLL_KEY);
+            totalInitiative = jsonObject.getInt(TOTAL_INITIATIVE_KEY);
+            isVisible = jsonObject.getBoolean(IS_VISIBLE_KEY);
+        } catch (JSONException e) {
+            Log.e(TAG,e.toString());
+        }
+    }
+
+    @Override
+    protected void toJSON_Child(JSONObject jsonObject) {
+        try {
+            jsonObject.put(ICON_INDEX_KEY, iconIndex);
+            jsonObject.put(SPEED_FACTOR_KEY, speedFactor);
+            jsonObject.put(ROLL_KEY, roll);
+            jsonObject.put(TOTAL_INITIATIVE_KEY, totalInitiative);
+            jsonObject.put(IS_VISIBLE_KEY, isVisible);
+            jsonObject.put(Fightable.FIGHTABLE_TYPE, THIS_FIGHTABLE_TYPE);
+        } catch (JSONException e) {
+            Log.e(TAG,e.toString());
+        }
     }
 }

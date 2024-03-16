@@ -1,6 +1,12 @@
 package to.us.suncloud.myapplication;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -11,6 +17,9 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class CombatantGroup extends Fightable {
+    public static final int THIS_FIGHTABLE_TYPE = 1; // Must be unique among all subclasses of Fightables!
+    private static final String TAG = "CombatantGroup";
+
     private ArrayList<CombatantGroupData> combatantList; // List of Combatants that are part of this Group
 
     // To speed up getTotalCombatantsInFaction/displayEquals calculations
@@ -36,6 +45,10 @@ public class CombatantGroup extends Fightable {
         setCombatantList(newGroupData);
 
         combatantListChanged();
+    }
+
+    public CombatantGroup(JSONObject jsonObject) {
+        fromJSON(jsonObject);
     }
 
     private void setCombatantList(ArrayList<CombatantGroupData> newData) {
@@ -369,6 +382,10 @@ public class CombatantGroup extends Fightable {
             mMultiples = combatantGroupData.mMultiples;
         }
 
+        CombatantGroupData( JSONObject jsonObject ) {
+            fromJSON( jsonObject );
+        }
+
         // For ArrayList<>.contains(...):
         @Override
         public boolean equals(Object o) {
@@ -387,6 +404,40 @@ public class CombatantGroup extends Fightable {
         @Override
         public int hashCode() {
             return Objects.hash(mID, mFaction);
+        }
+
+        // For JSON conversions
+        private static final String FACTION_KEY = "FACTION";
+        private static final String MULTIPLES_KEY = "MULTIPLIES";
+        private static final String ID_KEY = "ID";
+
+        public void fromJSON(JSONObject jsonObject) {
+            // TODO: Import not working with groups - are ID's actually matching?
+            try {
+                if (!jsonObject.isNull(ID_KEY)) {
+                    mID = UUID.fromString(jsonObject.getString(ID_KEY));
+                }
+                if (!jsonObject.isNull(FACTION_KEY)) {
+                    mFaction = Faction.fromInt(jsonObject.getInt(FACTION_KEY));
+                }
+                if (!jsonObject.isNull(MULTIPLES_KEY)) {
+                    mMultiples = jsonObject.getInt(MULTIPLES_KEY);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace(); // handle JSON exception as needed
+            }
+        }
+
+        public JSONObject toJSON() throws JSONException {
+            JSONObject json = null;
+            if ( !(mID == null || mFaction == null || mMultiples == null))
+            {
+                json = new JSONObject();
+                json.put(ID_KEY, mID.toString());
+                json.put(FACTION_KEY, mFaction.getVal() );
+                json.put(MULTIPLES_KEY, mMultiples != null ? mMultiples : JSONObject.NULL);
+            }
+            return json;
         }
     }
 
@@ -408,5 +459,42 @@ public class CombatantGroup extends Fightable {
 
     private void setSavedMembersInFaction( Faction f, int numMembers ) {
         membersInFaction.put(f, numMembers);
+    }
+
+    // For JSON conversions
+    private static final String COMBATANT_LIST_KEY = "COMBATANT_LIST";
+
+    @Override
+    protected void fromJSON_Child( JSONObject jsonObject ) {
+        if ( combatantList == null ) {
+            combatantList = new ArrayList<>();
+        } else {
+            removeAllCombatants();
+        }
+        try {
+            JSONArray jsonArray = jsonObject.getJSONArray(COMBATANT_LIST_KEY);
+            for (int i = 0; i < jsonArray.length(); i++) {
+                combatantList.add(new CombatantGroupData(jsonArray.getJSONObject(i)));
+            }
+        } catch (JSONException e) {
+            Log.e(TAG,e.toString());
+        }
+    }
+
+    @Override
+    protected void toJSON_Child( JSONObject jsonObject ) {
+        JSONArray combatantListJSON = new JSONArray();
+        try {
+            for (CombatantGroupData data : combatantList) {
+                JSONObject groupDataJSON = data.toJSON();
+                if ( groupDataJSON != null ) {
+                    combatantListJSON.put(groupDataJSON);
+                }
+            }
+            jsonObject.put(COMBATANT_LIST_KEY, combatantListJSON);
+            jsonObject.put(Fightable.FIGHTABLE_TYPE, THIS_FIGHTABLE_TYPE);
+        } catch ( JSONException e ) {
+            Log.e(TAG,e.toString());
+        }
     }
 }

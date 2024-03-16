@@ -38,9 +38,9 @@ import java.util.HashMap;
 public class ViewSavedCombatantsFragment extends DialogFragment implements ListFightableRecyclerAdapter.MasterAFFLKeeper {
     private static final String TAG = "ViewSavedCombatants";
     // The fragment initialization parameters
-    private static final String CURRENT_COMBATANT_LIST = "currentCombatantList";
+    private static final String NEW_FIGHTABLES_TO_ADD = "currentCombatantList";
 
-    private static final String COMBATANT_LIST_SAVE_FILE = "COMBATANT_LIST_SAVE_FILE";
+    public static final String COMBATANT_LIST_SAVE_FILE = "COMBATANT_LIST_SAVE_FILE";
 
     // Keys for the recursive function to send Combatants to combat
     private static final String ARG_FIGHTABLE = "fightable";
@@ -50,9 +50,8 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
 //    HashMap<Fightable.Faction, FactionFragmentInfo> factionFragmentMap = new HashMap<>();
 
 
-    //    private AllFactionFightableLists eligibleCombatantsList = null; // An list of Combatants that appear in the savedCombatantsList plus any Combatants that have been added
-    private AllFactionFightableLists savedCombatantsList = null; // An exact copy of the Combatant list from the saved file
-    private AllFactionFightableLists currentFactionCombatantList = null; // Used to generate a master Combatant list, to send to the CreateOrModCombatant dialogue
+    //    private AllFactionFightableLists eligibleCombatantsList = null; // An list of Combatants that appear in the rosterFightablesList plus any Combatants that have been added
+    private AllFactionFightableLists rosterFightablesList = null; // An exact copy of the Combatant list from the saved file
 
     private boolean isMultiSelecting = false; // Is the Fragment (or adapter) currently in a multi-selecting state?
 
@@ -74,10 +73,14 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
      *
      * @return A new instance of fragment AddCombatantFragment.
      */
-    static ViewSavedCombatantsFragment newViewBookmarkedFightablesInstance(AllFactionFightableLists currentFactionCombatantList) {
+    static ViewSavedCombatantsFragment newViewBookmarkedFightablesInstance() {
+        return new ViewSavedCombatantsFragment();
+    }
+
+    static ViewSavedCombatantsFragment newViewBookmarkedFightablesInstance(AllFactionFightableLists newFightablesToAdd) {
         ViewSavedCombatantsFragment fragment = new ViewSavedCombatantsFragment();
         Bundle args = new Bundle();
-        args.putSerializable(CURRENT_COMBATANT_LIST, currentFactionCombatantList);
+        args.putSerializable(NEW_FIGHTABLES_TO_ADD, newFightablesToAdd);
         fragment.setArguments(args);
         return fragment;
     }
@@ -118,21 +121,23 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         //          Stretch 3 - Import/Export Encounter data
 
         // Load in combatants from file (process them later)
-        savedCombatantsList = (AllFactionFightableLists) LocalPersistence.readObjectFromFile(requireContext(), COMBATANT_LIST_SAVE_FILE);
-        if (savedCombatantsList == null) {
+        rosterFightablesList = (AllFactionFightableLists) LocalPersistence.readObjectFromFile(requireContext(), COMBATANT_LIST_SAVE_FILE);
+        if (rosterFightablesList == null) {
             // If there aren't any previously saved Combatants (not even a blank AllFactionCombatantList), then make a new empty list to represent them
-            savedCombatantsList = new AllFactionFightableLists();
+            rosterFightablesList = new AllFactionFightableLists();
         }
-
-        // Initialize arguments
-        currentFactionCombatantList = new AllFactionFightableLists();
 
         // Read arguments
         if (getArguments() != null) {
             // If this Fragment is intended to add a new Combatant to the Encounter...
-            if (getArguments().containsKey(CURRENT_COMBATANT_LIST)) {
+            if (getArguments().containsKey(NEW_FIGHTABLES_TO_ADD)) {
                 // This list will be null if a) this is the first time this fragment has been used on this device, or b) no combatants have been saved previously
-                currentFactionCombatantList = ((AllFactionFightableLists) getArguments().getSerializable(CURRENT_COMBATANT_LIST)).clone(); // Get a "snapshot" clone of the incoming List, because this List may end up being modified over the lifetime of this Fragment (due to adding Combatants)
+                AllFactionFightableLists newFightablesToAdd = ((AllFactionFightableLists) getArguments().getSerializable(NEW_FIGHTABLES_TO_ADD)).clone(); // Get a "snapshot" clone of the incoming List, because this List may end up being modified over the lifetime of this Fragment (due to adding Combatants)
+                rosterFightablesList.addAll(newFightablesToAdd);
+                rosterFightablesList.verifyAllCombatantGroups();
+
+                // Save this new data to file
+                LocalPersistence.writeObjectToFile(requireContext(), rosterFightablesList, COMBATANT_LIST_SAVE_FILE);
             } else {
                 // Will consider combatants saved in the file, but none others
                 Log.e(TAG, "Did not receive Combatant list");
@@ -269,7 +274,7 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
         ListFightableRecyclerAdapter.LFRAFlags flags = new ListFightableRecyclerAdapter.LFRAFlags(); // Create flags
         flags.adapterCanModify = true;
         flags.adapterCanMultiSelect = true;
-        adapter = new ListFightableRecyclerAdapter(this, savedCombatantsList.clone(), flags); // Populate a Recycler view with the saved Combatants
+        adapter = new ListFightableRecyclerAdapter(this, rosterFightablesList.clone(), flags); // Populate a Recycler view with the saved Combatants
         combatantListView.setAdapter(adapter);
         combatantListView.addItemDecoration(new BannerDecoration(getContext()));
         combatantListView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -490,13 +495,13 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
     private void saveCombatantList() {
         // Save the Combatant data that we have now
         AllFactionFightableLists adapterList = adapter.getCombatantList();
-        if (!adapterList.rawEquals(savedCombatantsList)) {
+        if (!adapterList.rawEquals(rosterFightablesList)) {
             // If the test list is not equal to the list of Combatants from the file, that means that some Combatants were added (or possibly removed...?), so we should save the new list
             LocalPersistence.writeObjectToFile(requireContext(), adapter.getCombatantList().getRawCopy(), COMBATANT_LIST_SAVE_FILE);
         }
 
         // Now keep track of the most recently saved batch of Combatants
-        savedCombatantsList = adapterList.clone();
+        rosterFightablesList = adapterList.clone();
     }
 
     private void saveAndClose() {
@@ -528,13 +533,6 @@ public class ViewSavedCombatantsFragment extends DialogFragment implements ListF
             }
         };
 
-    }
-
-    private AllFactionFightableLists generateMasterCombatantList() {
-        AllFactionFightableLists masterCombatantList = new AllFactionFightableLists();
-        masterCombatantList.addAll(adapter.getCombatantList());
-        masterCombatantList.addAll(currentFactionCombatantList);
-        return masterCombatantList;
     }
 
     public interface ReceiveAddedCombatant extends Serializable {

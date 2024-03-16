@@ -2,6 +2,10 @@ package to.us.suncloud.myapplication;
 
 import android.util.Log;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,6 +15,8 @@ import java.util.UUID;
 
 // Simple wrapper for a list of combatants or groups that also holds faction information
 public class FactionFightableList implements Serializable {
+    private static final String TAG = "FactionFightableList";
+
     private ArrayList<Fightable> fightableArrayList;
     private Fightable.Faction thisFaction;
 
@@ -37,6 +43,10 @@ public class FactionFightableList implements Serializable {
         }
         this.thisFaction = c.faction();
         c.sort(); // Ensure that the fightableArrayList is sorted (which is should be already...)
+    }
+
+    FactionFightableList( JSONObject jsonObject ) {
+        fromJSON( jsonObject );
     }
 
     // ArrayList<> interface methods
@@ -319,7 +329,7 @@ public class FactionFightableList implements Serializable {
     public boolean containsFightableWithID(UUID combatantID ) {
         boolean containsCombatant = false;
         for (Fightable fightable : fightableArrayList) {
-            if (fightable.getId() == combatantID) {
+            if (fightable.getId().equals(combatantID)) {
                 containsCombatant = true;
                 break;
             }
@@ -331,7 +341,7 @@ public class FactionFightableList implements Serializable {
     public Fightable getFightableWithID(UUID fightableID) {
         Fightable returnCombatant = null;
         for (Fightable fightable : fightableArrayList) {
-            if (fightable.getId() == fightableID) {
+            if (fightable.getId().equals(fightableID)) {
                 returnCombatant = fightable;
                 break;
             }
@@ -357,4 +367,46 @@ public class FactionFightableList implements Serializable {
     public int hashCode() {
         return Objects.hash(fightableArrayList, thisFaction);
     }
+
+    // For JSON conversions
+    private static final String FACTION_KEY = "FACTION";
+    private static final String FIGHTABLE_LIST_KEY = "FIGHTABLE_LIST";
+
+    protected void fromJSON( JSONObject jsonObject ) {
+        if ( fightableArrayList == null ) {
+            fightableArrayList = new ArrayList<>();
+        } else {
+            clear();
+        }
+        try {
+            if (!jsonObject.isNull(FIGHTABLE_LIST_KEY)) {
+                JSONArray jsonArray = jsonObject.getJSONArray(FIGHTABLE_LIST_KEY);
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    fightableArrayList.add(Fightable.createFromJSON(jsonArray.getJSONObject(i)));
+                }
+            }
+            if (!jsonObject.isNull(FACTION_KEY)) {
+                thisFaction = Fightable.Faction.fromInt(jsonObject.getInt(FACTION_KEY));
+            }
+        } catch (JSONException e) {
+            Log.e(TAG,e.toString());
+        }
+    }
+
+    protected JSONObject toJSON( ) {
+        JSONObject jsonObject = new JSONObject();
+        JSONArray fightableListJSON = new JSONArray();
+        try {
+            for (Fightable fightable : fightableArrayList) {
+                fightableListJSON.put(fightable.toJSON());
+            }
+            jsonObject.put(FIGHTABLE_LIST_KEY, fightableListJSON);
+            jsonObject.put(FACTION_KEY, thisFaction.getVal());
+        } catch ( JSONException e ) {
+            Log.e(TAG,e.toString());
+        }
+
+        return jsonObject;
+    }
+
 }

@@ -121,7 +121,7 @@ public class EncounterCombatantList implements Serializable {
         // Checks if the given Combatant is in this list
         // Note: Check is by UUID!  Not by exact copy!
         for (int i = 0; i < combatantArrayList.size(); i++) {
-            if (combatantArrayList.get(i).getId() == c.getId()) {
+            if (combatantArrayList.get(i).getId().equals(c.getId())) {
                 return true; // Found the Combatant
             }
         }

@@ -1,6 +1,9 @@
 package to.us.suncloud.myapplication;
 
+import static to.us.suncloud.myapplication.ViewSavedCombatantsFragment.COMBATANT_LIST_SAVE_FILE;
+
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -14,12 +17,15 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
@@ -28,9 +34,17 @@ import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 
-import java.io.File;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,6 +61,8 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
     public static final String ENCOUNTER_DATA = "encounterData"; // ID for the encounter list data (dice rolls, etc) sorted as a EncounterCombatantList (really just for savedStateInstance, we transfer the Combatant list data with the Encounter Activity using a single, finalized EncounterCombatantList)
 
     public static final int COMBATANT_LIST_CODE = 0; // The Code to represent requesting a Combatant List back from the Encounter Activity, used in startActivityForResult()
+    public static final int PICKED_EXPORT_FILE_CODE = 1; // The Code to represent choosing a file to export the Combatant list to
+    public static final int PICKED_IMPORT_FILE_CODE = 2; // The Code to represent choosing a file to import
 
     int curTheme; // The current theme of this Activity
 
@@ -65,6 +81,7 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
 
     // Stored values for the Encounter Activity
     AllFactionFightableLists combatantLists = new AllFactionFightableLists();
+    AllFactionFightableLists fightablesReadFromFile = null;
     int roundNumber = 1; // The current round number of the Encounter
     int maxRoundNumber = 0; // The max round number that has been rolled of the Encounter
     //    int curActiveCombatant = EncounterCombatantRecyclerAdapter.PREP_PHASE; // The currently active Combatant in the Encounter
@@ -298,10 +315,10 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == COMBATANT_LIST_CODE) {
-            // Don't know what else it would be...
             if (resultCode == RESULT_OK) {
                 if (data != null) {
                     // Get the Combatant list
@@ -320,8 +337,81 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
                 }
             }
             adapter.notifyListChanged();
+        } else if ( requestCode == PICKED_EXPORT_FILE_CODE ) {
+            // Save data to the given file
+            if (resultCode == RESULT_OK) {
+                try {
+                    FileOutputStream fileOutputStream = (FileOutputStream) getContentResolver().openOutputStream(data.getData());
+                    AllFactionFightableLists list = (AllFactionFightableLists) LocalPersistence.readObjectFromFile(getContext(), COMBATANT_LIST_SAVE_FILE);
+                     if ( list != null ) {
+                         JSONObject jsonObject = list.toJSON();
+                         String outputString = jsonObject.toString();
+                         fileOutputStream.write(outputString.getBytes());
+                         Toast.makeText(getContext(), "Saved combatants to file!", Toast.LENGTH_SHORT).show();
+                     } else {
+                         Toast.makeText(getContext(), "No combatants to export!", Toast.LENGTH_SHORT).show();
+                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        } else if ( requestCode == PICKED_IMPORT_FILE_CODE ) {
+            // Save data to the given file
+            if (resultCode == RESULT_OK) {
+                Uri uri = data.getData();
+                try {
+                    // Import the json file
+                    String jsonString = readTextFromUri(uri);
+                    JSONObject jsonObj = new JSONObject(jsonString);
+                    fightablesReadFromFile = new AllFactionFightableLists(jsonObj);
+
+                    // Get saved Combatant list, for comparison
+                    AllFactionFightableLists savedList = (AllFactionFightableLists) LocalPersistence.readObjectFromFile(getContext(), COMBATANT_LIST_SAVE_FILE);
+
+                    // Attempt to fix Group data
+                    if ( savedList != null ) {
+                        for (Fightable fightable : fightablesReadFromFile.getFactionList(Fightable.Faction.Group).getFightableArrayList() ) {
+                            CombatantGroup combatantGroup = (CombatantGroup) fightable;
+                            for (CombatantGroup.CombatantGroupData combatantData : combatantGroup.getCombatantList()) {
+                                Fightable sameIDFightable = savedList.getFightableWithID(combatantData);
+                                if (sameIDFightable == null) {
+                                    // A fightable with this ID no longer exists
+                                    Fightable originalFightable = fightablesReadFromFile.getFightableWithID(combatantData);
+                                    if (originalFightable != null) {
+                                        Fightable sameNameFightable = savedList.getFightableWithName(originalFightable.getName());
+                                        if (sameNameFightable != null) {
+                                            combatantData.mID = sameNameFightable.getId();
+                                            combatantData.mFaction = sameNameFightable.getFaction();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+
+                    // TODO: Add error handling for badly formatted data...?
+                } catch (IOException | JSONException e) {
+                    e.printStackTrace();
+                    Toast.makeText(getContext(), String.format("Could not import Combatants: %s", e), Toast.LENGTH_LONG).show();
+                }
+            }
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private String readTextFromUri(Uri uri) throws IOException {
+        StringBuilder stringBuilder = new StringBuilder();
+        try (InputStream inputStream =
+                     getContentResolver().openInputStream(uri);
+             BufferedReader reader = new BufferedReader(
+                     new InputStreamReader(Objects.requireNonNull(inputStream)))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line);
+            }
+        }
+        return stringBuilder.toString();
     }
 
     @Override
@@ -339,11 +429,22 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
         // Update the ad location, if needed (based on if we THINK the user bought ads)
         displayAd(!purchaseHandler.wasPurchased(REMOVE_ADS_SKU));
         purchaseHandler.queryPurchases(); // Check to see if anything has changed on the Purchases front...
+
+        if ( fightablesReadFromFile != null ) {
+            // We read some Fightables from a file, so we need to go to the bookmarks fragment
+
+            // Open the bookmarks fragment, and all of these new Fightables to the bookmarks
+            FragmentManager fm_ob = getSupportFragmentManager();
+            ViewSavedCombatantsFragment viewBookmarksFrag = ViewSavedCombatantsFragment.newViewBookmarkedFightablesInstance(fightablesReadFromFile);
+            viewBookmarksFrag.show(fm_ob, "Open Bookmarks");
+            Toast.makeText(getContext(), "Added combatants from file!", Toast.LENGTH_SHORT).show();
+
+            fightablesReadFromFile = null;
+        }
     }
 
     @Override
     protected void onStop() {
-
         super.onStop();
     }
 
@@ -490,7 +591,7 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
             return true;
         } else if (id == R.id.open_bookmarks) {// Open the bookmarked Combatants menu
             FragmentManager fm_ob = getSupportFragmentManager();
-            ViewSavedCombatantsFragment viewBookmarksFrag = ViewSavedCombatantsFragment.newViewBookmarkedFightablesInstance(adapter.getCombatantList());
+            ViewSavedCombatantsFragment viewBookmarksFrag = ViewSavedCombatantsFragment.newViewBookmarkedFightablesInstance();
             viewBookmarksFrag.show(fm_ob, "Open Bookmarks");
             return true;
         } else if (id == R.id.clear_encounter) {// Clear the encounter, if the user confirms
@@ -515,6 +616,18 @@ public class ConfigureFightableListActivity extends AppCompatActivity implements
                         }
                     })
                     .show();
+        } else if ( id == R.id.import_roster ) {
+            // TODO: START HERE - can't choose a file to open...
+            Intent chooseFile = new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                .setType("*/*")
+                .addCategory(Intent.CATEGORY_OPENABLE);
+//                .putExtra(Intent.EXTRA_TITLE, getString(R.string.default_json_filename));
+            startActivityForResult(chooseFile, PICKED_IMPORT_FILE_CODE);
+        } else if ( id == R.id.export_roster ) {
+            Intent saveFile = new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                .setType("text/json")
+                .putExtra(Intent.EXTRA_TITLE, getString(R.string.default_json_filename));
+            startActivityForResult(saveFile, PICKED_EXPORT_FILE_CODE);
         } else {
             // Do Nothing - unrecognized ID
         }

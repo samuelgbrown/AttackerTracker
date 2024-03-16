@@ -8,20 +8,36 @@
         android:menuCategory="alternative"
         android:title="@string/open_bookmarks"
         android:visible="true"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
     <item
         android:id="@+id/clear_encounter"
         android:icon="@drawable/ic_baseline_delete_24"
         android:iconTint="@color/colorWhite"
         android:menuCategory="system"
-        android:title="@string/settings"
+        android:title="@string/reset_encounter"
         android:visible="true"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
     <item
         android:id="@+id/settings"
         android:icon="@drawable/settings_24dp"
         android:menuCategory="system"
         android:title="@string/settings"
         android:visible="true"
-        app:showAsAction="always" />
+        app:showAsAction="ifRoom" />
+    <item
+    android:id="@+id/import_roster"
+        android:icon="@drawable/import_24"
+        android:menuCategory="system"
+        android:title="@string/import_roster"
+        android:iconTint="@color/colorWhite"
+        android:visible="true"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/export_roster"
+        android:icon="@drawable/export_24"
+        android:menuCategory="system"
+        android:title="@string/export_roster"
+        android:iconTint="@color/colorWhite"
+        android:visible="true"
+        app:showAsAction="ifRoom" />
 </menu>
